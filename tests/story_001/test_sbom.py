@@ -76,7 +76,7 @@ def test_cyclonedx_source_link_priority(row):  # S1-18
 
 
 def test_spdx_falls_back_to_homepage():  # S1-18
-    row = CASES["S1-18"]["rows"][-1]
+    row = next(r for r in CASES["S1-18"]["rows"] if "homepage" in r)
     [c] = parse_sbom(spdx(pkg(downloadLocation=row["downloadLocation"], homepage=row["homepage"])))
     assert c.source_url == row["expected"]
 

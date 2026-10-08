@@ -22,6 +22,21 @@ _SPDX_EMPTY = {"", "NOASSERTION", "NONE"}
 _REF_PRIORITY = ("vcs", "source-distribution", "distribution", "website")
 
 
+def _first_url(*candidates) -> str | None:
+    """DR-7, shared by both formats: the first candidate that is a real link.
+
+    Blank and SPDX `NOASSERTION`/`NONE` values are skipped, and the VCS prefix
+    (`git+https://...`, common in both CycloneDX `vcs` refs and SPDX
+    `downloadLocation`) is stripped so the result opens in a browser.
+    """
+    for url in candidates:
+        if not isinstance(url, str) or url.strip().upper() in _SPDX_EMPTY:
+            continue
+        url = url.strip()
+        return url[4:] if url.startswith("git+") else url
+    return None
+
+
 def _licenseref(name: str) -> str:
     return "LicenseRef-" + (re.sub(r"[^A-Za-z0-9.]+", "-", name).strip("-") or "unnamed")
 
@@ -41,8 +56,6 @@ def _cdx_license(entries) -> str | None:
     concluded = [e for e in entries if _acknowledgement(e) == "concluded"]
     terms = []
     for entry in concluded or entries:
-        if not isinstance(entry, dict):
-            continue
         if entry.get("expression"):
             terms.append(entry["expression"])
             continue
@@ -58,10 +71,7 @@ def _cdx_license(entries) -> str | None:
 
 def _cdx_source(c: dict) -> str | None:
     refs = {r.get("type"): r.get("url") for r in c.get("externalReferences") or [] if isinstance(r, dict)}
-    for kind in _REF_PRIORITY:
-        if refs.get(kind):
-            return refs[kind]
-    return url_for(c.get("purl"))
+    return _first_url(*(refs.get(kind) for kind in _REF_PRIORITY), url_for(c.get("purl")))
 
 
 def _cdx_flatten(components, out: list[dict]) -> None:
@@ -88,7 +98,6 @@ def _parse_cyclonedx(doc: dict) -> list[Component]:
             purl=purl,
             license_expression=_cdx_license(c.get("licenses")),
             source_url=_cdx_source(c),
-            is_ai_model=c.get("type") == "machine-learning-model",
         ))
     return out
 
@@ -118,9 +127,6 @@ def _parse_spdx(doc: dict) -> list[Component]:
             continue
         purl = next((r.get("referenceLocator") for r in p.get("externalRefs") or []
                      if r.get("referenceType") == "purl"), None)
-        download = _spdx_value(p.get("downloadLocation"))
-        if download and download.startswith("git+"):
-            download = download[4:]
         parsed = parse_purl(purl)
         out.append(Component(
             ref=p.get("SPDXID") or purl or f"{p.get('name')}@{p.get('versionInfo', '')}",
@@ -129,8 +135,7 @@ def _parse_spdx(doc: dict) -> list[Component]:
             type="machine-learning-model" if parsed and parsed.type == "huggingface" else "library",
             purl=purl,
             license_expression=_spdx_value(p.get("licenseConcluded")) or _spdx_value(p.get("licenseDeclared")),
-            source_url=url_for(purl) or download or _spdx_value(p.get("homepage")),
-            is_ai_model=bool(parsed and parsed.type == "huggingface"),
+            source_url=_first_url(url_for(purl), p.get("downloadLocation"), p.get("homepage")),
         ))
     return out
 

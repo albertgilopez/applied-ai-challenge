@@ -37,6 +37,7 @@ muts = [
   'license_expression=_spdx_value(p.get("licenseDeclared")) or _spdx_value(p.get("licenseConcluded")),'),  # DR-5
  ("core/sbom.py", 'if not isinstance(p, dict) or p.get("SPDXID") in described:', "if not isinstance(p, dict):"),
  ("core/sbom.py", "for entry in concluded or entries:", "for entry in entries:"),  # DR-5 concluded
+ ("core/sbom.py", 'return url[4:] if url.startswith("git+") else url', "return url"),  # DR-7 git+ prefix
  ("core/sbom.py", '("vcs", "source-distribution", "distribution", "website")', '("vcs", "distribution", "source-distribution", "website")'),  # DR-7
  ("app/files.py", "if size > limit:", "if False:"),
  ("core/purl.py", 'parts = [unquote(p) for p in body.split("/") if p]', 'parts = [p for p in body.split("/") if p]'),

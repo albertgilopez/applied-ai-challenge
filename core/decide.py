@@ -11,9 +11,8 @@ from dataclasses import dataclass
 
 from core.component import Component
 from core.license_expr import And, Expr, Leaf, Or, ParseError, parse
-from core.policy import Policy
+from core.policy import ALLOW, REJECT, REVIEW, Policy
 
-ALLOW, REVIEW, REJECT = "Allow", "Needs review", "Reject"
 RANK = {REJECT: 0, REVIEW: 1, ALLOW: 2}
 SECTION_NAME = {ALLOW: "allowed", REVIEW: "under review", REJECT: "rejected"}
 

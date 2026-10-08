@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from typing import Union
 
 OPERATORS = ("AND", "OR", "WITH")
-_TOKEN = re.compile(r"\s*(\(|\)|[^\s()]+)")
+_TOKEN = re.compile(r"\(|\)|[^\s()]+")
 
 
 class ParseError(ValueError):
@@ -55,15 +55,8 @@ Expr = Union[Leaf, And, Or]
 
 
 def _tokens(text: str) -> list[str]:
-    tokens, pos = [], 0
-    text = text.rstrip()
-    while pos < len(text):
-        m = _TOKEN.match(text, pos)
-        if not m:  # pragma: no cover - the pattern matches any non-space run
-            raise ParseError(f"unexpected character at {pos}")
-        tokens.append(m.group(1))
-        pos = m.end()
-    return tokens
+    # A token is "(", ")" or any run of characters that are neither space nor parenthesis.
+    return _TOKEN.findall(text)
 
 
 class _Parser:

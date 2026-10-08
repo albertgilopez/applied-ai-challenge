@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-SECTIONS = {"allowed": "Allow", "review": "Needs review", "rejected": "Reject"}
+ALLOW, REVIEW, REJECT = "Allow", "Needs review", "Reject"
+SECTIONS = {"allowed": ALLOW, "review": REVIEW, "rejected": REJECT}
 
 
 class PolicyError(ValueError):
@@ -31,17 +32,16 @@ class Policy:
         unknown = sorted(set(data) - set(SECTIONS))
         if unknown:
             raise PolicyError(f"unknown section(s) {unknown}; expected {list(SECTIONS)}")
-        verdicts: dict[str, str] = {}
-        where: dict[str, str] = {}
-        for section, verdict in SECTIONS.items():
+        where: dict[str, str] = {}  # normalised id -> the section that lists it
+        for section in SECTIONS:
             for entry in data.get(section) or []:
                 if not isinstance(entry, str) or not entry.strip():
                     raise PolicyError(f"{section}: {entry!r} is not a license id (quote it if it is)")
                 k = _key(entry)
                 if k in where and where[k] != section:
                     raise PolicyError(f"{entry!r} is listed in both {where[k]} and {section}")
-                verdicts[k], where[k] = verdict, section
-        return cls(verdicts)
+                where[k] = section
+        return cls({k: SECTIONS[s] for k, s in where.items()})
 
     def lookup(self, license_text: str) -> str | None:
         return self.verdicts.get(_key(license_text))

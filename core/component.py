@@ -13,7 +13,11 @@ class Component:
     purl: str | None
     license_expression: str | None
     source_url: str | None
-    is_ai_model: bool = False
+
+    @property
+    def is_ai_model(self) -> bool:
+        """Derived, not stored: each parser maps its format's signal onto `type` (DR-6)."""
+        return self.type == "machine-learning-model"
 
     @property
     def identity(self) -> str:

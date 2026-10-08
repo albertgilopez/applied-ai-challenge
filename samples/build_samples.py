@@ -11,6 +11,7 @@ what was concluded from it.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -41,7 +42,8 @@ def _ref(name: str) -> str:
 
 
 def _licenseref(name: str) -> str:
-    return "LicenseRef-" + "-".join("".join(ch if ch.isalnum() or ch == "." else " " for ch in name).split())
+    # Same rule as core/sbom.py, written out again because this script runs standalone.
+    return "LicenseRef-" + (re.sub(r"[^A-Za-z0-9.]+", "-", name).strip("-") or "unnamed")
 
 
 def cyclonedx() -> dict:
