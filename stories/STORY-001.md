@@ -71,7 +71,7 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
     license declared.
 - **DR-6 AI models.** CycloneDX `type: machine-learning-model`; SPDX 2.3 has no such purpose, so a
   `pkg:huggingface/` purl marks the model.
-- **DR-7 Source link.** First available of: `vcs` > `distribution` > `website` external reference >
+- **DR-7 Source link.** First available of: `vcs` > `source-distribution` > `distribution` > `website` external reference >
   URL derived from the purl (pypi, npm, maven, github, huggingface) > SPDX `downloadLocation` /
   `homepage` (unless `NOASSERTION`/`NONE`) > none. A missing link adds `no source declared` to the
   reason and does not change the verdict.

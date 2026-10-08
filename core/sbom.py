@@ -18,7 +18,8 @@ class FormatError(ValueError):
 
 
 _SPDX_EMPTY = {"", "NOASSERTION", "NONE"}
-_REF_PRIORITY = ("vcs", "distribution", "website")
+# Closest to the source code first (CycloneDX 1.6 externalReferences types).
+_REF_PRIORITY = ("vcs", "source-distribution", "distribution", "website")
 
 
 def _licenseref(name: str) -> str:

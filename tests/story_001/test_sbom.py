@@ -67,8 +67,9 @@ def test_the_described_product_is_not_a_component():
     assert [c.name for c in parse_sbom(doc)] == ["lib"]
 
 
-def test_cyclonedx_source_link_priority():  # S1-18
-    row = CASES["S1-18"]["rows"][0]
+@pytest.mark.parametrize("row", [r for r in CASES["S1-18"]["rows"] if "externalReferences" in r],
+                         ids=lambda r: r["expected"])
+def test_cyclonedx_source_link_priority(row):  # S1-18
     [c] = parse_sbom(cdx({"type": "library", "name": "x", "purl": "pkg:pypi/x@1",
                           "externalReferences": row["externalReferences"]}))
     assert c.source_url == row["expected"]

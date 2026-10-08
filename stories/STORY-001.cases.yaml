@@ -68,6 +68,7 @@
 - id: S1-18
   rows:
     - { externalReferences: [{ type: website, url: "https://a.example" }, { type: vcs, url: "https://github.com/o/r" }], expected: "https://github.com/o/r" }
+    - { externalReferences: [{ type: distribution, url: "https://d.example/x.whl" }, { type: source-distribution, url: "https://d.example/x.tar.gz" }], expected: "https://d.example/x.tar.gz" }
     - { purl: "pkg:pypi/requests@2.32.3", expected: "https://pypi.org/project/requests/2.32.3/" }
     - { purl: "pkg:npm/%40scope/pkg@1.0.0", expected: "https://www.npmjs.com/package/@scope/pkg/v/1.0.0" }
     - { purl: "pkg:maven/org.slf4j/slf4j-api@2.0.13", expected: "https://central.sonatype.com/artifact/org.slf4j/slf4j-api/2.0.13" }
