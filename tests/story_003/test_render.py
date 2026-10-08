@@ -132,6 +132,19 @@ def test_counts_sum_and_every_row_has_a_source_or_none_declared():  # S3-04
         assert source == "none declared" or source.startswith("<https://"), row
 
 
+def test_an_overridden_row_shows_the_decided_verdict_and_the_reviewer():  # S3-03
+    c = Component("ref", "requests", "2.32.3", "library", None, "Apache-2.0", "https://github.com/psf/requests")
+    policy = load_policy(SAMPLES / "policy.yaml")
+    digest = policy.digest()
+    ledger = [
+        {"id": "d0", "at": "t", **decision_record(c, decide(c, policy), digest)},
+        {"id": "o1", "at": "t", "kind": "override", "decision": "d0", "verdict": "Reject", "by": "Ana", "reason": "x"},
+    ]
+    report = build_report([c], None, fold(ledger), sbom_sha256="s", policy_sha256=digest, generated_at="now")
+    [row] = component_rows(to_markdown(report))
+    assert "Reject (decided Allow)" in row and "overridden by Ana" in row
+
+
 @pytest.mark.parametrize(
     ("product", "expected"),
     [(Product("sample-instrument-software", "3.2.0"), "sample-instrument-software@3.2.0"), (None, "every package")],

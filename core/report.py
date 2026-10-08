@@ -133,7 +133,16 @@ def to_markdown(report: JSONObject) -> str:
         "|---|---|---|---|---|---|",
     ]
     for c in comps:
-        cells = [md_cell(c["name"]), md_cell(c["version"]), c["verdict"], c["status"], md_cell(c["reason"])]
+        # A reviewed row says so in the row itself: "Reject" next to "Apache-2.0 is allowed" reads as
+        # a contradiction unless the cell shows the decided verdict and who changed it.
+        verdict = (
+            c["verdict"] if c["verdict"] == c["decided_verdict"] else f"{c['verdict']} (decided {c['decided_verdict']})"
+        )
+        reason = md_cell(c["reason"])
+        if c["reviews"]:
+            last = c["reviews"][-1]
+            reason += f"; {'overridden' if last['kind'] == 'override' else 'approved'} by {md_cell(last['by'])}"
+        cells = [md_cell(c["name"]), md_cell(c["version"]), verdict, c["status"], reason]
         lines.append("| " + " | ".join([*cells, md_link(c["source_url"])]) + " |")
     reviewed = [c for c in comps if c["reviews"]]
     lines += ["", "## Reviewer decisions", ""]

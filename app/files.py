@@ -8,6 +8,7 @@ run with a message instead of producing an empty review.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -16,18 +17,22 @@ import yaml
 
 from core.component import Component
 from core.policy import Policy, PolicyError
-from core.sbom import FormatError, parse_sbom
+from core.sbom import FormatError, SbomDocument, read_sbom
 
 MAX_SBOM_BYTES = 20 * 1024 * 1024
 MAX_POLICY_BYTES = 256 * 1024
 
 
-def _read(path: Path | str, limit: int, error: type[Exception]) -> str:
+def _read_bytes(path: Path | str, limit: int, error: type[Exception]) -> bytes:
     path = Path(path)
     size = path.stat().st_size
     if size > limit:
         raise error(f"{path.name} is {size} bytes, above the {limit}-byte limit")
-    return path.read_text(encoding="utf-8")
+    return path.read_bytes()
+
+
+def _read(path: Path | str, limit: int, error: type[Exception]) -> str:
+    return _read_bytes(path, limit, error).decode("utf-8")
 
 
 def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -42,14 +47,23 @@ def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def load_sbom(path: Path | str) -> list[Component]:
-    text = _read(path, MAX_SBOM_BYTES, FormatError)
+    return load_sbom_document(path)[0].components
+
+
+def load_sbom_document(path: Path | str) -> tuple[SbomDocument, str]:
+    """The parsed SBOM (components and product) and the sha256 of the exact bytes that were read."""
+    raw = _read_bytes(path, MAX_SBOM_BYTES, FormatError)
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise FormatError(f"{Path(path).name} is not UTF-8") from exc
     try:
         doc = json.loads(text, object_pairs_hook=_no_duplicate_keys)
     except json.JSONDecodeError as exc:
         raise FormatError(f"{Path(path).name} is not valid JSON: {exc.msg} at line {exc.lineno}") from exc
     except RecursionError as exc:
         raise FormatError(f"{Path(path).name} is nested too deeply") from exc
-    return parse_sbom(doc)
+    return read_sbom(doc), hashlib.sha256(raw).hexdigest()
 
 
 def load_policy(path: Path | str) -> Policy:
