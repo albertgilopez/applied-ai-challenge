@@ -64,7 +64,9 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
   unless the policy lists them.
 - **DR-5 Format mapping.**
   - CycloneDX: several entries in `licenses` are combined with `AND`; an `expression` entry is used
-    as is; nested `components` are flattened.
+    as is; nested `components` are flattened. CycloneDX 1.6 marks entries with
+    `acknowledgement: declared | concluded`; when any entry is `concluded`, only the concluded ones
+    count (the same rule as SPDX below: a verified conclusion overrides an author's declaration).
   - SPDX: `licenseConcluded`, falling back to `licenseDeclared`; `NOASSERTION` and `NONE` mean no
     license declared.
 - **DR-6 AI models.** CycloneDX `type: machine-learning-model`; SPDX 2.3 has no such purpose, so a
@@ -97,6 +99,7 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
 - [x] Nested CycloneDX components are flattened (case: S1-17)
 - [x] The source link follows the DR-7 priority, including links derived from the purl (case: S1-18)
 - [x] Invalid JSON, unknown format and a contradictory policy raise errors (case: S1-19)
+- [x] A CycloneDX `concluded` license overrides the `declared` ones (case: S1-20)
 
 ## Out of scope
 

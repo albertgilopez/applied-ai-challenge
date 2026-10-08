@@ -27,11 +27,19 @@ def _licenseref(name: str) -> str:
 
 # ── CycloneDX ───────────────────────────────────────────────────────────────
 
+def _acknowledgement(entry: dict) -> str | None:
+    # CycloneDX 1.6: on an expression entry it sits on the entry, on a license entry inside `license`.
+    return entry.get("acknowledgement") or (entry.get("license") or {}).get("acknowledgement")
+
+
 def _cdx_license(entries) -> str | None:
     if not entries:
         return None
+    entries = [e for e in entries if isinstance(e, dict)]
+    # A verified conclusion overrides the authors' declarations (STORY-001 DR-5), as in SPDX.
+    concluded = [e for e in entries if _acknowledgement(e) == "concluded"]
     terms = []
-    for entry in entries:
+    for entry in concluded or entries:
         if not isinstance(entry, dict):
             continue
         if entry.get("expression"):

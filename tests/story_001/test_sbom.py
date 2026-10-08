@@ -28,6 +28,12 @@ def test_several_cyclonedx_licenses_combine_with_and():  # S1-15
     assert c.license_expression == "(MIT) AND (GPL-3.0-only)"
 
 
+@pytest.mark.parametrize("row", CASES["S1-20"]["rows"], ids=["concluded-wins", "no-concluded-all-count"])
+def test_cyclonedx_concluded_overrides_declared(row):  # S1-20
+    [c] = parse_sbom(cdx({"type": "library", "name": "x", "licenses": row["cyclonedx_licenses"]}))
+    assert c.license_expression == row["expected"]
+
+
 def test_a_cyclonedx_expression_is_used_as_is():
     [c] = parse_sbom(cdx({"type": "library", "name": "x", "licenses": [{"expression": "MIT OR Apache-2.0"}]}))
     assert c.license_expression == "MIT OR Apache-2.0"

@@ -33,6 +33,7 @@ muts = [
  ("core/sbom.py", 'license_expression=_spdx_value(p.get("licenseConcluded")) or _spdx_value(p.get("licenseDeclared")),',
   'license_expression=_spdx_value(p.get("licenseDeclared")) or _spdx_value(p.get("licenseConcluded")),'),  # DR-5
  ("core/sbom.py", 'if not isinstance(p, dict) or p.get("SPDXID") in described:', "if not isinstance(p, dict):"),
+ ("core/sbom.py", "for entry in concluded or entries:", "for entry in entries:"),  # DR-5 concluded
  ("app/files.py", "if size > limit:", "if False:"),
  ("core/purl.py", 'parts = [unquote(p) for p in body.split("/") if p]', 'parts = [p for p in body.split("/") if p]'),
 ]

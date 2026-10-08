@@ -79,3 +79,9 @@
     - { input: "not json", expected: FormatError }
     - { input: "{\"foo\": 1}", expected: FormatError }
     - { policy: { allowed: [MIT], rejected: [mit] }, expected: PolicyError }
+- id: S1-20
+  rows:
+    - cyclonedx_licenses: [{ license: { id: GPL-3.0-only, acknowledgement: declared } }, { license: { id: MIT, acknowledgement: concluded } }]
+      expected: MIT
+    - cyclonedx_licenses: [{ license: { id: MIT, acknowledgement: declared } }, { license: { id: GPL-3.0-only } }]
+      expected: (MIT) AND (GPL-3.0-only)
