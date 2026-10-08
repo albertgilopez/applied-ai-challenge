@@ -5,9 +5,12 @@ estimated. Cost is derived from a price table that carries its source and the
 date it was checked; a model with no price returns `None`, never 0.0, so a
 missing price can't pass for a free run.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
+
+from harness.storage import JSONObject
 
 # USD per million tokens (input, output). Fill only from the provider's current
 # pricing page and update PRICES_CHECKED_ON when you do.
@@ -26,7 +29,7 @@ class Usage:
     cache_creation_input_tokens: int = 0
     cache_read_input_tokens: int = 0
 
-    def add(self, raw: dict | None) -> None:
+    def add(self, raw: JSONObject | None) -> None:
         raw = raw or {}
         for f in fields(self):  # the field names are the API's usage keys
             setattr(self, f.name, getattr(self, f.name) + int(raw.get(f.name) or 0))

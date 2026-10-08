@@ -14,11 +14,11 @@ is asked about `GPL-2.0-only WITH Classpath-exception-2.0` as written, so no
 code path can drop the exception or the "or later" and look up something more
 permissive than what the component declares.
 """
+
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Union
 
 OPERATORS = ("AND", "OR", "WITH")
 _TOKEN = re.compile(r"\(|\)|[^\s()]+")
@@ -43,15 +43,15 @@ class Leaf:
 
 @dataclass(frozen=True)
 class And:
-    items: tuple["Expr", ...]
+    items: tuple[Expr, ...]
 
 
 @dataclass(frozen=True)
 class Or:
-    items: tuple["Expr", ...]
+    items: tuple[Expr, ...]
 
 
-Expr = Union[Leaf, And, Or]
+Expr = Leaf | And | Or
 
 
 def _tokens(text: str) -> list[str]:

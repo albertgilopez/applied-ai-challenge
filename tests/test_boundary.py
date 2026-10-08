@@ -5,6 +5,7 @@ and itself, nothing else: no model SDK, no HTTP client, no YAML parser. Every
 file is parsed with `ast`, so the check sees imports inside functions too, and
 the failure names the file and the import.
 """
+
 from __future__ import annotations
 
 import ast

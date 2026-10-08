@@ -1,4 +1,5 @@
 """T6: the sample files, the file adapter, and S1-09 (both formats agree)."""
+
 import json
 from pathlib import Path
 

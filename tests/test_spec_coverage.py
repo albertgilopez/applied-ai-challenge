@@ -5,6 +5,7 @@ cases file must not be empty, and every checkbox under `## Acceptance Criteria`
 must cite a `(case: ID)` that exists in it. A checkbox without a case is a
 promise no test runs.
 """
+
 from __future__ import annotations
 
 import re

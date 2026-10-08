@@ -1,7 +1,13 @@
 """One SBOM component, the same shape whatever format it came from."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
+
+# A parsed JSON object as it comes from an SBOM or a policy: keys are strings,
+# values are whatever the document holds. Narrowed by the code that reads it.
+JSONObject = dict[str, Any]
 
 
 @dataclass(frozen=True)

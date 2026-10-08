@@ -5,6 +5,7 @@ Verdicts are ordered `Reject < Needs review < Allow`. `OR` takes the best branch
 the branch that decided is kept, so a `Reject` names the id that rejected it.
 Anything missing, unparseable or unlisted is `Needs review` (DR-1).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

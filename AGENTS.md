@@ -28,6 +28,8 @@ purpose-built agent loop.
 
 ```bash
 uv sync                      # install
+uv run ruff check . && uv run ruff format --check .   # lint and format
+uv run mypy                  # types (core/ is held to --strict)
 uv run pytest                # all tests, offline (recorded model responses)
 python scripts/canaries.py   # break each guard on purpose; every mutation must turn the suite red
 uv run pip-audit             # dependency vulnerability scan (CI fails on findings)

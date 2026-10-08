@@ -1,4 +1,5 @@
 """T5: CycloneDX and SPDX parsing into one component list (STORY-001 DR-5..DR-8)."""
+
 import pytest
 
 from core.sbom import FormatError, parse_sbom
@@ -35,8 +36,9 @@ def test_a_cyclonedx_expression_is_used_as_is():
 
 
 def test_a_name_only_license_becomes_a_licenseref():  # DR-4
-    [c] = parse_sbom(cdx({"type": "library", "name": "x",
-                          "licenses": [{"license": {"name": "Llama 3.1 Community License"}}]}))
+    [c] = parse_sbom(
+        cdx({"type": "library", "name": "x", "licenses": [{"license": {"name": "Llama 3.1 Community License"}}]})
+    )
     assert c.license_expression == "LicenseRef-Llama-3.1-Community-License"
 
 
@@ -48,25 +50,39 @@ def test_spdx_concluded_then_declared(row):  # S1-16
 
 
 def test_nested_cyclonedx_components_are_flattened():  # S1-17
-    child = lambda n: {"type": "library", "name": n}
+    def child(name):
+        return {"type": "library", "name": name}
+
     parsed = parse_sbom(cdx({"type": "library", "name": "parent", "components": [child("a"), child("b")]}))
     assert sorted(c.name for c in parsed) == ["a", "b", "parent"]
 
 
 def test_the_described_product_is_not_a_component():
     product = {"type": "application", "name": "our-product"}
-    assert [c.name for c in parse_sbom(cdx({"type": "library", "name": "lib"}, metadata={"component": product}))] == ["lib"]
-    doc = spdx(pkg("product"), pkg("lib"),
-               relationships=[{"spdxElementId": "SPDXRef-DOCUMENT", "relationshipType": "DESCRIBES",
-                               "relatedSpdxElement": "SPDXRef-product"}])
+    assert [c.name for c in parse_sbom(cdx({"type": "library", "name": "lib"}, metadata={"component": product}))] == [
+        "lib"
+    ]
+    doc = spdx(
+        pkg("product"),
+        pkg("lib"),
+        relationships=[
+            {
+                "spdxElementId": "SPDXRef-DOCUMENT",
+                "relationshipType": "DESCRIBES",
+                "relatedSpdxElement": "SPDXRef-product",
+            }
+        ],
+    )
     assert [c.name for c in parse_sbom(doc)] == ["lib"]
 
 
-@pytest.mark.parametrize("row", [r for r in CASES["S1-18"]["rows"] if "externalReferences" in r],
-                         ids=lambda r: r["expected"])
+@pytest.mark.parametrize(
+    "row", [r for r in CASES["S1-18"]["rows"] if "externalReferences" in r], ids=lambda r: r["expected"]
+)
 def test_cyclonedx_source_link_priority(row):  # S1-18
-    [c] = parse_sbom(cdx({"type": "library", "name": "x", "purl": "pkg:pypi/x@1",
-                          "externalReferences": row["externalReferences"]}))
+    [c] = parse_sbom(
+        cdx({"type": "library", "name": "x", "purl": "pkg:pypi/x@1", "externalReferences": row["externalReferences"]})
+    )
     assert c.source_url == row["expected"]
 
 
@@ -77,8 +93,16 @@ def test_spdx_falls_back_to_homepage():  # S1-18
 
 
 def test_spdx_purl_comes_from_external_refs_and_marks_ai_models():  # DR-6
-    model = pkg("m", externalRefs=[{"referenceCategory": "PACKAGE-MANAGER", "referenceType": "purl",
-                                    "referenceLocator": "pkg:huggingface/mistralai/Mistral-7B-v0.1"}])
+    model = pkg(
+        "m",
+        externalRefs=[
+            {
+                "referenceCategory": "PACKAGE-MANAGER",
+                "referenceType": "purl",
+                "referenceLocator": "pkg:huggingface/mistralai/Mistral-7B-v0.1",
+            }
+        ],
+    )
     [c] = parse_sbom(spdx(model))
     assert c.is_ai_model and c.source_url == "https://huggingface.co/mistralai/Mistral-7B-v0.1"
 
@@ -88,13 +112,16 @@ def test_cyclonedx_marks_ai_models_by_type():  # DR-6
     assert c.is_ai_model
 
 
-@pytest.mark.parametrize("doc, message", [
-    ({"foo": 1}, "unknown SBOM format"),            # S1-19
-    (cdx(), "no components"),
-    (spdx(), "no components"),
-    ({"bomFormat": "CycloneDX", "components": "nope"}, "must be a list"),
-    ([], "must be a JSON object"),
-])
+@pytest.mark.parametrize(
+    "doc, message",
+    [
+        ({"foo": 1}, "unknown SBOM format"),  # S1-19
+        (cdx(), "no components"),
+        (spdx(), "no components"),
+        ({"bomFormat": "CycloneDX", "components": "nope"}, "must be a list"),
+        ([], "must be a JSON object"),
+    ],
+)
 def test_bad_documents_raise(doc, message):
     with pytest.raises(FormatError, match=message):
         parse_sbom(doc)

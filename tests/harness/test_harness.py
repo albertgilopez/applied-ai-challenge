@@ -15,8 +15,8 @@ from harness.prompts import PromptRegistry, UnapprovedPrompt
 from harness.replay import CassetteMiss, RecordingProvider, ReplayProvider
 from harness.usage import Usage, cost_usd
 
-
 # ── scripted model ──────────────────────────────────────────────────────────
+
 
 class ScriptedProvider:
     """Returns pre-written responses in order and keeps every request it saw."""
@@ -67,13 +67,20 @@ def setup(tmp_path):
 def make_agent(setup, provider, system="be careful", **kw):
     catalog, registry, ledger, tmp = setup
     return Agent(
-        provider=provider, model="claude-sonnet-5-5", system=system,
-        prompt_id="sys", registry=registry, catalog=catalog,
-        gate=Gate(write_roots=[tmp]), ledger=ledger, **kw,
+        provider=provider,
+        model="claude-sonnet-5-5",
+        system=system,
+        prompt_id="sys",
+        registry=registry,
+        catalog=catalog,
+        gate=Gate(write_roots=[tmp]),
+        ledger=ledger,
+        **kw,
     )
 
 
 # ── catalog and gate ────────────────────────────────────────────────────────
+
 
 def test_tool_schema_is_derived_from_the_signature(setup):
     catalog = setup[0]
@@ -115,6 +122,7 @@ def test_a_write_outside_the_allowed_roots_is_denied(tmp_path):
 
 # ── governed prompt ─────────────────────────────────────────────────────────
 
+
 def test_prod_refuses_an_unapproved_prompt(setup):
     agent = make_agent(setup, ScriptedProvider([final()]), system="a different prompt", env="prod")
     with pytest.raises(UnapprovedPrompt):
@@ -141,6 +149,7 @@ def test_an_approval_without_evidence_is_refused(tmp_path):
 
 
 # ── loop, ledger, usage ─────────────────────────────────────────────────────
+
 
 def test_every_step_lands_in_the_ledger(setup):
     provider = ScriptedProvider([tool_use("read_value", {"key": "k"}), final("ok")])
@@ -179,6 +188,7 @@ def test_cache_tokens_count_as_input():
 
 def test_a_cached_run_is_not_priced_as_plain_input(monkeypatch):
     import harness.usage as usage
+
     monkeypatch.setitem(usage.PRICES, "m", (1.0, 1.0))
     assert cost_usd(Usage(1_000_000, 0), "m") == 1.0
     assert cost_usd(Usage(10, 0, cache_read_input_tokens=1000), "m") is None
@@ -189,6 +199,7 @@ def test_an_unknown_price_is_none_not_zero():
 
 
 # ── replay (the lab) ────────────────────────────────────────────────────────
+
 
 def test_a_recorded_run_replays_without_the_network(setup, tmp_path):
     live = ScriptedProvider([tool_use("read_value", {"key": "k"}), final("ok")])
@@ -216,6 +227,7 @@ def test_re_recording_a_request_appends_and_the_last_one_wins(tmp_path):
 
 # ── write-ahead, crash safety, confinement, storage ─────────────────────────
 
+
 def test_a_tool_decision_is_written_before_the_tool_runs(tmp_path):
     catalog, ledger = Catalog(), Ledger(tmp_path / "ledger.jsonl")
     seen_at_run = []
@@ -225,9 +237,16 @@ def test_a_tool_decision_is_written_before_the_tool_runs(tmp_path):
         seen_at_run.append([e["kind"] for e in ledger.read()])
         return "ok"
 
-    agent = Agent(provider=ScriptedProvider([tool_use("peek", {}), final()]), model="m", system="s",
-                  prompt_id="s", registry=PromptRegistry(tmp_path / "approvals.jsonl"),
-                  catalog=catalog, gate=Gate(), ledger=ledger)
+    agent = Agent(
+        provider=ScriptedProvider([tool_use("peek", {}), final()]),
+        model="m",
+        system="s",
+        prompt_id="s",
+        registry=PromptRegistry(tmp_path / "approvals.jsonl"),
+        catalog=catalog,
+        gate=Gate(),
+        ledger=ledger,
+    )
     agent.run("go")
     assert seen_at_run == [["run_start", "model_call", "tool_intent"]]
 
@@ -257,6 +276,7 @@ def test_a_read_tool_cannot_be_pointed_outside_its_roots(tmp_path):
 
 def test_an_effect_the_gate_does_not_know_is_denied():
     from harness.catalog import Tool
+
     odd = Tool(name="x", description="", effect="delete", fn=lambda: "", input_schema={})  # bypasses register()
     assert Gate().decide(odd, {}).verdict == "deny"
 

@@ -5,9 +5,12 @@ does not list returns `None` and the caller treats it as `Needs review`
 (STORY-001 DR-1). A policy that contradicts itself, or carries something that
 is not a license id, is refused when it is loaded rather than when it misfires.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
+
+from core.component import JSONObject
 
 ALLOW, REVIEW, REJECT = "Allow", "Needs review", "Reject"
 SECTIONS = {"allowed": ALLOW, "review": REVIEW, "rejected": REJECT}
@@ -26,7 +29,7 @@ class Policy:
     verdicts: dict[str, str]
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Policy":
+    def from_dict(cls, data: JSONObject) -> Policy:
         if not isinstance(data, dict) or not any(data.get(s) for s in SECTIONS):
             raise PolicyError("the policy is empty: it needs at least one of " + ", ".join(SECTIONS))
         unknown = sorted(set(data) - set(SECTIONS))

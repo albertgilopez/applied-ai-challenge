@@ -10,6 +10,7 @@ history can grow but never be edited, and "is this approved?" is derived from it
 Line endings are normalised before hashing, so a prompt read from a CRLF file on
 Windows keeps the approval it was given on Linux.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -34,8 +35,10 @@ class PromptRegistry:
         if not by.strip() or not validation_ref.strip():
             raise ValueError("an approval needs who approved it and the evidence it rests on")
         h = digest(text)
-        append_jsonl(self.path, {"prompt_id": prompt_id, "sha256": h, "by": by,
-                                 "validation_ref": validation_ref, "at": utc_stamp()})
+        append_jsonl(
+            self.path,
+            {"prompt_id": prompt_id, "sha256": h, "by": by, "validation_ref": validation_ref, "at": utc_stamp()},
+        )
         return h
 
     def is_approved(self, prompt_id: str, text: str) -> bool:

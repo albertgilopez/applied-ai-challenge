@@ -1,4 +1,5 @@
 """T2: license policy (STORY-001 DR-4, DR-8)."""
+
 import pytest
 
 from core.policy import Policy, PolicyError

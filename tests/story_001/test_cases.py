@@ -4,15 +4,30 @@ One test per case id, so a failure names the acceptance criterion it breaks.
 Cases that need SBOM parsing or the sample files live in test_sbom.py and
 test_samples.py; this file covers the license decision.
 """
+
 import pytest
 
 from core.component import Component
 from core.decide import decide
 from core.policy import Policy
-from tests.story_001.cases import CASES as BY_ID, POLICY
+from tests.story_001.cases import CASES as BY_ID
+from tests.story_001.cases import POLICY
 
-LICENSE_CASES = ["S1-01", "S1-02", "S1-03", "S1-04", "S1-05", "S1-06", "S1-07", "S1-08",
-                 "S1-10", "S1-11", "S1-12", "S1-13", "S1-14"]
+LICENSE_CASES = [
+    "S1-01",
+    "S1-02",
+    "S1-03",
+    "S1-04",
+    "S1-05",
+    "S1-06",
+    "S1-07",
+    "S1-08",
+    "S1-10",
+    "S1-11",
+    "S1-12",
+    "S1-13",
+    "S1-14",
+]
 
 
 def _rows(case):
@@ -20,9 +35,16 @@ def _rows(case):
 
 
 def _component(row, case_id):
-    source = row["source"] if "source" in row else "https://example.org/src"
-    return Component(ref=case_id, name="pkg", version="1.0", type="library", purl=None,
-                     license_expression=row.get("license"), source_url=source)
+    source = row.get("source", "https://example.org/src")
+    return Component(
+        ref=case_id,
+        name="pkg",
+        version="1.0",
+        type="library",
+        purl=None,
+        license_expression=row.get("license"),
+        source_url=source,
+    )
 
 
 @pytest.mark.parametrize("case_id", LICENSE_CASES)

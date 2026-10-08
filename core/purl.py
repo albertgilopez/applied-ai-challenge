@@ -5,8 +5,10 @@
 Only the types this tool links to are mapped; any other type, or a malformed
 purl, yields no link rather than a guessed one.
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from urllib.parse import quote, unquote
 
@@ -49,7 +51,7 @@ def _maven(p: Purl) -> str | None:
     return f"https://central.sonatype.com/artifact/{p.namespace}/{p.name}" + (f"/{p.version}" if p.version else "")
 
 
-def _owner_repo(host: str):
+def _owner_repo(host: str) -> Callable[[Purl], str | None]:
     return lambda p: f"https://{host}/{p.namespace}/{p.name}" if p.namespace else None
 
 

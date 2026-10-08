@@ -5,6 +5,7 @@ plain dicts. Both readers cap the input size before parsing anything, and turn
 every parser failure into the core's own error types, so a bad file stops the
 run with a message instead of producing an empty review.
 """
+
 from __future__ import annotations
 
 import json
