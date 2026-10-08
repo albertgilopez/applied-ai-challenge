@@ -64,15 +64,17 @@ record/replay of model calls so CI never calls a model.
   (two CycloneDX license entries concatenated as text could turn a `Reject` into an `Allow`). It was
   reproduced, fixed case-first, and given a canary, like every fix after it.
 - **CI** (GitHub Actions, and a `Jenkinsfile` over the same `scripts/ci.sh`): lint, types (`core/` under
-  `mypy --strict`), tests, canaries and `pip-audit`. It was seen failing on purpose twice: a broken case
-  stops it at `test`, a known-vulnerable dependency stops it at `audit`.
+  `mypy --strict`), tests, canaries and `pip-audit`. On GitHub Actions it was seen failing on purpose
+  twice: a broken case stops it at `test`, a known-vulnerable dependency stops it at `audit`. The
+  `Jenkinsfile` was run on a local Jenkins (`ci/jenkins-local/`): green on `main`, red at `test` on a
+  branch with a broken case.
 
 ## Limits
 
 - The reviewer name is recorded as typed; there is no authentication.
 - The ledger is append-only by code, not tamper-evident (no hash chain).
 - One model provider, no streaming, no code-execution sandbox: out of scope at this size.
-- The `Jenkinsfile` was run in its agent image, not on a Jenkins server.
+- Jenkins was run locally in Docker, not on a shared CI server; the audit probe was run on Actions only.
 
 ## How this was built
 

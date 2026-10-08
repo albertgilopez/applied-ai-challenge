@@ -2,10 +2,9 @@
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
   "as_of": "2026-10-09",
   "at_commit": "f4dea73",
-  "where_we_are": "STORY-001 and STORY-003 done. CI live: GitHub Actions and a Jenkinsfile over scripts/ci.sh (lint, types, 201 tests, 58/58 canaries, pip-audit). Seen failing on purpose twice on a probe branch: a broken case (test stage) and a vulnerable dependency (audit stage).",
+  "where_we_are": "STORY-001 and STORY-003 done. CI live: GitHub Actions and a Jenkinsfile over scripts/ci.sh (lint, types, 201 tests, 58/58 canaries, pip-audit). Actions seen failing on purpose twice on a probe branch: a broken case (test stage) and a vulnerable dependency (audit stage). The Jenkinsfile ran on a local Jenkins (ci/jenkins-local/): green on main, red at test on a broken-case branch.",
   "next": [
-    "README: one page, design, how the AI was verified, limits, which AI was used and where",
-    "Run the Jenkinsfile once on a local Jenkins (today only its agent image ran scripts/ci.sh)",
+    "KeysBench POC: 5-8 engineering tasks, rubric, grounded judge, results per model with measured cost and latency",
     "Remaining LOW review findings (C10, C19, H5, H11, H12, H14, H16) when touching those files",
     "STORY-002 and KeysBench after the panel brief"
   ],
