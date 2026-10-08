@@ -59,10 +59,14 @@ def _tokens(text: str) -> list[str]:
     return _TOKEN.findall(text)
 
 
+MAX_DEPTH = 64  # real expressions nest 2-3 deep; 260 parentheses blew Python's recursion limit (scan C7)
+
+
 class _Parser:
     def __init__(self, text: str) -> None:
         self.tokens = _tokens(text)
         self.i = 0
+        self.depth = 0
 
     def peek(self) -> str | None:
         return self.tokens[self.i] if self.i < len(self.tokens) else None
@@ -105,11 +109,17 @@ class _Parser:
         if tok is None:
             raise ParseError(f"expected a license id after {previous!r}" if previous else "empty expression")
         if tok == "(":
+            self.depth += 1
+            if self.depth > MAX_DEPTH:
+                # A ParseError, not a RecursionError: decide() turns it into Needs review for this
+                # component instead of aborting the review of the whole SBOM.
+                raise ParseError(f"parentheses nested too deeply (more than {MAX_DEPTH})")
             self.take()
             node = self.expression()
             if self.peek() != ")":
                 raise ParseError("missing ')'")
             self.take()
+            self.depth -= 1
             return node
         if tok == ")" or tok in OPERATORS:
             raise ParseError(f"unexpected {tok!r} at token {self.i}")

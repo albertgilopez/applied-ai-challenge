@@ -27,7 +27,15 @@ LICENSE_CASES = [
     "S1-12",
     "S1-13",
     "S1-14",
+    "S1-24",
 ]
+
+
+def test_deep_parentheses_are_needs_review_not_a_crash():  # S1-27, security scan C7
+    case = BY_ID["S1-27"]
+    depth = case["license_depth"]
+    d = decide(_component({"license": "(" * depth + "MIT" + ")" * depth}, "S1-27"), POLICY)
+    assert d.verdict == case["expected"] and case["reason_contains"] in d.reason
 
 
 def _rows(case):
