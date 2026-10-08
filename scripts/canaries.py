@@ -197,12 +197,18 @@ for rel in filter(None, tracked):
 
 
 def _suite(cwd: pathlib.Path) -> int:
+    # No bytecode cache (-B). Python reuses a .pyc when the source has the same size and the same
+    # mtime in whole seconds. A mutation that swaps two expressions of equal length, written in the
+    # same second as the previous restore, then ran the OLD code: on Linux, where the suite takes
+    # half a second, that canary read SURVIVED while the guard was fine. The opposite case is worse:
+    # a restore that does not take effect leaves a mutation live and the next canary reads KILLED.
     r = subprocess.run(
-        [str(VENV_PY), "-m", "pytest", "-q", "-x", "-p", "no:cacheprovider"],
+        [str(VENV_PY), "-B", "-m", "pytest", "-q", "-x", "-p", "no:cacheprovider"],
         cwd=cwd,
         capture_output=True,
         text=True,
         timeout=TIMEOUT_S,
+        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
     )
     return r.returncode
 
