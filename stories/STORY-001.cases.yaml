@@ -1,0 +1,36 @@
+# Each case: id, input, expected. Policy for these cases: samples/policy.yaml
+- id: S1-01
+  license: MIT
+  expected: Allow
+- id: S1-02
+  license: GPL-3.0-only
+  expected: Reject
+- id: S1-03
+  license: LGPL-2.1-only
+  expected: Needs review
+- id: S1-04
+  license: null
+  expected: Needs review
+  reason_contains: no license declared
+- id: S1-05
+  license: Some-Vendor-License-1.0
+  expected: Needs review
+  reason_contains: not in policy
+- id: S1-06
+  license: MIT OR GPL-3.0-only
+  expected: Allow
+- id: S1-07
+  license: MIT AND GPL-3.0-only
+  expected: Reject
+- id: S1-08
+  license: MIT AND (Apache-2.0
+  expected: Needs review
+  reason_contains: cannot parse
+- id: S1-09
+  sboms: [samples/sbom.cdx.json, samples/sbom.spdx.json]
+  expected: same components, >=10, >=2 machine-learning-model
+- id: S1-10
+  license: MIT
+  source: null
+  expected: Allow
+  reason_contains: no source declared

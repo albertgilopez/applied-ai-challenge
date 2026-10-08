@@ -3,6 +3,9 @@
 A green test only counts once it has been seen failing. Each mutation is checked
 to have actually changed the file before the suite runs, and the file is restored
 afterwards. Exit code = number of mutations the suite failed to catch.
+
+Mutate what a test guards (the code, the data), never the test itself: a loosened
+test over a clean tree stays green, which proves nothing.
 """
 import subprocess, sys, pathlib
 muts = [
@@ -14,6 +17,9 @@ muts = [
  ("harness/loop.py", 'if seen[key] >= REPEAT_LIMIT:', 'if False:'),
  ("harness/replay.py", 'if key not in self.data:', 'if False:'),
  ("harness/usage.py", 'return None\n    per_in', 'return 0.0\n    per_in'),
+ # Boundary and story coverage: mutate what the test guards, not the test.
+ ("core/__init__.py", 'tests/test_boundary.py).\n"""\n', 'tests/test_boundary.py).\n"""\nimport anthropic\n'),
+ ("stories/STORY-003.md", "the original decision stays (case: S3-01)\n", "the original decision stays (case: S3-01)\n- [ ] A promise no case checks\n"),
  ("harness/loop.py", 'self.ledger.append({"kind": "tool", **record, "output": output[:2000]})', 'pass'),
 ]
 bad = 0

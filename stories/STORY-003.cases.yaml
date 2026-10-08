@@ -1,0 +1,12 @@
+- id: S3-01
+  action: override Needs review -> Allow
+  expected: ledger has both lines, original unchanged
+- id: S3-02
+  action: override with empty reviewer or reason
+  expected: refused
+- id: S3-03
+  expected: report final verdict == override verdict, override listed with reviewer and reason
+- id: S3-04
+  expected: counts per verdict sum to component count; every row has a source link or "none declared"
+- id: S3-05
+  expected: second run makes no model calls and yields the same verdicts
