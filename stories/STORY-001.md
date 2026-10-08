@@ -81,7 +81,8 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
 - **DR-7 Source link.** First available of: `vcs` > `source-distribution` > `distribution` > `website` external reference >
   URL derived from the purl (pypi, npm, maven, github, huggingface) > SPDX `downloadLocation` /
   `homepage` (unless `NOASSERTION`/`NONE`) > none. A missing link adds `no source declared` to the
-  reason and does not change the verdict.
+  reason and does not change the verdict. Only an `https` link counts as available; any other
+  scheme is skipped (amended by STORY-003 DR-6, security review C5).
 - **DR-8 Errors are loud.** Invalid JSON, an unknown format, or a policy listing the same id twice
   raise an error; they never yield an empty result. So do: a JSON object with a **duplicate key**
   (other tools would read the other value; scan C11), a document carrying **both** CycloneDX and SPDX

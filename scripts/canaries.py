@@ -118,7 +118,7 @@ muts = [
         "if False:",
     ),
     ("core/sbom.py", "for entry in concluded or entries:", "for entry in entries:"),  # DR-5 concluded
-    ("core/sbom.py", 'return url[4:] if url.startswith("git+") else url', "return url"),  # DR-7 git+ prefix
+    ("core/sbom.py", 'url = url[4:] if url.startswith("git+") else url', "url = url"),  # DR-7 git+ prefix
     (
         "core/sbom.py",
         '("vcs", "source-distribution", "distribution", "website")',

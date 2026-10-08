@@ -9,6 +9,7 @@ document this module does not recognise, or one with no components, raises
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
 from core.component import Component, JSONObject
 from core.license_expr import And, ParseError, parse, to_text
@@ -17,6 +18,20 @@ from core.purl import parse_purl, url_for
 
 class FormatError(ValueError):
     pass
+
+
+@dataclass(frozen=True)
+class Product:
+    """The package the SBOM describes, left out of the review and named in the report (STORY-003 DR-8)."""
+
+    name: str
+    version: str | None
+
+
+@dataclass(frozen=True)
+class SbomDocument:
+    components: list[Component]
+    product: Product | None  # None: no single product, so every package was reviewed
 
 
 _SPDX_EMPTY = {"", "NOASSERTION", "NONE"}
@@ -30,12 +45,18 @@ def _first_url(*candidates: object) -> str | None:
     Blank and SPDX `NOASSERTION`/`NONE` values are skipped, and the VCS prefix
     (`git+https://...`, common in both CycloneDX `vcs` refs and SPDX
     `downloadLocation`) is stripped so the result opens in a browser.
+
+    Only `https` counts as a link. `javascript:`, `file:`, a UNC path or plain `http:` is skipped
+    and the next candidate is tried: the link ends up in the report Legal opens, so the parser
+    never hands on a link it would not open itself (STORY-003 DR-6, security review C5).
     """
     for url in candidates:
         if not isinstance(url, str) or url.strip().upper() in _SPDX_EMPTY:
             continue
         url = url.strip()
-        return url[4:] if url.startswith("git+") else url
+        url = url[4:] if url.startswith("git+") else url
+        if url.lower().startswith("https://"):
+            return url
     return None
 
 
@@ -101,7 +122,7 @@ def _cdx_flatten(components: object, out: list[JSONObject]) -> None:
                 _cdx_flatten(c["components"], out)
 
 
-def _parse_cyclonedx(doc: JSONObject) -> list[Component]:
+def _parse_cyclonedx(doc: JSONObject) -> SbomDocument:
     flat: list[JSONObject] = []
     _cdx_flatten(doc.get("components", []), flat)
     # The product itself is not a component, but its own sub-components are (DR-5, scan C17).
@@ -122,7 +143,11 @@ def _parse_cyclonedx(doc: JSONObject) -> list[Component]:
                 source_url=_cdx_source(c),
             )
         )
-    return out
+    named = None
+    if isinstance(product, dict) and product.get("name"):
+        version = product.get("version")
+        named = Product(str(product["name"]), version if isinstance(version, str) else None)
+    return SbomDocument(out, named)
 
 
 # ── SPDX ────────────────────────────────────────────────────────────────────
@@ -178,14 +203,19 @@ def _spdx_product(doc: JSONObject) -> str | None:
     return product
 
 
-def _parse_spdx(doc: JSONObject) -> list[Component]:
+def _parse_spdx(doc: JSONObject) -> SbomDocument:
     packages = doc.get("packages", [])
     if not isinstance(packages, list):
         raise FormatError("SPDX 'packages' must be a list")
     product = _spdx_product(doc)
+    named = None
     out = []
     for p in packages:
-        if not isinstance(p, dict) or (product is not None and p.get("SPDXID") == product):
+        if not isinstance(p, dict):
+            continue
+        if product is not None and p.get("SPDXID") == product:
+            version = p.get("versionInfo")
+            named = Product(str(p.get("name") or product), version if isinstance(version, str) else None)
             continue
         purl = next(
             (r.get("referenceLocator") for r in p.get("externalRefs") or [] if r.get("referenceType") == "purl"), None
@@ -202,24 +232,30 @@ def _parse_spdx(doc: JSONObject) -> list[Component]:
                 source_url=_first_url(url_for(purl), p.get("downloadLocation"), p.get("homepage")),
             )
         )
-    return out
+    if product is not None and named is None:
+        named = Product(product, None)  # described but not among the packages: still named, by its id
+    return SbomDocument(out, named)
 
 
 # ── entry point ─────────────────────────────────────────────────────────────
 
 
 def parse_sbom(doc: object) -> list[Component]:
+    return read_sbom(doc).components
+
+
+def read_sbom(doc: object) -> SbomDocument:
     if not isinstance(doc, dict):
         raise FormatError("an SBOM must be a JSON object")
     if "bomFormat" in doc and "spdxVersion" in doc:
         # A polyglot: reviewed as one format, the other format's packages would go unreviewed (scan C18).
         raise FormatError("the document carries both CycloneDX and SPDX markers")
     if doc.get("bomFormat") == "CycloneDX":
-        components = _parse_cyclonedx(doc)
+        parsed = _parse_cyclonedx(doc)
     elif str(doc.get("spdxVersion", "")).startswith("SPDX-"):
-        components = _parse_spdx(doc)
+        parsed = _parse_spdx(doc)
     else:
         raise FormatError("unknown SBOM format: expected bomFormat=CycloneDX or an spdxVersion")
-    if not components:
+    if not parsed.components:
         raise FormatError("the SBOM has no components")
-    return components
+    return parsed
