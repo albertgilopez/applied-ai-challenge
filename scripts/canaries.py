@@ -21,6 +21,19 @@ muts = [
  ("core/__init__.py", 'tests/test_boundary.py).\n"""\n', 'tests/test_boundary.py).\n"""\nimport anthropic\n'),
  ("stories/STORY-003.md", "the original decision stays (case: S3-01)\n", "the original decision stays (case: S3-01)\n- [ ] A promise no case checks\n"),
  ("harness/loop.py", 'self.ledger.append({"kind": "tool", **record, "output": output[:2000]})', 'pass'),
+ # STORY-001: one mutation per domain rule.
+ ("core/license_expr.py", 'while self.peek() == "AND":', 'while self.peek() in ("AND", "OR"):'),  # DR-2 precedence
+ ("core/decide.py", "return max(results, key=lambda r: RANK[r[0]])", "return min(results, key=lambda r: RANK[r[0]])"),  # DR-3 OR
+ ("core/decide.py", "return min(results, key=lambda r: RANK[r[0]])", "return max(results, key=lambda r: RANK[r[0]])"),  # DR-3 AND
+ ("core/decide.py", 'verdict, reason = REVIEW, "no license declared"', 'verdict, reason = ALLOW, "no license declared"'),  # DR-1
+ ("core/decide.py", 'return REVIEW, f"{leaf.text} not in policy"', 'return ALLOW, f"{leaf.text} not in policy"'),  # DR-1
+ ("core/decide.py", "verdict = policy.lookup(leaf.text)", "verdict = policy.lookup(leaf.id)"),  # DR-4 no inference
+ ("core/policy.py", "if k in where and where[k] != section:", "if False:"),  # DR-8
+ ("core/sbom.py", '" AND ".join(f"({t})" for t in terms)', '" OR ".join(f"({t})" for t in terms)'),  # DR-5
+ ("core/sbom.py", 'license_expression=_spdx_value(p.get("licenseConcluded")) or _spdx_value(p.get("licenseDeclared")),',
+  'license_expression=_spdx_value(p.get("licenseDeclared")) or _spdx_value(p.get("licenseConcluded")),'),  # DR-5
+ ("core/sbom.py", 'if not isinstance(p, dict) or p.get("SPDXID") in described:', "if not isinstance(p, dict):"),
+ ("app/files.py", "if size > limit:", "if False:"),
 ]
 bad = 0
 for f, a, b in muts:

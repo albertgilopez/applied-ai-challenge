@@ -66,10 +66,10 @@ Parallel frontier: {T1, T2, T4}. Critical path: T4 → T5 → T6 → T7.
 
 | Task | State | Commit |
 |---|---|---|
-| T1 | todo | |
-| T2 | todo | |
-| T3 | todo | |
-| T4 | todo | |
-| T5 | todo | |
-| T6 | todo | |
-| T7 | todo | |
+| T1 | done | d821f1a |
+| T2 | done | d71db0b |
+| T3 | done | 8105d51 |
+| T4 | done | 7703160 |
+| T5 | done | bad2245 |
+| T6 | done | ec8af8b |
+| T7 | done | this commit |
