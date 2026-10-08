@@ -20,8 +20,16 @@ class PolicyError(ValueError):
     pass
 
 
-def _key(text: str) -> str:
-    return " ".join(text.split()).casefold()
+def _key(text: str) -> str | None:
+    """Normalised lookup key, or None for text that cannot be an SPDX id.
+
+    SPDX ids are case-insensitive in ASCII only. Full Unicode case folding (`casefold()`) turned
+    lookalikes such as `BSD-3-Clau\\u017fe` (long s) into an allowed id; non-ASCII text now never
+    matches, so it stays `Needs review` (STORY-001 DR-2, security scan C9).
+    """
+    if not text.isascii():
+        return None
+    return " ".join(text.split()).lower()
 
 
 @dataclass(frozen=True)
@@ -32,19 +40,33 @@ class Policy:
     def from_dict(cls, data: JSONObject) -> Policy:
         if not isinstance(data, dict) or not any(data.get(s) for s in SECTIONS):
             raise PolicyError("the policy is empty: it needs at least one of " + ", ".join(SECTIONS))
-        unknown = sorted(set(data) - set(SECTIONS))
+        unknown = sorted(str(k) for k in set(data) - set(SECTIONS))  # str(): YAML keys may be bools
         if unknown:
             raise PolicyError(f"unknown section(s) {unknown}; expected {list(SECTIONS)}")
         where: dict[str, str] = {}  # normalised id -> the section that lists it
         for section in SECTIONS:
-            for entry in data.get(section) or []:
+            entries = data.get(section)
+            if entries is None:
+                continue
+            # A scalar would be iterated character by character (`rejected: GPL-3.0-only` became
+            # {g, p, l, ...}) and the rejection would silently vanish (security scan C8).
+            if not isinstance(entries, list):
+                raise PolicyError(f"{section} must be a list of license ids, got {type(entries).__name__}")
+            for i, entry in enumerate(entries):
+                # Report the type and position, never the entry itself: echoing a YAML alias bomb
+                # made the error message exponential (security scan C6).
                 if not isinstance(entry, str) or not entry.strip():
-                    raise PolicyError(f"{section}: {entry!r} is not a license id (quote it if it is)")
+                    raise PolicyError(
+                        f"{section}[{i}]: a {type(entry).__name__} is not a license id (quote it if it is)"
+                    )
                 k = _key(entry)
+                if k is None:
+                    raise PolicyError(f"{section}[{i}]: license ids are ASCII")
                 if k in where and where[k] != section:
                     raise PolicyError(f"{entry!r} is listed in both {where[k]} and {section}")
                 where[k] = section
         return cls({k: SECTIONS[s] for k, s in where.items()})
 
     def lookup(self, license_text: str) -> str | None:
-        return self.verdicts.get(_key(license_text))
+        k = _key(license_text)
+        return None if k is None else self.verdicts.get(k)

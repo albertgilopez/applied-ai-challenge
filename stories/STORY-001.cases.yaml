@@ -111,3 +111,25 @@
     - describes: [SPDXRef-product]
       relationships: [{ spdxElementId: SPDXRef-product, relationshipType: CONTAINS, relatedSpdxElement: SPDXRef-lib }]
       expected_reviewed: [gpl-dep, lib]
+- id: S1-24
+  rows:
+    - { license: "BSD-3-Clau\u017fe", expected: Needs review }
+    - { license: "MIT\u200b", expected: Needs review }
+    - { license: "apache-2.0", expected: Allow }
+- id: S1-25
+  input: '{"bomFormat":"CycloneDX","components":[{"name":"x","licenses":[{"license":{"id":"GPL-3.0-only"}}],"licenses":[{"license":{"id":"MIT"}}]}]}'
+  expected: FormatError
+- id: S1-26
+  rows:
+    - { policy: { allowed: [MIT], rejected: GPL-3.0-only }, expected: PolicyError, message_contains: "must be a list" }
+    - { policy: { allowed: [MIT, [nested]] }, expected: PolicyError, message_contains: "allowed[1]" }
+- id: S1-27
+  license_depth: 260
+  expected: Needs review
+  reason_contains: nested too deeply
+- id: S1-28
+  input: { bomFormat: CycloneDX, spdxVersion: SPDX-2.3 }
+  expected: FormatError
+- id: S1-29
+  cyclonedx_metadata_component_children: [sub-a, sub-b]
+  expected_reviewed: [lib, sub-a, sub-b]

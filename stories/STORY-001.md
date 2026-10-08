@@ -56,7 +56,9 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
 - **DR-1 Fail closed.** Missing, unknown, custom or unparseable → `Needs review`. Never `Allow`.
 - **DR-2 Expression grammar (SPDX 2.3.1 Annex D).** Precedence `+` > `WITH` > `AND` > `OR`;
   parentheses override. Operators match case-sensitively (uppercase only); license ids match
-  case-insensitively.
+  case-insensitively **in ASCII only**, as SPDX defines it: an id with any non-ASCII character is not
+  in the policy, so `BSD-3-Clauſe` is `Needs review`, not `BSD-3-Clause` (scan C9). Parentheses nest
+  at most 64 deep; deeper is `cannot parse`, not a crash of the whole review (scan C7).
 - **DR-3 Combining.** Ranking `Allow` > `Needs review` > `Reject`. `OR` takes the best branch,
   `AND` the worst.
 - **DR-4 No inference.** `X WITH Y` and `X+` are looked up as written; if the policy does not list
@@ -64,7 +66,8 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
   unless the policy lists them.
 - **DR-5 Format mapping.**
   - CycloneDX: several entries in `licenses` are combined with `AND`; an `expression` entry is used
-    as is; nested `components` are flattened. Each entry is parsed **on its own** and the parsed
+    as is; nested `components` are flattened, including the ones under `metadata.component.components`
+    (the product's own sub-components; scan C17). Each entry is parsed **on its own** and the parsed
     trees are combined; text is never concatenated, so one entry cannot change how another one
     reads (security scan C1: `x) OR (MIT` next to GPL made a Reject into an Allow). An entry that
     does not parse on its own makes the whole component `Needs review`. CycloneDX 1.6 marks entries with
@@ -80,7 +83,11 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
   `homepage` (unless `NOASSERTION`/`NONE`) > none. A missing link adds `no source declared` to the
   reason and does not change the verdict.
 - **DR-8 Errors are loud.** Invalid JSON, an unknown format, or a policy listing the same id twice
-  raise an error; they never yield an empty result.
+  raise an error; they never yield an empty result. So do: a JSON object with a **duplicate key**
+  (other tools would read the other value; scan C11), a document carrying **both** CycloneDX and SPDX
+  markers (scan C18), a policy section that is not a list (scan C8), and a policy nested too deeply
+  (scan C16). Error messages name the type and position of a bad entry, never its full contents
+  (a YAML alias bomb made the message itself exponential; scan C6).
 - **DR-9 Only the product leaves the list.** The package an SPDX document DESCRIBES is the product,
   not a component, and is left out only when it is the **single** described package and no other
   package depends on it or contains it. Otherwise it is reviewed like any other package: an extra
@@ -114,6 +121,12 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
 - [x] One CycloneDX license entry cannot rewrite how another one combines (case: S1-21)
 - [x] An SPDX concluded `NONE` is `Needs review`, never the declared license (case: S1-22)
 - [x] An extra `DESCRIBES` relationship cannot remove a dependency from the review (case: S1-23)
+- [x] License ids match case-insensitively in ASCII only; lookalikes are not in the policy (case: S1-24)
+- [x] A JSON object with a duplicate key is a format error (case: S1-25)
+- [x] A policy section must be a list, and a bad entry is reported by type and position (case: S1-26)
+- [x] Parentheses deeper than 64 are `cannot parse`, not a crash (case: S1-27)
+- [x] A document with both CycloneDX and SPDX markers is a format error (case: S1-28)
+- [x] Components under `metadata.component.components` are reviewed (case: S1-29)
 
 ## Out of scope
 
