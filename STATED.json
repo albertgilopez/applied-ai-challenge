@@ -1,10 +1,10 @@
 {
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
   "as_of": "2026-10-08",
-  "at_commit": "a0d8c88",
-  "where_we_are": "STORY-001 done and reviewed; security review fixes C1 (blocking), C2, C3 and C15 applied with cases and canaries. 119 tests, 34/34 canaries.",
+  "at_commit": "1021fd2",
+  "where_we_are": "STORY-001 done and reviewed. Security fixes applied: C1-C3, C6-C9, C11, C15-C18 (core/app). 130 tests, 42/42 canaries.",
   "next": [
-    "Remaining review findings in core/app (C6-C9, C11, C17, C18) and harness (H1, H3, H6, H9)",
+    "Harness review findings: H3 (unknown env is prod), H1 (read tool without path_args), H6 (truncated JSONL line), H9 (canaries on a copy)",
     "STORY-003: review/override, ledger and Legal report (names the excluded product; escapes output; C12 key)",
     "CI: GitHub Actions + Jenkinsfile",
     "README",
