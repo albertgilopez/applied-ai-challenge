@@ -1,13 +1,14 @@
 {
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
   "as_of": "2026-10-08",
-  "at_commit": "1959d79",
-  "where_we_are": "Harness and STORY-001 done and reviewed (/improve + /simplify): 108 tests, 29 of 29 canaries caught.",
+  "at_commit": "a0d8c88",
+  "where_we_are": "STORY-001 done and reviewed; security review fixes C1 (blocking), C2, C3 and C15 applied with cases and canaries. 119 tests, 34/34 canaries.",
   "next": [
-    "STORY-003: review/override, ledger and Legal report on STORY-001 decisions (not blocked)",
+    "Remaining review findings in core/app (C6-C9, C11, C17, C18) and harness (H1, H3, H6, H9)",
+    "STORY-003: review/override, ledger and Legal report (names the excluded product; escapes output; C12 key)",
     "CI: GitHub Actions + Jenkinsfile",
     "README",
-    "STORY-002: model cards with grounded extraction (after the panel brief)"
+    "STORY-002 and KeysBench after the panel brief"
   ],
   "blocked": [],
   "waiting_on": [
