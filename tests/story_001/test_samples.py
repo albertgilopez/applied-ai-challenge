@@ -1,4 +1,5 @@
 """T6: the sample files, the file adapter, and S1-09 (both formats agree)."""
+import json
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,7 @@ from app.files import MAX_POLICY_BYTES, load_policy, load_sbom
 from core.decide import decide
 from core.policy import PolicyError
 from core.sbom import FormatError
-from tests.story_001.test_cases import POLICY
+from tests.story_001.cases import POLICY
 
 SAMPLES = Path(__file__).resolve().parents[2] / "samples"
 
@@ -26,7 +27,6 @@ def test_both_formats_yield_the_same_components_and_verdicts():  # S1-09
 
 
 def test_the_samples_are_what_the_builder_produces():
-    import json
     assert json.loads((SAMPLES / "sbom.cdx.json").read_text(encoding="utf-8")) == build.cyclonedx()
     assert json.loads((SAMPLES / "sbom.spdx.json").read_text(encoding="utf-8")) == build.spdx()
 

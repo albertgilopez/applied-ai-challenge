@@ -15,6 +15,8 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import tempfile
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,18 +31,31 @@ def _git(*args: str) -> str | None:
 
 
 def _tests() -> dict:
-    # pyproject already adds -q; a second -q would suppress the summary line.
-    r = subprocess.run([sys.executable, "-m", "pytest", "-p", "no:cacheprovider"],
-                       cwd=ROOT, capture_output=True, text=True)
-    summary = next((l.strip(" =") for l in reversed(r.stdout.splitlines()) if " in " in l and ("passed" in l or "failed" in l or "error" in l)), "")
-    return {"exit_code": r.returncode, "summary": summary}
+    # Counts come from the JUnit XML report, not from pytest's human-readable
+    # output (whose summary line moves with -q flags and pytest versions). The
+    # exit code stays the verdict.
+    with tempfile.TemporaryDirectory() as tmp:
+        report = Path(tmp) / "junit.xml"
+        r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={report}"],
+                           cwd=ROOT, capture_output=True, text=True)
+        counts = {}
+        if report.exists():
+            suite = ET.parse(report).getroot()
+            suite = suite if suite.tag == "testsuite" else suite.find("testsuite")
+            counts = {k: int(suite.get(k, 0)) for k in ("tests", "failures", "errors", "skipped")}
+    return {"exit_code": r.returncode, **counts}
 
 
-def _stale(at_commit: str | None) -> bool:
-    """The judgement is stale once anything other than STATED.json changed after it was written."""
-    if not at_commit:
+def _stale(stated: dict) -> bool:
+    """The judgement is stale once anything other than STATED.json changed after it was written.
+
+    "When it was written" comes from git (the last commit that touched STATED.json),
+    not from the hand-written `at_commit`, which is only cross-checked.
+    """
+    anchor = _git("log", "-1", "--format=%h", "--", "STATED.json")
+    if not anchor:
         return True
-    changed = _git("log", "--format=%h", f"{at_commit}..HEAD", "--", ".", ":(exclude)STATED.json")
+    changed = _git("log", "--format=%h", f"{anchor}..HEAD", "--", ".", ":(exclude)STATED.json")
     return changed is None or bool(changed)
 
 
@@ -56,11 +71,15 @@ def build(run_tests: bool = True) -> dict:
         "tests": _tests() if run_tests else None,
     }
     if stated:
-        stated = {**stated, "stale": _stale(stated.get("at_commit"))}
+        stated = {**stated, "stale": _stale(stated)}
+        anchor = _git("log", "-1", "--format=%h", "--", "STATED.json")
+        # `git merge-base --is-ancestor` exits 1 when it is not an ancestor; _git returns None then.
+        if anchor and stated.get("at_commit") and _git("merge-base", "--is-ancestor", stated["at_commit"], anchor) is None:
+            stated["at_commit_warning"] = f"at_commit {stated['at_commit']} is not an ancestor of {anchor}"
     return {"schema": 1, "derived": derived, "stated": stated}
 
 
 if __name__ == "__main__":
     out = ROOT / "state.json"
-    out.write_text(json.dumps(build(), indent=2) + "\n", encoding="utf-8")
+    out.write_text(json.dumps(build(), indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {out.relative_to(ROOT)}")

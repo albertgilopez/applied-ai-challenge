@@ -1,13 +1,10 @@
 """T4: package URLs and the source link derived from them (STORY-001 DR-7, S1-18)."""
-from pathlib import Path
-
 import pytest
-import yaml
 
 from core.purl import Purl, parse_purl, url_for
+from tests.story_001.cases import CASES
 
-CASES = yaml.safe_load((Path(__file__).resolve().parents[2] / "stories" / "STORY-001.cases.yaml").read_text(encoding="utf-8"))
-PURL_ROWS = [r for c in CASES if c["id"] == "S1-18" for r in c["rows"] if "purl" in r]
+PURL_ROWS = [r for r in CASES["S1-18"]["rows"] if "purl" in r]
 
 
 def test_parse_splits_the_parts_and_decodes():

@@ -4,24 +4,12 @@ One test per case id, so a failure names the acceptance criterion it breaks.
 Cases that need SBOM parsing or the sample files live in test_sbom.py and
 test_samples.py; this file covers the license decision.
 """
-from pathlib import Path
-
 import pytest
-import yaml
 
 from core.component import Component
 from core.decide import decide
 from core.policy import Policy
-
-CASES = yaml.safe_load((Path(__file__).resolve().parents[2] / "stories" / "STORY-001.cases.yaml").read_text(encoding="utf-8"))
-BY_ID = {c["id"]: c for c in CASES}
-
-# The policy written in the header of the cases file (and in samples/policy.yaml).
-POLICY = Policy.from_dict({
-    "allowed": ["MIT", "Apache-2.0", "BSD-3-Clause", "GPL-2.0-only WITH Classpath-exception-2.0"],
-    "review": ["LGPL-2.1-only", "MPL-2.0"],
-    "rejected": ["GPL-3.0-only", "AGPL-3.0-only"],
-})
+from tests.story_001.cases import CASES as BY_ID, POLICY
 
 LICENSE_CASES = ["S1-01", "S1-02", "S1-03", "S1-04", "S1-05", "S1-06", "S1-07", "S1-08",
                  "S1-10", "S1-11", "S1-12", "S1-13", "S1-14"]

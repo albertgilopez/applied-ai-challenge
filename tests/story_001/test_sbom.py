@@ -1,13 +1,8 @@
 """T5: CycloneDX and SPDX parsing into one component list (STORY-001 DR-5..DR-8)."""
-from pathlib import Path
-
 import pytest
-import yaml
 
 from core.sbom import FormatError, parse_sbom
-
-CASES = {c["id"]: c for c in yaml.safe_load(
-    (Path(__file__).resolve().parents[2] / "stories" / "STORY-001.cases.yaml").read_text(encoding="utf-8"))}
+from tests.story_001.cases import CASES
 
 
 def cdx(*components, **extra):
