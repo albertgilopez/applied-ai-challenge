@@ -6,12 +6,75 @@
 
 ## Scope
 
-- Input: an SBOM in CycloneDX JSON or SPDX JSON. Both formats produce the same component list.
+- Input: an SBOM in CycloneDX JSON (1.5/1.6) or SPDX JSON (2.3). Both formats produce the same
+  component list.
 - Policy: a file listing which SPDX license ids are `allowed`, `review` or `rejected`.
 - Output per component: `Allow`, `Needs review` or `Reject`, with the reason and a link to the
   component's source.
-- License expressions: `A OR B` takes the best option the policy allows; `A AND B` takes the
-  strictest.
+
+**Why deterministic, not a model:** this story only answers syntactic questions (is this id in
+the list? how does this expression parse?). The answer is exact, cheap and must never vary. The
+model comes in at STORY-002, where the license lives in prose.
+
+## Flow
+
+```mermaid
+flowchart LR
+  F[SBOM file] --> D{format?}
+  D -->|bomFormat=CycloneDX| C[parse CycloneDX]
+  D -->|spdxVersion| S[parse SPDX]
+  D -->|neither| E[FormatError]
+  C --> L[Component list]
+  S --> L
+  L --> X[parse license expression]
+  P[Policy] --> V[decide]
+  X --> V
+  V --> O[Decision per component]
+```
+
+```text
+ SBOM file ──► format? ──CycloneDX──► parse CycloneDX ─┐
+                  │                                     ├──► components ──► parse expression ─┐
+                  ├──────SPDX───────► parse SPDX ──────┘                                      ├──► decide ──► Decision
+                  └──neither──► FormatError                                    Policy ────────┘
+```
+
+## Interface contract
+
+```
+parse_sbom(document: dict) -> list[Component]          raises FormatError
+Component  { ref, name, version, type, purl, license_expression | None, source_url | None, is_ai_model }
+Policy.from_dict({allowed: [...], review: [...], rejected: [...]})   raises PolicyError
+decide(component, policy) -> Decision { verdict, reason, source_url | None }
+verdict ∈ { "Allow", "Needs review", "Reject" }
+```
+
+`core/` receives already-loaded `dict`s: reading files and YAML happens outside the pure core.
+
+## Domain rules
+
+- **DR-1 Fail closed.** Missing, unknown, custom or unparseable → `Needs review`. Never `Allow`.
+- **DR-2 Expression grammar (SPDX 2.3.1 Annex D).** Precedence `+` > `WITH` > `AND` > `OR`;
+  parentheses override. Operators match case-sensitively (uppercase only); license ids match
+  case-insensitively.
+- **DR-3 Combining.** Ranking `Allow` > `Needs review` > `Reject`. `OR` takes the best branch,
+  `AND` the worst.
+- **DR-4 No inference.** `X WITH Y` and `X+` are looked up as written; if the policy does not list
+  them, `Needs review`. `LicenseRef-*` and name-only licenses are `Needs review` (custom license)
+  unless the policy lists them.
+- **DR-5 Format mapping.**
+  - CycloneDX: several entries in `licenses` are combined with `AND`; an `expression` entry is used
+    as is; nested `components` are flattened.
+  - SPDX: `licenseConcluded`, falling back to `licenseDeclared`; `NOASSERTION` and `NONE` mean no
+    license declared.
+- **DR-6 AI models.** CycloneDX `type: machine-learning-model`; SPDX 2.3 has no such purpose, so a
+  `pkg:huggingface/` purl marks the model.
+- **DR-7 Source link.** First available of: `vcs` > `distribution` > `website` external reference >
+  URL derived from the purl (pypi, npm, maven, github, huggingface) > SPDX `downloadLocation` /
+  `homepage` (unless `NOASSERTION`/`NONE`) > none. A missing link adds `no source declared` to the
+  reason and does not change the verdict.
+- **DR-8 Errors are loud.** Invalid JSON, an unknown format, or a policy listing the same id twice
+  raise an error; they never yield an empty result.
 
 ## Acceptance Criteria
 
@@ -25,6 +88,15 @@
 - [ ] An expression that cannot be parsed is `Needs review` (case: S1-08)
 - [ ] The CycloneDX and SPDX samples yield the same components, at least 10, at least 2 AI models (case: S1-09)
 - [ ] Every decision carries a source link, or says that none was declared (case: S1-10)
+- [ ] License ids match case-insensitively; operators only in uppercase (case: S1-11)
+- [ ] `AND` binds tighter than `OR` without parentheses (case: S1-12)
+- [ ] `WITH` and `+` are looked up as written, never inferred (case: S1-13)
+- [ ] `LicenseRef-*` is `Needs review` unless the policy lists it (case: S1-14)
+- [ ] Several CycloneDX license entries combine with `AND` (case: S1-15)
+- [ ] SPDX uses `licenseConcluded`, then `licenseDeclared`; `NOASSERTION`/`NONE` is no license (case: S1-16)
+- [ ] Nested CycloneDX components are flattened (case: S1-17)
+- [ ] The source link follows the DR-7 priority, including links derived from the purl (case: S1-18)
+- [ ] Invalid JSON, unknown format and a contradictory policy raise errors (case: S1-19)
 
 ## Out of scope
 

@@ -1,4 +1,8 @@
-# Each case: id, input, expected. Policy for these cases: samples/policy.yaml
+# STORY-001 cases. Policy for license cases: samples/policy.yaml
+#   allowed:  MIT, Apache-2.0, BSD-3-Clause, GPL-2.0-only WITH Classpath-exception-2.0
+#   review:   LGPL-2.1-only, MPL-2.0
+#   rejected: GPL-3.0-only, AGPL-3.0-only
+# `license` cases run decide() on a component with that expression; the rest name their input.
 - id: S1-01
   license: MIT
   expected: Allow
@@ -28,9 +32,50 @@
   reason_contains: cannot parse
 - id: S1-09
   sboms: [samples/sbom.cdx.json, samples/sbom.spdx.json]
-  expected: same components, >=10, >=2 machine-learning-model
+  expected: same components, >=10, >=2 AI models
 - id: S1-10
   license: MIT
   source: null
   expected: Allow
   reason_contains: no source declared
+- id: S1-11
+  rows:
+    - { license: mit, expected: Allow }
+    - { license: MIT and Apache-2.0, expected: Needs review, reason_contains: cannot parse }
+- id: S1-12
+  license: GPL-3.0-only AND MIT OR Apache-2.0
+  expected: Allow   # (GPL AND MIT) OR Apache -> Reject OR Allow -> Allow
+- id: S1-13
+  rows:
+    - { license: GPL-2.0-only WITH Classpath-exception-2.0, expected: Allow }
+    - { license: GPL-2.0-only WITH LLVM-exception, expected: Needs review, reason_contains: not in policy }
+    - { license: Apache-2.0+, expected: Needs review, reason_contains: not in policy }
+- id: S1-14
+  license: LicenseRef-acme-eula
+  expected: Needs review
+  reason_contains: custom license
+- id: S1-15
+  cyclonedx_licenses: [{ license: { id: MIT } }, { license: { id: GPL-3.0-only } }]
+  expected: Reject
+- id: S1-16
+  rows:
+    - { licenseConcluded: MIT, licenseDeclared: GPL-3.0-only, expected: Allow }
+    - { licenseConcluded: NOASSERTION, licenseDeclared: MIT, expected: Allow }
+    - { licenseConcluded: NOASSERTION, licenseDeclared: NONE, expected: Needs review, reason_contains: no license declared }
+- id: S1-17
+  cyclonedx: parent component with 2 nested components
+  expected: 3 components
+- id: S1-18
+  rows:
+    - { externalReferences: [{ type: website, url: "https://a.example" }, { type: vcs, url: "https://github.com/o/r" }], expected: "https://github.com/o/r" }
+    - { purl: "pkg:pypi/requests@2.32.3", expected: "https://pypi.org/project/requests/2.32.3/" }
+    - { purl: "pkg:npm/%40scope/pkg@1.0.0", expected: "https://www.npmjs.com/package/@scope/pkg/v/1.0.0" }
+    - { purl: "pkg:maven/org.slf4j/slf4j-api@2.0.13", expected: "https://central.sonatype.com/artifact/org.slf4j/slf4j-api/2.0.13" }
+    - { purl: "pkg:github/psf/requests@v2.32.3", expected: "https://github.com/psf/requests" }
+    - { purl: "pkg:huggingface/mistralai/Mistral-7B-v0.1", expected: "https://huggingface.co/mistralai/Mistral-7B-v0.1" }
+    - { downloadLocation: NOASSERTION, homepage: "https://h.example", expected: "https://h.example" }
+- id: S1-19
+  rows:
+    - { input: "not json", expected: FormatError }
+    - { input: "{\"foo\": 1}", expected: FormatError }
+    - { policy: { allowed: [MIT], rejected: [mit] }, expected: PolicyError }
