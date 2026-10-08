@@ -8,6 +8,8 @@ is not a license id, is refused when it is loaded rather than when it misfires.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 
 from core.component import JSONObject
@@ -66,6 +68,16 @@ class Policy:
                     raise PolicyError(f"{entry!r} is listed in both {where[k]} and {section}")
                 where[k] = section
         return cls({k: SECTIONS[s] for k, s in where.items()})
+
+    def digest(self) -> str:
+        """sha256 of the policy as loaded: normalised ids and their verdicts, sorted.
+
+        A recorded decision is reused only under the same digest (STORY-003 DR-4). Hashing what was
+        loaded, not the file, means a comment or a reordered list does not reopen every item, while
+        moving an id to another section does.
+        """
+        canonical = json.dumps(sorted(self.verdicts.items()), separators=(",", ":"))
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
     def lookup(self, license_text: str) -> str | None:
         k = _key(license_text)
