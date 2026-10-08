@@ -1,12 +1,97 @@
+# STORY-003 cases. Policy unless a case says otherwise: samples/policy.yaml
+#   allowed:  MIT, Apache-2.0, BSD-3-Clause, GPL-2.0-only WITH Classpath-exception-2.0
+#   review:   LGPL-2.1-only, MPL-2.0
+#   rejected: GPL-3.0-only, AGPL-3.0-only
+# `component` is the shape STORY-001 produces; omitted fields are null. Each case starts from an
+# empty ledger and runs `scan` first, unless it says otherwise.
 - id: S3-01
-  action: override Needs review -> Allow
-  expected: ledger has both lines, original unchanged
+  component: { name: libfoo, version: "1.0", license: LGPL-2.1-only, source: "https://github.com/o/libfoo" }
+  steps:
+    - { override: { verdict: Allow, by: Ana Legal, reason: "Dynamic linking only, checked by Legal" } }
+  expected:
+    ledger_kinds: [decision, override]
+    decision_line_unchanged: true
+    override_points_at_decision: true
 - id: S3-02
-  action: override with empty reviewer or reason
-  expected: refused
+  component: { name: libfoo, version: "1.0", license: LGPL-2.1-only, source: "https://github.com/o/libfoo" }
+  rows:
+    - { override: { verdict: Allow, by: "", reason: "ok" }, expected: refused }
+    - { override: { verdict: Allow, by: "   ", reason: "ok" }, expected: refused }
+    - { override: { verdict: Allow, by: Ana Legal, reason: "" }, expected: refused }
+    - { override: { verdict: Allow, by: Ana Legal }, expected: refused }
+  expected_after_all: { ledger_kinds: [decision] }
 - id: S3-03
-  expected: report final verdict == override verdict, override listed with reviewer and reason
+  component: { name: libfoo, version: "1.0", license: LGPL-2.1-only, source: "https://github.com/o/libfoo" }
+  steps:
+    - { override: { verdict: Allow, by: Ana Legal, reason: "first look" } }
+    - { override: { verdict: Reject, by: Ben Legal, reason: "second look: static linking found" } }
+  expected:
+    final_verdict: Reject
+    decided_verdict: Needs review
+    status: overridden
+    reviews_listed: [{ by: Ana Legal, verdict: Allow }, { by: Ben Legal, verdict: Reject }]
 - id: S3-04
-  expected: counts per verdict sum to component count; every row has a source link or "none declared"
+  sbom: samples/sbom.cdx.json
+  expected:
+    counts_sum_to_reviewed_components: true
+    every_row_has: source link or "none declared"
 - id: S3-05
-  expected: second run makes no model calls and yields the same verdicts
+  sbom: samples/sbom.cdx.json
+  steps: [scan, report, scan, report]
+  expected:
+    decision_lines_after_second_scan: same as after the first
+    report_json_equal_except: [generated_at]
+- id: S3-06
+  component: { name: libfoo, version: "1.0", license: LGPL-2.1-only, source: "https://github.com/o/libfoo" }
+  rows:
+    - { override: { decision: does-not-exist, verdict: Allow, by: Ana Legal, reason: "ok" }, expected: refused }
+    - { override: { verdict: Allowed, by: Ana Legal, reason: "ok" }, expected: refused }
+    - { approve: { decision: does-not-exist, by: Ana Legal }, expected: refused }
+  expected_after_all: { ledger_kinds: [decision] }
+- id: S3-07
+  component: { name: libfoo, version: "1.0", license: LGPL-2.1-only, source: "https://github.com/o/libfoo" }
+  rows:
+    - { approve: { by: "" }, expected: refused }
+    - { approve: { by: Ana Legal }, expected: { status: approved, final_verdict: Needs review, pending: 0 } }
+- id: S3-08
+  components:
+    - { name: twin, version: "2.0", license: MIT, source: "https://github.com/o/twin" }
+    - { name: twin, version: "2.0", license: GPL-3.0-only, source: "https://github.com/o/twin" }
+  steps:
+    - { override: { component: 0, verdict: Allow, by: Ana Legal, reason: "approved MIT copy" } }
+  expected:
+    decisions: 2
+    verdicts: [Allow, Reject]
+    second_component_status: pending   # the override on the MIT copy does not reach the GPL one
+- id: S3-09
+  component: { name: libfoo, version: "1.0", license: LGPL-2.1-only, source: "https://github.com/o/libfoo" }
+  steps:
+    - { override: { verdict: Allow, by: Ana Legal, reason: "fine under the old policy" } }
+    - { rescan_with_policy: { allowed: [MIT], review: [], rejected: [LGPL-2.1-only] } }
+  expected:
+    decisions: 2
+    final_verdict: Reject
+    status: pending
+- id: S3-10
+  rows:
+    - { source: "https://github.com/o/r", expected: "https://github.com/o/r" }
+    - { source: "javascript:alert(1)", expected: none declared }
+    - { source: "git+javascript:alert(1)", expected: none declared }
+    - { source: "file:///etc/passwd", expected: none declared }
+    - { source: "\\\\attacker\\share\\x", expected: none declared }
+    - { source: "http://github.com/o/r", expected: none declared }
+- id: S3-11
+  component:
+    name: "evil\u001b[32m | x\nnew row `code` [click](https://evil.example)"
+    version: "1.0"
+    license: MIT
+    source: "https://github.com/o/r"
+  expected:
+    markdown_component_rows: 1
+    markdown_has_control_chars: false
+    markdown_links_to_evil_example: false
+    json_name_is_raw: true
+- id: S3-12
+  rows:
+    - { sbom: samples/sbom.cdx.json, expected: product named as name@version }
+    - { sbom: spdx with two described packages, expected: every package reviewed }
