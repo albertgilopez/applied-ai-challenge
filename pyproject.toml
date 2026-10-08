@@ -1,0 +1,21 @@
+[project]
+name = "applied-ai-challenge"
+version = "0.1.0"
+description = "First-pass open-source approval agent for CRA SBOMs, and KeysBench, on a small purpose-built agent harness"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=1.12,<2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pip-audit>=2.7",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.uv]
+package = false

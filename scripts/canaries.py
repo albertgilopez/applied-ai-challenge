@@ -1,0 +1,30 @@
+"""Mutation canaries: break one property at a time and require the suite to go red.
+
+A green test only counts once it has been seen failing. Each mutation is checked
+to have actually changed the file before the suite runs, and the file is restored
+afterwards. Exit code = number of mutations the suite failed to catch.
+"""
+import subprocess, sys, pathlib
+muts = [
+ ("harness/gate.py", 'return Decision("escalate", "outward effect needs a human")', 'return Decision("allow", "outward effect needs a human")'),
+ ("harness/gate.py", 'return Decision("deny", "tool is not in the catalog")', 'return Decision("allow", "tool is not in the catalog")'),
+ ("harness/gate.py", 'if not isinstance(value, str) or not self._inside_roots(value):', 'if not isinstance(value, str):'),
+ ("harness/prompts.py", 'if not ok and env == "prod":', 'if False:'),
+ ("harness/prompts.py", 'if not by.strip() or not validation_ref.strip():', 'if False:'),
+ ("harness/loop.py", 'if seen[key] >= REPEAT_LIMIT:', 'if False:'),
+ ("harness/replay.py", 'if key not in self.data:', 'if False:'),
+ ("harness/usage.py", 'return None\n    per_in', 'return 0.0\n    per_in'),
+ ("harness/loop.py", 'self.ledger.append({"kind": "tool", **record, "output": output[:2000]})', 'pass'),
+]
+bad = 0
+for f, a, b in muts:
+    p = pathlib.Path(f); orig = p.read_text(encoding="utf-8")
+    assert a in orig, f"mutation anchor missing: {a[:50]}"
+    p.write_text(orig.replace(a, b, 1), encoding="utf-8")
+    assert p.read_text(encoding="utf-8") != orig
+    r = subprocess.run(["uv", "run", "pytest", "-q", "-x"], capture_output=True, text=True)
+    p.write_text(orig, encoding="utf-8")
+    status = "KILLED" if r.returncode != 0 else "SURVIVED"
+    bad += status == "SURVIVED"
+    print(f"{status:9} {f}: {a[:60]}")
+print("survivors:", bad); sys.exit(bad)
