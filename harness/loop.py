@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from harness.catalog import Catalog
 from harness.gate import Gate
 from harness.ledger import Ledger
-from harness.prompts import PromptRegistry, digest
+from harness.prompts import PromptRegistry, UnapprovedPrompt, digest
 from harness.providers import Provider
 from harness.storage import JSONObject
 from harness.usage import Usage, cost_usd
@@ -52,7 +52,7 @@ class Agent:
         catalog: Catalog,
         gate: Gate,
         ledger: Ledger,
-        env: str = "dev",
+        env: str = "prod",  # fail closed: forgetting the env must not relax the prompt control
         max_steps: int = 8,
         max_tokens: int = 2048,
         on_escalate: Escalation | None = None,
@@ -98,7 +98,20 @@ class Agent:
         return block, record
 
     def run(self, user: str) -> RunResult:
-        approved = self.registry.require(self.prompt_id, self.system, self.env)
+        try:
+            approved = self.registry.require(self.prompt_id, self.system, self.env)
+        except UnapprovedPrompt:
+            # A refused start is part of the audit trail too (security scan H3).
+            self.ledger.append(
+                {
+                    "kind": "run_refused",
+                    "env": self.env,
+                    "prompt_id": self.prompt_id,
+                    "prompt_sha256": digest(self.system),
+                    "prompt_approved": False,
+                }
+            )
+            raise
         self.ledger.append(
             {
                 "kind": "run_start",

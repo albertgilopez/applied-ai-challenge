@@ -20,6 +20,10 @@ from typing import Any
 JSONObject = dict[str, Any]
 
 
+class CorruptRecord(ValueError):
+    pass
+
+
 def utc_stamp() -> str:
     """Seconds-resolution UTC timestamp, e.g. 2026-10-08T19:30:00Z."""
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -37,6 +41,17 @@ def read_jsonl(path: Path | str) -> Iterator[JSONObject]:
     if not path.exists():
         return
     with path.open(encoding="utf-8") as f:
-        for line in f:
-            if line.strip():
-                yield json.loads(line)
+        lines = f.read().split("\n")
+    # A file written by append_jsonl ends with a newline, so its last piece is "". A last piece
+    # that is not empty is a write that was interrupted: skip it. Any other line that does not
+    # parse is corruption and stops the read, naming the line (security scan H6: one truncated
+    # line used to make the whole ledger, approvals or cassette unreadable).
+    for number, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            yield json.loads(line)
+        except json.JSONDecodeError as exc:
+            if number == len(lines):
+                return
+            raise CorruptRecord(f"{path.name}: line {number} is not valid JSON") from exc

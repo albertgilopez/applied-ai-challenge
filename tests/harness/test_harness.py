@@ -50,7 +50,7 @@ def final(text="done"):
 def setup(tmp_path):
     catalog = Catalog()
 
-    @tool(catalog, effect="read", description="Read a value")
+    @tool(catalog, effect="read", description="Read a value", path_args=())
     def read_value(key: str) -> str:
         return f"value-of-{key}"
 
@@ -232,7 +232,7 @@ def test_a_tool_decision_is_written_before_the_tool_runs(tmp_path):
     catalog, ledger = Catalog(), Ledger(tmp_path / "ledger.jsonl")
     seen_at_run = []
 
-    @tool(catalog, effect="read", description="Peek at the ledger while running")
+    @tool(catalog, effect="read", description="Peek at the ledger while running", path_args=())
     def peek() -> str:
         seen_at_run.append([e["kind"] for e in ledger.read()])
         return "ok"
@@ -246,6 +246,7 @@ def test_a_tool_decision_is_written_before_the_tool_runs(tmp_path):
         catalog=catalog,
         gate=Gate(),
         ledger=ledger,
+        env="dev",  # this prompt is not approved; dev is the explicit opt-out
     )
     agent.run("go")
     assert seen_at_run == [["run_start", "model_call", "tool_intent"]]
@@ -285,3 +286,70 @@ def test_records_are_written_with_lf_on_every_platform(setup):
     ledger = setup[2]
     ledger.append({"kind": "x"})
     assert b"\r\n" not in ledger.path.read_bytes()
+
+
+# ── security review fixes (H3, H1, H6) ──────────────────────────────────────
+
+
+@pytest.mark.parametrize("env", ["production", "PROD", " prod", "", "staging"])
+def test_an_env_that_is_not_dev_or_test_is_treated_as_prod(setup, env):  # H3
+    agent = make_agent(setup, ScriptedProvider([final()]), system="not approved", env=env)
+    with pytest.raises(UnapprovedPrompt):
+        agent.run("go")
+
+
+def test_the_default_env_is_prod(setup):  # H3: forgetting to pass env must not relax the control
+    catalog, registry, ledger, tmp = setup
+    agent = Agent(
+        provider=ScriptedProvider([final()]),
+        model="m",
+        system="not approved",
+        prompt_id="sys",
+        registry=registry,
+        catalog=catalog,
+        gate=Gate(write_roots=[tmp]),
+        ledger=ledger,
+    )
+    with pytest.raises(UnapprovedPrompt):
+        agent.run("go")
+
+
+@pytest.mark.parametrize("env", ["dev", "test", "DEV"])
+def test_dev_and_test_run_an_unapproved_prompt_and_say_so(setup, env):  # H3
+    result = make_agent(setup, ScriptedProvider([final("ran")]), system="not approved", env=env).run("go")
+    assert result.text == "ran"
+    assert setup[2].read()[0]["prompt_approved"] is False
+
+
+def test_a_refused_start_is_recorded(setup):  # H3: the refusal itself is part of the audit trail
+    with pytest.raises(UnapprovedPrompt):
+        make_agent(setup, ScriptedProvider([final()]), system="not approved", env="prod").run("go")
+    last = setup[2].read()[-1]
+    assert last["kind"] == "run_refused" and last["prompt_approved"] is False
+
+
+@pytest.mark.parametrize("effect", ["read", "write"])
+def test_a_read_or_write_tool_must_declare_its_path_arguments(effect):  # H1
+    catalog = Catalog()
+    with pytest.raises(ValueError, match="path_args"):
+
+        @tool(catalog, effect=effect, description="x")
+        def open_anything(path: str) -> str:  # pragma: no cover - never registered
+            return ""
+
+
+def test_a_truncated_last_line_is_an_interrupted_write_and_is_ignored(tmp_path):  # H6
+    from harness.storage import read_jsonl
+
+    p = tmp_path / "l.jsonl"
+    p.write_text('{"a": 1}\n{"b": 2}\n{"c": ', encoding="utf-8")
+    assert list(read_jsonl(p)) == [{"a": 1}, {"b": 2}]
+
+
+def test_a_corrupt_line_that_is_not_the_last_is_an_error(tmp_path):  # H6
+    from harness.storage import CorruptRecord, read_jsonl
+
+    p = tmp_path / "l.jsonl"
+    p.write_text('{"a": 1}\nnot json\n{"c": 3}\n', encoding="utf-8")
+    with pytest.raises(CorruptRecord, match="line 2"):
+        list(read_jsonl(p))

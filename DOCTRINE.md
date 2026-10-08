@@ -44,15 +44,17 @@ carries nothing that is not already public.
 ## D-05 — The system prompt is a governed artifact
 
 Prompts are approved by content hash, with who approved and the evidence (`validation_ref`).
-Editing a prompt revokes its approval; with `ENV=prod` the agent refuses to start on an
-unapproved prompt.
+Editing a prompt revokes its approval; outside an explicit `dev` or `test` env the agent refuses
+to start on an unapproved prompt, and the refusal is recorded. Any other env (`production`, `PROD`,
+empty) and the default are prod: fail closed (security review H3).
 **Why:** the prompt decides behaviour as much as the code does, and it is easier to change.
 
 ## D-06 — The ledger is history, not state
 
 Every model call, tool call, decision and override is appended to a JSONL file. An override is a
 new line pointing at the decision it overrides. If the ledger cannot be written, the operation
-fails.
+fails. On read, a last line that does not parse is an interrupted write and is skipped; any other
+line that does not parse is corruption and stops the read, naming the line (security review H6).
 **Why:** an audit trail with gaps is worse than a failed run.
 
 ## D-07 — CI never calls a model

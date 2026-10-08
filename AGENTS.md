@@ -16,7 +16,7 @@ purpose-built agent loop.
 |---|---|---|
 | `core/` | SBOM parsing, policy, license expressions, the decision | **Standard library only.** `tests/test_boundary.py` fails naming the offending import |
 | `app/` | Reads SBOM and policy files (JSON/YAML), with size caps | The only file and YAML access; hands plain dicts to `core/` |
-| `harness/` | Agent loop: catalog, gate, governed prompt, ledger, usage, record/replay | Every tool declares its effect; the gate decides on that declaration |
+| `harness/` | Agent loop: catalog, gate, governed prompt, ledger, usage, record/replay | Every tool declares its effect; `read`/`write` tools also declare `path_args` (`()` for none), or they cannot be registered |
 | `agent/` (STORY-002) | The model-card reviewer built on `harness/` | The only place a model is called |
 | `review/` (STORY-003) | Human approve/override, audit ledger, Legal report | Corrections are new ledger lines, never edits |
 | `stories/` | One Markdown file per story + its `cases.yaml` | Every acceptance checkbox cites `(case: ID)` |
@@ -31,7 +31,7 @@ uv sync                      # install
 uv run ruff check . && uv run ruff format --check .   # lint and format
 uv run mypy                  # types (core/ is held to --strict)
 uv run pytest                # all tests, offline (recorded model responses)
-python scripts/canaries.py   # break each guard on purpose; every mutation must turn the suite red
+python scripts/canaries.py   # break each guard on purpose, on a temp copy; every mutation must turn the suite red
 uv run pip-audit             # dependency vulnerability scan (CI fails on findings)
 uv run python state/python/state.py   # write state.json (derived facts + STATED.json)
 ```

@@ -18,6 +18,8 @@ from pathlib import Path
 
 from harness.storage import append_jsonl, read_jsonl, utc_stamp
 
+RELAXED_ENVS = frozenset({"dev", "test"})  # the only envs that may run an unapproved prompt
+
 
 class UnapprovedPrompt(RuntimeError):
     pass
@@ -46,8 +48,12 @@ class PromptRegistry:
         return any(r["prompt_id"] == prompt_id and r["sha256"] == h for r in read_jsonl(self.path))
 
     def require(self, prompt_id: str, text: str, env: str) -> bool:
-        """Return whether the prompt is approved; raise in prod if it is not."""
+        """Return whether the prompt is approved; raise unless the env is an explicit dev or test.
+
+        Fail closed: "production", "PROD", " prod", "" or a typo are all prod. The old check was
+        `env == "prod"`, so any other spelling ran an unapproved prompt (security scan H3).
+        """
         ok = self.is_approved(prompt_id, text)
-        if not ok and env == "prod":
+        if not ok and env.strip().lower() not in RELAXED_ENVS:
             raise UnapprovedPrompt(f"prompt {prompt_id!r} ({digest(text)[:12]}) has no approval")
         return ok

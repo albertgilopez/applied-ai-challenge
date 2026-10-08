@@ -4,13 +4,19 @@ A green test only counts once it has been seen failing. Each mutation is checked
 to have actually changed the file before the suite runs, and the file is restored
 afterwards. Exit code = number of mutations the suite failed to catch.
 
+Everything happens on a temporary copy of the tracked files; the checkout is never
+written. Run it from the repo root after `uv sync` (it uses the project's .venv).
+
 Mutate what a test guards (the code, the data), never the test itself: a loosened
 test over a clean tree stays green, which proves nothing.
 """
 
+import os
 import pathlib
+import shutil
 import subprocess
 import sys
+import tempfile
 
 muts = [
     (
@@ -39,7 +45,15 @@ muts = [
         'return Decision("escalate", f"unknown effect {t.effect!r}")',
     ),
     ("harness/prompts.py", r'text.replace("\r\n", "\n").encode("utf-8")', 'text.encode("utf-8")'),
-    ("harness/prompts.py", 'if not ok and env == "prod":', "if False:"),
+    ("harness/prompts.py", "if not ok and env.strip().lower() not in RELAXED_ENVS:", "if False:"),  # H3
+    ("harness/loop.py", 'env: str = "prod",', 'env: str = "dev",'),  # H3 default
+    ("harness/catalog.py", 'if t.effect in ("read", "write") and t.path_args is None:', "if False:"),  # H1
+    ("harness/storage.py", "if number == len(lines):", "if True:"),  # H6 only the LAST line may be partial
+    (
+        "harness/storage.py",
+        "            if number == len(lines):\n                return",
+        "            if False:\n                return",
+    ),  # H6
     ("harness/prompts.py", "if not by.strip() or not validation_ref.strip():", "if False:"),
     ("harness/loop.py", "if seen[key] >= REPEAT_LIMIT:", "if False:"),
     ("harness/replay.py", "if key not in self.data:", "if False:"),
@@ -130,22 +144,67 @@ if missing:
         print(f"ANCHOR MISSING {f}: {a[:70]}")
     sys.exit(2)
 
+# Mutations run on a temporary COPY of the tracked files, never on the checkout. Mutating the
+# real tree left the security gate rewritten on disk for the duration of each run: a hard kill,
+# a parallel session or a `git add` in that window could keep it (security scan H9).
+REPO = pathlib.Path.cwd()
+VENV_PY = REPO / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+TIMEOUT_S = 120
+
+work = pathlib.Path(tempfile.mkdtemp(prefix="canaries-"))
+# Tracked files AND new files not yet added (but not ignored ones): copying only what git tracks
+# would leave a new module out of the copy, every run would fail on an ImportError, and every
+# mutation would read as KILLED for the wrong reason.
+tracked = subprocess.run(
+    ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.split("\0")
+for rel in filter(None, tracked):
+    dest = work / rel
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(REPO / rel, dest)
+
+
+def _suite(cwd: pathlib.Path) -> int:
+    r = subprocess.run(
+        [str(VENV_PY), "-m", "pytest", "-q", "-x", "-p", "no:cacheprovider"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        timeout=TIMEOUT_S,
+    )
+    return r.returncode
+
+
+# Baseline: the UNMUTATED copy must pass. If it does not (a file missing from the copy, a broken
+# environment), every mutation would read as KILLED and the run would prove nothing.
+if _suite(work) != 0:
+    shutil.rmtree(work, ignore_errors=True)
+    print("BASELINE RED: the unmutated copy fails its own suite; no mutation result would mean anything")
+    sys.exit(3)
+
 bad = 0
-for f, a, b in muts:
-    # Bytes in, bytes out: text mode on Windows would rewrite line endings on restore.
-    p = pathlib.Path(f)
-    raw = p.read_bytes()
-    orig = raw.decode("utf-8")
-    assert a in orig, f"mutation anchor missing: {a[:50]}"
-    try:
-        p.write_bytes(orig.replace(a, b, 1).encode("utf-8"))
-        assert p.read_bytes() != raw
-        r = subprocess.run(["uv", "run", "pytest", "-q", "-x"], capture_output=True, text=True)
-    finally:  # a Ctrl-C or a crash must never leave a mutated file in the tree
-        p.write_bytes(raw)
-    assert p.read_bytes() == raw, f"{f} was not restored byte for byte"
-    status = "KILLED" if r.returncode != 0 else "SURVIVED"
-    bad += status == "SURVIVED"
-    print(f"{status:9} {f}: {a[:60]}")
+try:
+    for f, a, b in muts:
+        # Bytes in, bytes out: text mode on Windows would rewrite line endings on restore.
+        p = work / f
+        raw = p.read_bytes()
+        orig = raw.decode("utf-8")
+        assert a in orig, f"mutation anchor missing: {a[:50]}"
+        try:
+            p.write_bytes(orig.replace(a, b, 1).encode("utf-8"))
+            assert p.read_bytes() != raw
+            status = "KILLED" if _suite(work) != 0 else "SURVIVED"
+        except subprocess.TimeoutExpired:
+            status = "KILLED"  # a mutation that makes the suite hang has not passed it
+        finally:
+            p.write_bytes(raw)
+        assert p.read_bytes() == raw, f"{f} was not restored byte for byte"
+        bad += status == "SURVIVED"
+        print(f"{status:9} {f}: {a[:60]}")
+finally:
+    shutil.rmtree(work, ignore_errors=True)
 print("survivors:", bad)
 sys.exit(bad)

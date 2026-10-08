@@ -40,7 +40,7 @@ class Gate:
         return any(target == root or root in target.parents for root in roots)
 
     def _check_paths(self, t: Tool, args: JSONObject, roots: list[Path], kind: str) -> Decision | None:
-        for name in t.path_args:
+        for name in t.path_args or ():
             value = args.get(name)
             if not isinstance(value, str) or not self._inside(value, roots):
                 return Decision("deny", f"{name}={value!r} is outside the allowed {kind} roots")

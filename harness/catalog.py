@@ -26,7 +26,7 @@ class Tool:
     effect: Effect
     fn: Callable[..., str]
     input_schema: JSONObject
-    path_args: tuple[str, ...] = ()
+    path_args: tuple[str, ...] | None = None
 
     def schema(self) -> JSONObject:
         """The tool definition the model sees."""
@@ -52,6 +52,10 @@ class Catalog:
             raise ValueError(f"tool {t.name!r} is already registered")
         if t.effect not in get_args(Effect):
             raise ValueError(f"tool {t.name!r} declares an unknown effect {t.effect!r}")
+        if t.effect in ("read", "write") and t.path_args is None:
+            # Undeclared means unconfined: a read tool without path_args used to be allowed for
+            # any path, `.env` included (security scan H1). Declare `path_args=()` for none.
+            raise ValueError(f"tool {t.name!r} ({t.effect}) must declare path_args; use () if it takes no paths")
         self._tools[t.name] = t
         return t
 
@@ -68,7 +72,7 @@ def tool(
     effect: Effect,
     description: str | None = None,
     input_schema: JSONObject | None = None,
-    path_args: tuple[str, ...] = (),
+    path_args: tuple[str, ...] | None = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Register a function as a tool. `path_args` names the arguments the gate
     must confine to the allowed roots (read roots for `read`, write roots for `write`)."""
@@ -81,7 +85,7 @@ def tool(
                 effect=effect,
                 fn=fn,
                 input_schema=input_schema or _schema_from_signature(fn),
-                path_args=tuple(path_args),
+                path_args=None if path_args is None else tuple(path_args),
             )
         )
         return fn
