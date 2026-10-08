@@ -111,6 +111,15 @@ muts = [
         '("vcs", "distribution", "source-distribution", "website")',
     ),  # DR-7
     ("app/files.py", "if size > limit:", "if False:"),
+    # Review findings C6-C9, C11, C16-C18: one mutation per fix, each reintroduces the bug.
+    ("core/policy.py", "if not text.isascii():\n        return None", "if False:\n        return None"),  # C9
+    ("core/policy.py", "if not isinstance(entries, list):", "if False:"),  # C8
+    ("core/policy.py", "{type(entry).__name__} is not a license id", "{entry!r} is not a license id"),  # C6
+    ("core/license_expr.py", "if self.depth > MAX_DEPTH:", "if False:"),  # C7
+    ("core/sbom.py", 'if "bomFormat" in doc and "spdxVersion" in doc:', "if False:"),  # C18
+    ("core/sbom.py", 'if isinstance(product, dict) and "components" in product:', "if False:"),  # C17
+    ("app/files.py", "doc = json.loads(text, object_pairs_hook=_no_duplicate_keys)", "doc = json.loads(text)"),  # C11
+    ("app/files.py", 'raise PolicyError(f"{Path(path).name} is nested too deeply") from exc', "raise"),  # C16
     ("core/purl.py", 'parts = [unquote(p) for p in body.split("/") if p]', 'parts = [p for p in body.split("/") if p]'),
 ]
 # Every anchor is checked before anything is mutated: a reformat that splits a
