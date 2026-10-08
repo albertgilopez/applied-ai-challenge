@@ -171,6 +171,19 @@ def test_the_loop_stops_when_it_stops_making_progress(setup):
     assert result.stop_reason == "no_progress"
 
 
+def test_cache_tokens_count_as_input():
+    u = Usage()
+    u.add({"input_tokens": 10, "output_tokens": 5, "cache_creation_input_tokens": 200, "cache_read_input_tokens": 1000})
+    assert u.total_input_tokens == 1210
+
+
+def test_a_cached_run_is_not_priced_as_plain_input(monkeypatch):
+    import harness.usage as usage
+    monkeypatch.setitem(usage.PRICES, "m", (1.0, 1.0))
+    assert cost_usd(Usage(1_000_000, 0), "m") == 1.0
+    assert cost_usd(Usage(10, 0, cache_read_input_tokens=1000), "m") is None
+
+
 def test_an_unknown_price_is_none_not_zero():
     assert cost_usd(Usage(1000, 1000), "some-model-nobody-priced") is None
 

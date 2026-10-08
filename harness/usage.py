@@ -18,18 +18,33 @@ PRICES: dict[str, tuple[float, float]] = {}
 
 @dataclass
 class Usage:
+    # The API splits input into three counters: uncached tokens, tokens written
+    # to the prompt cache, and tokens read from it. Total input is their sum;
+    # summing only `input_tokens` undercounts as soon as caching is on.
     input_tokens: int = 0
     output_tokens: int = 0
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
 
     def add(self, raw: dict | None) -> None:
         raw = raw or {}
         self.input_tokens += int(raw.get("input_tokens") or 0)
         self.output_tokens += int(raw.get("output_tokens") or 0)
+        self.cache_creation_input_tokens += int(raw.get("cache_creation_input_tokens") or 0)
+        self.cache_read_input_tokens += int(raw.get("cache_read_input_tokens") or 0)
+
+    @property
+    def total_input_tokens(self) -> int:
+        return self.input_tokens + self.cache_creation_input_tokens + self.cache_read_input_tokens
 
 
 def cost_usd(usage: Usage, model: str) -> float | None:
     price = PRICES.get(model)
     if price is None:
+        return None
+    if usage.cache_creation_input_tokens or usage.cache_read_input_tokens:
+        # Cache writes and reads are priced differently from plain input; until
+        # those rates are in the table, a cached run has no honest cost.
         return None
     per_in, per_out = price
     return (usage.input_tokens * per_in + usage.output_tokens * per_out) / 1_000_000

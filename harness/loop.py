@@ -111,6 +111,8 @@ class Agent:
         cost = cost_usd(usage, self.model)
         self.ledger.append({"kind": "run_end", "stop_reason": stop, "steps": step,
                             "input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens,
+                            "cache_creation_input_tokens": usage.cache_creation_input_tokens,
+                            "cache_read_input_tokens": usage.cache_read_input_tokens,
                             "cost_usd": cost, "latency_s": round(latency, 3)})
         return RunResult(text=text, stop_reason=stop, steps=step, usage=usage,
                          cost_usd=cost, latency_s=latency, tool_calls=calls)
