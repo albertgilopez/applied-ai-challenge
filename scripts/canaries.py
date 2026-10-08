@@ -11,7 +11,10 @@ import subprocess, sys, pathlib
 muts = [
  ("harness/gate.py", 'return Decision("escalate", "outward effect needs a human")', 'return Decision("allow", "outward effect needs a human")'),
  ("harness/gate.py", 'return Decision("deny", "tool is not in the catalog")', 'return Decision("allow", "tool is not in the catalog")'),
- ("harness/gate.py", 'if not isinstance(value, str) or not self._inside_roots(value):', 'if not isinstance(value, str):'),
+ ("harness/gate.py", 'if not isinstance(value, str) or not self._inside(value, roots):', 'if not isinstance(value, str):'),
+ ("harness/gate.py", 'return self._check_paths(t, args, self.read_roots, "read") or Decision("allow", "read-only tool")', 'return Decision("allow", "read-only tool")'),
+ ("harness/gate.py", 'return Decision("deny", f"unknown effect {t.effect!r}")', 'return Decision("escalate", f"unknown effect {t.effect!r}")'),
+ ("harness/prompts.py", r'text.replace("\r\n", "\n").encode("utf-8")', 'text.encode("utf-8")'),
  ("harness/prompts.py", 'if not ok and env == "prod":', 'if False:'),
  ("harness/prompts.py", 'if not by.strip() or not validation_ref.strip():', 'if False:'),
  ("harness/loop.py", 'if seen[key] >= REPEAT_LIMIT:', 'if False:'),
@@ -20,7 +23,7 @@ muts = [
  # Boundary and story coverage: mutate what the test guards, not the test.
  ("core/__init__.py", 'tests/test_boundary.py).\n"""\n', 'tests/test_boundary.py).\n"""\nimport anthropic\n'),
  ("stories/STORY-003.md", "the original decision stays (case: S3-01)\n", "the original decision stays (case: S3-01)\n- [ ] A promise no case checks\n"),
- ("harness/loop.py", 'self.ledger.append({"kind": "tool", **record, "output": output[:2000]})', 'pass'),
+ ("harness/loop.py", 'intent = self.ledger.append({"kind": "tool_intent"', 'intent = None and ({"kind": "tool_intent"'),
  # STORY-001: one mutation per domain rule.
  ("core/license_expr.py", 'while self.peek() == "AND":', 'while self.peek() in ("AND", "OR"):'),  # DR-2 precedence
  ("core/decide.py", "return max(results, key=lambda r: RANK[r[0]])", "return min(results, key=lambda r: RANK[r[0]])"),  # DR-3 OR
@@ -43,10 +46,12 @@ for f, a, b in muts:
     # Bytes in, bytes out: text mode on Windows would rewrite line endings on restore.
     p = pathlib.Path(f); raw = p.read_bytes(); orig = raw.decode("utf-8")
     assert a in orig, f"mutation anchor missing: {a[:50]}"
-    p.write_bytes(orig.replace(a, b, 1).encode("utf-8"))
-    assert p.read_bytes() != raw
-    r = subprocess.run(["uv", "run", "pytest", "-q", "-x"], capture_output=True, text=True)
-    p.write_bytes(raw)
+    try:
+        p.write_bytes(orig.replace(a, b, 1).encode("utf-8"))
+        assert p.read_bytes() != raw
+        r = subprocess.run(["uv", "run", "pytest", "-q", "-x"], capture_output=True, text=True)
+    finally:  # a Ctrl-C or a crash must never leave a mutated file in the tree
+        p.write_bytes(raw)
     assert p.read_bytes() == raw, f"{f} was not restored byte for byte"
     status = "KILLED" if r.returncode != 0 else "SURVIVED"
     bad += status == "SURVIVED"

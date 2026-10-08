@@ -7,7 +7,7 @@ missing price can't pass for a free run.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 # USD per million tokens (input, output). Fill only from the provider's current
 # pricing page and update PRICES_CHECKED_ON when you do.
@@ -28,10 +28,8 @@ class Usage:
 
     def add(self, raw: dict | None) -> None:
         raw = raw or {}
-        self.input_tokens += int(raw.get("input_tokens") or 0)
-        self.output_tokens += int(raw.get("output_tokens") or 0)
-        self.cache_creation_input_tokens += int(raw.get("cache_creation_input_tokens") or 0)
-        self.cache_read_input_tokens += int(raw.get("cache_read_input_tokens") or 0)
+        for f in fields(self):  # the field names are the API's usage keys
+            setattr(self, f.name, getattr(self, f.name) + int(raw.get(f.name) or 0))
 
     @property
     def total_input_tokens(self) -> int:

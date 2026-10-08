@@ -7,8 +7,8 @@ declaration, never on the tool's name.
 from __future__ import annotations
 
 import inspect
-from dataclasses import dataclass, field
-from typing import Any, Callable, Literal
+from dataclasses import dataclass
+from typing import Any, Callable, Literal, get_args
 
 Effect = Literal["read", "write", "outward"]
 
@@ -22,7 +22,7 @@ class Tool:
     effect: Effect
     fn: Callable[..., str]
     input_schema: dict
-    path_args: tuple[str, ...] = field(default_factory=tuple)
+    path_args: tuple[str, ...] = ()
 
     def schema(self) -> dict:
         """The tool definition the model sees."""
@@ -46,7 +46,7 @@ class Catalog:
     def register(self, t: Tool) -> Tool:
         if t.name in self._tools:
             raise ValueError(f"tool {t.name!r} is already registered")
-        if t.effect not in ("read", "write", "outward"):
+        if t.effect not in get_args(Effect):
             raise ValueError(f"tool {t.name!r} declares an unknown effect {t.effect!r}")
         self._tools[t.name] = t
         return t
@@ -57,14 +57,11 @@ class Catalog:
     def schemas(self) -> list[dict]:
         return [t.schema() for t in self._tools.values()]
 
-    def names(self) -> list[str]:
-        return list(self._tools)
-
 
 def tool(catalog: Catalog, *, effect: Effect, description: str | None = None,
          input_schema: dict | None = None, path_args: tuple[str, ...] = ()) -> Callable:
     """Register a function as a tool. `path_args` names the arguments the gate
-    must check against the allowed write roots."""
+    must confine to the allowed roots (read roots for `read`, write roots for `write`)."""
 
     def wrap(fn: Callable[..., Any]) -> Callable[..., Any]:
         catalog.register(Tool(

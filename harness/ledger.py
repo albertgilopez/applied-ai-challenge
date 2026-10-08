@@ -6,29 +6,20 @@ audit trail, an unrecorded decision is worse than a failed one.
 """
 from __future__ import annotations
 
-import json
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
+
+from harness.storage import append_jsonl, read_jsonl, utc_stamp
 
 
 class Ledger:
     def __init__(self, path: Path | str) -> None:
         self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def append(self, event: dict) -> str:
-        row = {
-            "id": uuid.uuid4().hex[:12],
-            "at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
-            **event,
-        }
-        with self.path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
+        row = {"id": uuid.uuid4().hex[:12], "at": utc_stamp(), **event}
+        append_jsonl(self.path, row)
         return row["id"]
 
     def read(self) -> list[dict]:
-        if not self.path.exists():
-            return []
-        with self.path.open(encoding="utf-8") as f:
-            return [json.loads(line) for line in f if line.strip()]
+        return list(read_jsonl(self.path))

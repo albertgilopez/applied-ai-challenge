@@ -4,13 +4,18 @@ It is approved by content hash, together with who approved it and the evidence
 (an eval run, a review) that justified it. Changing one character changes the
 hash, so an edited prompt is an unapproved prompt. In `prod` the agent refuses
 to start on an unapproved prompt; elsewhere it runs and says so in the ledger.
+
+Approvals are appended as JSON lines, like every other record: the approval
+history can grow but never be edited, and "is this approved?" is derived from it.
+Line endings are normalised before hashing, so a prompt read from a CRLF file on
+Windows keeps the approval it was given on Linux.
 """
 from __future__ import annotations
 
 import hashlib
-import json
-from datetime import datetime, timezone
 from pathlib import Path
+
+from harness.storage import append_jsonl, read_jsonl, utc_stamp
 
 
 class UnapprovedPrompt(RuntimeError):
@@ -18,36 +23,24 @@ class UnapprovedPrompt(RuntimeError):
 
 
 def digest(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return hashlib.sha256(text.replace("\r\n", "\n").encode("utf-8")).hexdigest()
 
 
 class PromptRegistry:
     def __init__(self, path: Path | str) -> None:
         self.path = Path(path)
 
-    def _load(self) -> dict:
-        if not self.path.exists():
-            return {}
-        return json.loads(self.path.read_text(encoding="utf-8"))
-
     def approve(self, prompt_id: str, text: str, *, by: str, validation_ref: str) -> str:
         if not by.strip() or not validation_ref.strip():
             raise ValueError("an approval needs who approved it and the evidence it rests on")
-        data = self._load()
-        entry = {
-            "sha256": digest(text),
-            "by": by,
-            "validation_ref": validation_ref,
-            "at": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
-        }
-        data.setdefault(prompt_id, []).append(entry)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        return entry["sha256"]
+        h = digest(text)
+        append_jsonl(self.path, {"prompt_id": prompt_id, "sha256": h, "by": by,
+                                 "validation_ref": validation_ref, "at": utc_stamp()})
+        return h
 
     def is_approved(self, prompt_id: str, text: str) -> bool:
         h = digest(text)
-        return any(e["sha256"] == h for e in self._load().get(prompt_id, []))
+        return any(r["prompt_id"] == prompt_id and r["sha256"] == h for r in read_jsonl(self.path))
 
     def require(self, prompt_id: str, text: str, env: str) -> bool:
         """Return whether the prompt is approved; raise in prod if it is not."""

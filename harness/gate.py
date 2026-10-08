@@ -24,24 +24,34 @@ class Decision:
 
 
 class Gate:
-    def __init__(self, write_roots: Iterable[Path | str] = ()) -> None:
+    def __init__(self, write_roots: Iterable[Path | str] = (), read_roots: Iterable[Path | str] = ()) -> None:
+        # Writes may go only under write_roots; a read tool that takes a path may read
+        # only under read_roots (or write_roots). Its output goes to the model and the
+        # ledger, so "read-only" is not "harmless" if it can be pointed at `.env`.
         self.write_roots = [Path(r).resolve() for r in write_roots]
+        self.read_roots = [Path(r).resolve() for r in read_roots] + self.write_roots
 
-    def _inside_roots(self, raw: str) -> bool:
+    @staticmethod
+    def _inside(raw: str, roots: list[Path]) -> bool:
         target = Path(raw).resolve()
-        return any(target == root or root in target.parents for root in self.write_roots)
+        return any(target == root or root in target.parents for root in roots)
+
+    def _check_paths(self, t: Tool, args: dict, roots: list[Path], kind: str) -> Decision | None:
+        for name in t.path_args:
+            value = args.get(name)
+            if not isinstance(value, str) or not self._inside(value, roots):
+                return Decision("deny", f"{name}={value!r} is outside the allowed {kind} roots")
+        return None
 
     def decide(self, t: Tool | None, args: dict) -> Decision:
         if t is None:
             return Decision("deny", "tool is not in the catalog")
         if t.effect == "read":
-            return Decision("allow", "read-only tool")
+            return self._check_paths(t, args, self.read_roots, "read") or Decision("allow", "read-only tool")
         if t.effect == "write":
             if not t.path_args:
                 return Decision("deny", "write tool declares no path arguments to check")
-            for name in t.path_args:
-                value = args.get(name)
-                if not isinstance(value, str) or not self._inside_roots(value):
-                    return Decision("deny", f"{name}={value!r} is outside the allowed write roots")
-            return Decision("allow", "write inside allowed roots")
-        return Decision("escalate", "outward effect needs a human")
+            return self._check_paths(t, args, self.write_roots, "write") or Decision("allow", "write inside allowed roots")
+        if t.effect == "outward":
+            return Decision("escalate", "outward effect needs a human")
+        return Decision("deny", f"unknown effect {t.effect!r}")

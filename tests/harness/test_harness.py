@@ -4,7 +4,6 @@ Each test names the property it protects, because these are the properties a
 reviewer will ask about: what the agent may do, who approved its prompt, and
 whether every step left a record.
 """
-import json
 
 import pytest
 
@@ -59,16 +58,16 @@ def setup(tmp_path):
     def notify(message: str) -> str:  # pragma: no cover - must never run
         raise AssertionError("an outward tool ran without a human")
 
-    registry = PromptRegistry(tmp_path / "approved.json")
+    registry = PromptRegistry(tmp_path / "approvals.jsonl")
     registry.approve("sys", "be careful", by="reviewer", validation_ref="tests")
     ledger = Ledger(tmp_path / "ledger.jsonl")
     return catalog, registry, ledger, tmp_path
 
 
-def make_agent(setup, provider, **kw):
+def make_agent(setup, provider, system="be careful", **kw):
     catalog, registry, ledger, tmp = setup
     return Agent(
-        provider=provider, model="claude-sonnet-5-5", system="be careful",
+        provider=provider, model="claude-sonnet-5-5", system=system,
         prompt_id="sys", registry=registry, catalog=catalog,
         gate=Gate(write_roots=[tmp]), ledger=ledger, **kw,
     )
@@ -117,25 +116,26 @@ def test_a_write_outside_the_allowed_roots_is_denied(tmp_path):
 # ── governed prompt ─────────────────────────────────────────────────────────
 
 def test_prod_refuses_an_unapproved_prompt(setup):
-    catalog, registry, ledger, tmp = setup
-    agent = Agent(
-        provider=ScriptedProvider([final()]), model="m", system="a different prompt",
-        prompt_id="sys", registry=registry, catalog=catalog,
-        gate=Gate(write_roots=[tmp]), ledger=ledger, env="prod",
-    )
+    agent = make_agent(setup, ScriptedProvider([final()]), system="a different prompt", env="prod")
     with pytest.raises(UnapprovedPrompt):
         agent.run("go")
 
 
+def test_crlf_does_not_revoke_an_approval(tmp_path):
+    registry = PromptRegistry(tmp_path / "approvals.jsonl")
+    registry.approve("sys", "line one\nline two", by="reviewer", validation_ref="eval-1")
+    assert registry.is_approved("sys", "line one\r\nline two")
+
+
 def test_editing_the_prompt_revokes_its_approval(tmp_path):
-    registry = PromptRegistry(tmp_path / "approved.json")
+    registry = PromptRegistry(tmp_path / "approvals.jsonl")
     registry.approve("sys", "v1", by="reviewer", validation_ref="eval-1")
     assert registry.is_approved("sys", "v1")
     assert not registry.is_approved("sys", "v1 plus one word")
 
 
 def test_an_approval_without_evidence_is_refused(tmp_path):
-    registry = PromptRegistry(tmp_path / "approved.json")
+    registry = PromptRegistry(tmp_path / "approvals.jsonl")
     with pytest.raises(ValueError):
         registry.approve("sys", "v1", by="reviewer", validation_ref="")
 
@@ -147,7 +147,7 @@ def test_every_step_lands_in_the_ledger(setup):
     result = make_agent(setup, provider).run("go")
     assert result.text == "ok"
     kinds = [e["kind"] for e in setup[2].read()]
-    assert kinds == ["run_start", "model_call", "tool", "model_call", "run_end"]
+    assert kinds == ["run_start", "model_call", "tool_intent", "tool", "model_call", "run_end"]
 
 
 def test_the_ledger_is_append_only(setup):
@@ -192,7 +192,7 @@ def test_an_unknown_price_is_none_not_zero():
 
 def test_a_recorded_run_replays_without_the_network(setup, tmp_path):
     live = ScriptedProvider([tool_use("read_value", {"key": "k"}), final("ok")])
-    cassette = tmp_path / "cassette.json"
+    cassette = tmp_path / "cassette.jsonl"
     make_agent(setup, RecordingProvider(live, cassette)).run("go")
 
     replayed = make_agent(setup, ReplayProvider(cassette)).run("go")
@@ -200,7 +200,68 @@ def test_a_recorded_run_replays_without_the_network(setup, tmp_path):
 
 
 def test_replay_refuses_a_request_it_never_saw(tmp_path):
-    cassette = tmp_path / "cassette.json"
-    cassette.write_text(json.dumps({}), encoding="utf-8")
+    cassette = tmp_path / "cassette.jsonl"
+    cassette.write_text("", encoding="utf-8")
     with pytest.raises(CassetteMiss):
         ReplayProvider(cassette).create(model="m", messages=[{"role": "user", "content": "new"}])
+
+
+def test_re_recording_a_request_appends_and_the_last_one_wins(tmp_path):
+    cassette = tmp_path / "c.jsonl"
+    RecordingProvider(ScriptedProvider([final("old")]), cassette).create(model="m", messages=[])
+    RecordingProvider(ScriptedProvider([final("new")]), cassette).create(model="m", messages=[])
+    assert len(cassette.read_text(encoding="utf-8").splitlines()) == 2
+    assert ReplayProvider(cassette).create(model="m", messages=[])["content"][0]["text"] == "new"
+
+
+# ── write-ahead, crash safety, confinement, storage ─────────────────────────
+
+def test_a_tool_decision_is_written_before_the_tool_runs(tmp_path):
+    catalog, ledger = Catalog(), Ledger(tmp_path / "ledger.jsonl")
+    seen_at_run = []
+
+    @tool(catalog, effect="read", description="Peek at the ledger while running")
+    def peek() -> str:
+        seen_at_run.append([e["kind"] for e in ledger.read()])
+        return "ok"
+
+    agent = Agent(provider=ScriptedProvider([tool_use("peek", {}), final()]), model="m", system="s",
+                  prompt_id="s", registry=PromptRegistry(tmp_path / "approvals.jsonl"),
+                  catalog=catalog, gate=Gate(), ledger=ledger)
+    agent.run("go")
+    assert seen_at_run == [["run_start", "model_call", "tool_intent"]]
+
+
+def test_a_crashed_run_still_closes_in_the_ledger(setup):
+    class Broken:
+        def create(self, **request):
+            raise ConnectionError("network down")
+
+    with pytest.raises(ConnectionError):
+        make_agent(setup, Broken()).run("go")
+    last = setup[2].read()[-1]
+    assert last["kind"] == "run_end" and last["stop_reason"] == "error" and "network down" in last["error"]
+
+
+def test_a_read_tool_cannot_be_pointed_outside_its_roots(tmp_path):
+    catalog = Catalog()
+
+    @tool(catalog, effect="read", description="Read a file", path_args=("path",))
+    def read_file(path: str) -> str:
+        return "contents"
+
+    gate = Gate(read_roots=[tmp_path / "cards"])
+    assert gate.decide(catalog.get("read_file"), {"path": str(tmp_path / "cards" / "a.md")}).verdict == "allow"
+    assert gate.decide(catalog.get("read_file"), {"path": str(tmp_path / ".env")}).verdict == "deny"
+
+
+def test_an_effect_the_gate_does_not_know_is_denied():
+    from harness.catalog import Tool
+    odd = Tool(name="x", description="", effect="delete", fn=lambda: "", input_schema={})  # bypasses register()
+    assert Gate().decide(odd, {}).verdict == "deny"
+
+
+def test_records_are_written_with_lf_on_every_platform(setup):
+    ledger = setup[2]
+    ledger.append({"kind": "x"})
+    assert b"\r\n" not in ledger.path.read_bytes()

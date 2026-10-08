@@ -3,10 +3,12 @@
 model call → for each tool_use: gate → (run | deny | escalate) → ledger → next
 model call, until the model stops, the step budget runs out, or the loop stops
 making progress (the same call repeated). Every step is written to the ledger
-before the next one starts.
+before the next one starts; a tool's decision is written before the tool runs,
+and the run's closing line is written even when the run crashes.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import time
 from dataclasses import dataclass, field
@@ -50,6 +52,11 @@ class Agent:
         name, args = call["name"], call.get("input") or {}
         t = self.catalog.get(name)
         decision = self.gate.decide(t, args)
+        # Write-ahead: the decision is recorded before anything runs, so an effect
+        # can never exist without its ledger line (DOCTRINE D-06). If this append
+        # fails, the tool does not run.
+        intent = self.ledger.append({"kind": "tool_intent", "tool": name, "args": args,
+                                     "verdict": decision.verdict, "reason": decision.reason})
         if decision.verdict == "allow":
             try:
                 output, is_error = str(t.fn(**args)), False
@@ -63,7 +70,7 @@ class Agent:
 
         record = {"tool": name, "args": args, "verdict": decision.verdict,
                   "reason": decision.reason, "is_error": is_error}
-        self.ledger.append({"kind": "tool", **record, "output": output[:2000]})
+        self.ledger.append({"kind": "tool", "intent": intent, **record, "output": output[:2000]})
         block = {"type": "tool_result", "tool_use_id": call["id"], "content": output, "is_error": is_error}
         return block, record
 
@@ -73,10 +80,26 @@ class Agent:
                             "prompt_id": self.prompt_id, "prompt_sha256": digest(self.system),
                             "prompt_approved": approved})
         started = time.monotonic()
-        messages: list[dict] = [{"role": "user", "content": user}]
-        usage, calls, seen = Usage(), [], {}
-        text, stop = "", "max_steps"
+        usage, calls = Usage(), []
+        text, stop, step, error = "", "max_steps", 0, None
+        try:
+            text, stop, step = self._loop(user, usage, calls)
+        except Exception as exc:
+            # A crashed run still closes in the ledger, with the error, before it propagates.
+            stop, error = "error", f"{type(exc).__name__}: {exc}"
+            raise
+        finally:
+            latency = time.monotonic() - started
+            cost = cost_usd(usage, self.model)
+            self.ledger.append({"kind": "run_end", "stop_reason": stop, "steps": step, "error": error,
+                                **dataclasses.asdict(usage), "cost_usd": cost, "latency_s": round(latency, 3)})
+        return RunResult(text=text, stop_reason=stop, steps=step, usage=usage,
+                         cost_usd=cost, latency_s=latency, tool_calls=calls)
 
+    def _loop(self, user: str, usage: Usage, calls: list[dict]) -> tuple[str, str, int]:
+        messages: list[dict] = [{"role": "user", "content": user}]
+        seen: dict[str, int] = {}
+        text, stop, step = "", "max_steps", 0
         for step in range(1, self.max_steps + 1):
             response = self.provider.create(
                 model=self.model, max_tokens=self.max_tokens, system=self.system,
@@ -106,13 +129,4 @@ class Agent:
                 results.append(block)
                 calls.append(record)
             messages.append({"role": "user", "content": results})
-
-        latency = time.monotonic() - started
-        cost = cost_usd(usage, self.model)
-        self.ledger.append({"kind": "run_end", "stop_reason": stop, "steps": step,
-                            "input_tokens": usage.input_tokens, "output_tokens": usage.output_tokens,
-                            "cache_creation_input_tokens": usage.cache_creation_input_tokens,
-                            "cache_read_input_tokens": usage.cache_read_input_tokens,
-                            "cost_usd": cost, "latency_s": round(latency, 3)})
-        return RunResult(text=text, stop_reason=stop, steps=step, usage=usage,
-                         cost_usd=cost, latency_s=latency, tool_calls=calls)
+        return text, stop, step
