@@ -81,7 +81,7 @@ MODIFY scripts/canaries.py    mutations for precedence, OR/AND combining, fail-c
 | Formats disagree on a component | S1-09 compares the two samples on identity, license and AI flag |
 | Purl encoding (`%40scope`) | S1-18 row for a scoped npm package |
 
-## Koncepto candidates
+## Cross-file invariants
 
 None: no domain rule crosses unrelated files. DR-1 (fail closed) spans stories and is guarded by
 tests in each story plus a canary, which is enough at this size.
