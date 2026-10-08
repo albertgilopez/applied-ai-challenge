@@ -68,3 +68,19 @@ def test_a_bare_no_in_the_policy_is_refused(tmp_path):
     p.write_text("allowed:\n  - MIT\n  - no\n", encoding="utf-8")
     with pytest.raises(PolicyError, match="not a license id"):
         load_policy(p)
+
+
+def test_a_duplicate_json_key_is_a_format_error(tmp_path):  # S1-25, security scan C11
+    from tests.story_001.cases import CASES
+
+    p = tmp_path / "dup.json"
+    p.write_text(CASES["S1-25"]["input"], encoding="utf-8")
+    with pytest.raises(FormatError, match="duplicate key"):
+        load_sbom(p)
+
+
+def test_a_deeply_nested_policy_is_a_policy_error(tmp_path):  # security scan C16
+    p = tmp_path / "deep.yaml"
+    p.write_text("allowed: " + "[" * 600 + "]" * 600 + "\n", encoding="utf-8")
+    with pytest.raises(PolicyError):
+        load_policy(p)
