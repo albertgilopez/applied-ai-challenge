@@ -2,8 +2,9 @@
 
 import pytest
 
+from core.decide import decide
 from core.sbom import FormatError, parse_sbom
-from tests.story_001.cases import CASES
+from tests.story_001.cases import CASES, POLICY
 
 
 def cdx(*components, **extra):
@@ -21,7 +22,41 @@ def pkg(name="p", **kw):
 def test_several_cyclonedx_licenses_combine_with_and():  # S1-15
     case = CASES["S1-15"]
     [c] = parse_sbom(cdx({"type": "library", "name": "x", "licenses": case["cyclonedx_licenses"]}))
-    assert c.license_expression == "(MIT) AND (GPL-3.0-only)"
+    assert c.license_expression == "MIT AND GPL-3.0-only"
+    assert decide(c, POLICY).verdict == case["expected"]
+
+
+@pytest.mark.parametrize("row", CASES["S1-21"]["rows"], ids=["injection", "or-entry", "allowed-or-entry"])
+def test_one_entry_cannot_rewrite_another(row):  # S1-21, security scan C1
+    [c] = parse_sbom(cdx({"type": "library", "name": "x", "licenses": row["cyclonedx_licenses"]}))
+    d = decide(c, POLICY)
+    assert d.verdict == row["expected"], (c.license_expression, d.reason)
+    if "reason_contains" in row:
+        assert row["reason_contains"] in d.reason
+
+
+@pytest.mark.parametrize("bad", [{"expression": ["MIT"]}, {"license": {"id": 5}}, {"license": {"name": {"x": 1}}}])
+def test_a_license_value_that_is_not_text_is_a_format_error(bad):  # S1-19 / DR-8, security scan C15
+    with pytest.raises(FormatError, match="must be text"):
+        parse_sbom(cdx({"type": "library", "name": "x", "licenses": [bad]}))
+
+
+@pytest.mark.parametrize("row", CASES["S1-22"]["rows"], ids=["concluded-none", "concluded-noassertion"])
+def test_spdx_concluded_none_is_not_the_declared_license(row):  # S1-22, security scan C2
+    [c] = parse_sbom(spdx(pkg(licenseConcluded=row["licenseConcluded"], licenseDeclared=row["licenseDeclared"])))
+    assert decide(c, POLICY).verdict == row["expected"]
+
+
+@pytest.mark.parametrize("row", CASES["S1-23"]["rows"], ids=["two-described", "described-dependency", "product-only"])
+def test_describes_cannot_hide_a_dependency(row):  # S1-23, security scan C3
+    doc = spdx(
+        pkg("product"),
+        pkg("lib", licenseConcluded="MIT"),
+        {**pkg("gpl", licenseConcluded="GPL-3.0-only"), "name": "gpl-dep"},
+        documentDescribes=row["describes"],
+        relationships=row["relationships"],
+    )
+    assert sorted(c.name for c in parse_sbom(doc)) == row["expected_reviewed"]
 
 
 @pytest.mark.parametrize("row", CASES["S1-20"]["rows"], ids=["concluded-wins", "no-concluded-all-count"])

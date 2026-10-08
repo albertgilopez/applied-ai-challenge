@@ -86,4 +86,28 @@
     - cyclonedx_licenses: [{ license: { id: GPL-3.0-only, acknowledgement: declared } }, { license: { id: MIT, acknowledgement: concluded } }]
       expected: MIT
     - cyclonedx_licenses: [{ license: { id: MIT, acknowledgement: declared } }, { license: { id: GPL-3.0-only } }]
-      expected: (MIT) AND (GPL-3.0-only)
+      expected: MIT AND GPL-3.0-only
+- id: S1-21
+  rows:
+    - cyclonedx_licenses: [{ license: { id: GPL-3.0-only } }, { license: { id: "x) OR (MIT" } }]
+      expected: Needs review
+      reason_contains: cannot parse
+    - cyclonedx_licenses: [{ license: { id: GPL-3.0-only } }, { expression: "MIT OR Apache-2.0" }]
+      expected: Reject
+    - cyclonedx_licenses: [{ license: { id: MIT } }, { expression: "Apache-2.0 OR GPL-3.0-only" }]
+      expected: Allow
+- id: S1-22
+  rows:
+    - { licenseConcluded: NONE, licenseDeclared: MIT, expected: Needs review }
+    - { licenseConcluded: NOASSERTION, licenseDeclared: MIT, expected: Allow }
+- id: S1-23
+  rows:
+    - describes: [SPDXRef-product, SPDXRef-gpl]
+      relationships: []
+      expected_reviewed: [gpl-dep, lib, product]
+    - describes: [SPDXRef-gpl]
+      relationships: [{ spdxElementId: SPDXRef-lib, relationshipType: DEPENDS_ON, relatedSpdxElement: SPDXRef-gpl }]
+      expected_reviewed: [gpl-dep, lib, product]
+    - describes: [SPDXRef-product]
+      relationships: [{ spdxElementId: SPDXRef-product, relationshipType: CONTAINS, relatedSpdxElement: SPDXRef-lib }]
+      expected_reviewed: [gpl-dep, lib]

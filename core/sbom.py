@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 
 from core.component import Component, JSONObject
+from core.license_expr import And, ParseError, parse, to_text
 from core.purl import parse_purl, url_for
 
 
@@ -56,19 +57,33 @@ def _cdx_license(entries: object) -> str | None:
     entries = [e for e in entries if isinstance(e, dict)]
     # A verified conclusion overrides the authors' declarations (STORY-001 DR-5), as in SPDX.
     concluded = [e for e in entries if _acknowledgement(e) == "concluded"]
-    terms = []
+    terms: list[str] = []
     for entry in concluded or entries:
-        if entry.get("expression"):
-            terms.append(entry["expression"])
-            continue
         lic = entry.get("license") or {}
-        if lic.get("id"):
-            terms.append(lic["id"])
-        elif lic.get("name"):
-            terms.append(_licenseref(lic["name"]))
+        value = entry.get("expression") or (lic.get("id") if isinstance(lic, dict) else None)
+        name = lic.get("name") if isinstance(lic, dict) else None
+        # A license value that is not text is a malformed SBOM: say so (DR-8) instead of crashing
+        # later with an untyped error or guessing (security scan C15).
+        for field in (value, name):
+            if field is not None and not isinstance(field, str):
+                raise FormatError(f"license value must be text, got {type(field).__name__}")
+        if value:
+            terms.append(value)
+        elif name:
+            terms.append(_licenseref(name))
     if not terms:
         return None
-    return terms[0] if len(terms) == 1 else " AND ".join(f"({t})" for t in terms)
+    if len(terms) == 1:
+        return terms[0]
+    # Each entry is parsed on its own and the TREES are combined (DR-5, security scan C1). Joining
+    # the raw strings let one entry rewrite another: "x) OR (MIT" next to GPL read as "... OR MIT".
+    trees = []
+    for term in terms:
+        try:
+            trees.append(parse(term))
+        except ParseError:
+            return term  # does not parse on its own, so decide() makes the component Needs review
+    return to_text(And(tuple(trees)))
 
 
 def _cdx_source(c: JSONObject) -> str | None:
@@ -113,22 +128,60 @@ def _spdx_value(v: object) -> str | None:
     return None if not isinstance(v, str) or v.strip().upper() in _SPDX_EMPTY else v.strip()
 
 
-def _spdx_described(doc: JSONObject) -> set[str]:
-    described = set(doc.get("documentDescribes") or [])
+def _spdx_license(p: JSONObject) -> str | None:
+    """DR-5: concluded, then declared, but only when nobody concluded anything (NOASSERTION).
+
+    A concluded NONE is a verified "no license is available" (SPDX 2.3 § 7.13); falling back to the
+    author's declaration would replace a verified negative with a claim (security scan C2).
+    """
+    concluded = p.get("licenseConcluded")
+    if isinstance(concluded, str) and concluded.strip().upper() == "NONE":
+        return None
+    return _spdx_value(concluded) or _spdx_value(p.get("licenseDeclared"))
+
+
+# Relationships in which the related element is part of, or a dependency of, another package.
+_INBOUND = {"DEPENDS_ON", "CONTAINS", "DYNAMIC_LINK", "STATIC_LINK", "HAS_PREREQUISITE", "GENERATES"}
+_OUTBOUND = {"DEPENDENCY_OF", "CONTAINED_BY", "PREREQUISITE_FOR", "GENERATED_FROM"}
+
+
+def _spdx_product(doc: JSONObject) -> str | None:
+    """DR-9: the one package to leave out as "the product", or None to review every package.
+
+    Only a single described package counts, and only if no other package depends on it or contains
+    it. An extra DESCRIBES (or a described dependency) therefore cannot hide anything (scan C3).
+    """
+    doc_id = doc.get("SPDXID")
+    described = {d for d in doc.get("documentDescribes") or [] if isinstance(d, str)}
     for r in doc.get("relationships") or []:
-        if r.get("spdxElementId") == doc.get("SPDXID") and r.get("relationshipType") == "DESCRIBES":
-            described.add(r.get("relatedSpdxElement"))
-    return described
+        if (
+            isinstance(r, dict)
+            and doc_id
+            and r.get("spdxElementId") == doc_id
+            and r.get("relationshipType") == "DESCRIBES"
+            and isinstance(r.get("relatedSpdxElement"), str)
+        ):
+            described.add(r["relatedSpdxElement"])
+    if len(described) != 1:
+        return None
+    (product,) = described
+    for r in doc.get("relationships") or []:
+        if not isinstance(r, dict):
+            continue
+        kind, src, dst = r.get("relationshipType"), r.get("spdxElementId"), r.get("relatedSpdxElement")
+        if (kind in _INBOUND and dst == product) or (kind in _OUTBOUND and src == product):
+            return None
+    return product
 
 
 def _parse_spdx(doc: JSONObject) -> list[Component]:
     packages = doc.get("packages", [])
     if not isinstance(packages, list):
         raise FormatError("SPDX 'packages' must be a list")
-    described = _spdx_described(doc)
+    product = _spdx_product(doc)
     out = []
     for p in packages:
-        if not isinstance(p, dict) or p.get("SPDXID") in described:
+        if not isinstance(p, dict) or (product is not None and p.get("SPDXID") == product):
             continue
         purl = next(
             (r.get("referenceLocator") for r in p.get("externalRefs") or [] if r.get("referenceType") == "purl"), None
@@ -141,7 +194,7 @@ def _parse_spdx(doc: JSONObject) -> list[Component]:
                 version=p.get("versionInfo"),
                 type="machine-learning-model" if parsed and parsed.type == "huggingface" else "library",
                 purl=purl,
-                license_expression=_spdx_value(p.get("licenseConcluded")) or _spdx_value(p.get("licenseDeclared")),
+                license_expression=_spdx_license(p),
                 source_url=_first_url(url_for(purl), p.get("downloadLocation"), p.get("homepage")),
             )
         )

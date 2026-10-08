@@ -64,11 +64,15 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
   unless the policy lists them.
 - **DR-5 Format mapping.**
   - CycloneDX: several entries in `licenses` are combined with `AND`; an `expression` entry is used
-    as is; nested `components` are flattened. CycloneDX 1.6 marks entries with
+    as is; nested `components` are flattened. Each entry is parsed **on its own** and the parsed
+    trees are combined; text is never concatenated, so one entry cannot change how another one
+    reads (security scan C1: `x) OR (MIT` next to GPL made a Reject into an Allow). An entry that
+    does not parse on its own makes the whole component `Needs review`. CycloneDX 1.6 marks entries with
     `acknowledgement: declared | concluded`; when any entry is `concluded`, only the concluded ones
     count (the same rule as SPDX below: a verified conclusion overrides an author's declaration).
-  - SPDX: `licenseConcluded`, falling back to `licenseDeclared`; `NOASSERTION` and `NONE` mean no
-    license declared.
+  - SPDX: `licenseConcluded`, falling back to `licenseDeclared` only when the conclusion is
+    `NOASSERTION` (nobody looked). A concluded `NONE` is a verified "no license is available": it does
+    **not** fall back to the declaration (security scan C2) and the component is `Needs review`.
 - **DR-6 AI models.** CycloneDX `type: machine-learning-model`; SPDX 2.3 has no such purpose, so a
   `pkg:huggingface/` purl marks the model.
 - **DR-7 Source link.** First available of: `vcs` > `source-distribution` > `distribution` > `website` external reference >
@@ -77,6 +81,13 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
   reason and does not change the verdict.
 - **DR-8 Errors are loud.** Invalid JSON, an unknown format, or a policy listing the same id twice
   raise an error; they never yield an empty result.
+- **DR-9 Only the product leaves the list.** The package an SPDX document DESCRIBES is the product,
+  not a component, and is left out only when it is the **single** described package and no other
+  package depends on it or contains it. Otherwise it is reviewed like any other package: an extra
+  `DESCRIBES` relationship must not be a way to hide a dependency (security scan C3). Residual, by
+  design: a document whose only described package is a dependency with no other relationships looks
+  exactly like a product; its author controls the whole document anyway. STORY-003 closes the gap by
+  always reporting which package was left out as the product.
 
 ## Acceptance Criteria
 
@@ -100,6 +111,9 @@ verdict ∈ { "Allow", "Needs review", "Reject" }
 - [x] The source link follows the DR-7 priority, including links derived from the purl (case: S1-18)
 - [x] Invalid JSON, unknown format and a contradictory policy raise errors (case: S1-19)
 - [x] A CycloneDX `concluded` license overrides the `declared` ones (case: S1-20)
+- [x] One CycloneDX license entry cannot rewrite how another one combines (case: S1-21)
+- [x] An SPDX concluded `NONE` is `Needs review`, never the declared license (case: S1-22)
+- [x] An extra `DESCRIBES` relationship cannot remove a dependency from the review (case: S1-23)
 
 ## Out of scope
 

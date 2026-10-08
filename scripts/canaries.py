@@ -80,13 +80,29 @@ muts = [
     ),  # DR-1
     ("core/decide.py", "verdict = policy.lookup(leaf.text)", "verdict = policy.lookup(leaf.id)"),  # DR-4 no inference
     ("core/policy.py", "if k in where and where[k] != section:", "if False:"),  # DR-8
-    ("core/sbom.py", '" AND ".join(f"({t})" for t in terms)', '" OR ".join(f"({t})" for t in terms)'),  # DR-5
+    # DR-5 / scan C1: reintroduce text concatenation, and skip an entry that does not parse.
+    ("core/sbom.py", "return to_text(And(tuple(trees)))", 'return " AND ".join(f"({t})" for t in terms)'),
+    ("core/sbom.py", "return term  # does not parse on its own", "continue  # does not parse on its own"),
+    (
+        "core/license_expr.py",
+        'return " AND ".join(f"({to_text(i)})" if isinstance(i, Or) else to_text(i) for i in node.items)',
+        'return " AND ".join(to_text(i) for i in node.items)',
+    ),
+    # DR-5: concluded before declared; scan C2: a concluded NONE does not fall back.
     (
         "core/sbom.py",
-        'license_expression=_spdx_value(p.get("licenseConcluded")) or _spdx_value(p.get("licenseDeclared")),',
-        'license_expression=_spdx_value(p.get("licenseDeclared")) or _spdx_value(p.get("licenseConcluded")),',
-    ),  # DR-5
-    ("core/sbom.py", 'if not isinstance(p, dict) or p.get("SPDXID") in described:', "if not isinstance(p, dict):"),
+        'return _spdx_value(concluded) or _spdx_value(p.get("licenseDeclared"))',
+        'return _spdx_value(p.get("licenseDeclared")) or _spdx_value(concluded)',
+    ),
+    ("core/sbom.py", 'if isinstance(concluded, str) and concluded.strip().upper() == "NONE":', "if False:"),
+    # DR-9 / scan C3: the product leaves the list only if unique and nothing depends on it.
+    ("core/sbom.py", '(product is not None and p.get("SPDXID") == product)', "False"),
+    ("core/sbom.py", "if len(described) != 1:", "if not described:"),
+    (
+        "core/sbom.py",
+        "if (kind in _INBOUND and dst == product) or (kind in _OUTBOUND and src == product):",
+        "if False:",
+    ),
     ("core/sbom.py", "for entry in concluded or entries:", "for entry in entries:"),  # DR-5 concluded
     ("core/sbom.py", 'return url[4:] if url.startswith("git+") else url', "return url"),  # DR-7 git+ prefix
     (

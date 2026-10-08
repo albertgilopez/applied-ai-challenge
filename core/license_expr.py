@@ -119,6 +119,20 @@ class _Parser:
         return Leaf(tok)
 
 
+def to_text(node: Expr) -> str:
+    """Canonical text of a parsed expression, parenthesised so it parses back to the same tree.
+
+    This is how parsed pieces are put back together: combining *trees* and printing them means a
+    fragment can never change how its neighbour reads, which concatenating raw text allowed.
+    """
+    if isinstance(node, Leaf):
+        return node.text
+    if isinstance(node, And):
+        # AND binds tighter than OR, so only an OR child needs parentheses inside an AND.
+        return " AND ".join(f"({to_text(i)})" if isinstance(i, Or) else to_text(i) for i in node.items)
+    return " OR ".join(to_text(i) for i in node.items)
+
+
 def parse(text: str | None) -> Expr:
     if text is None or not text.strip():
         raise ParseError("empty expression")

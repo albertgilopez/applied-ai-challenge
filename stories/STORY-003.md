@@ -12,6 +12,8 @@
 - `report` command: a short Markdown summary Legal can attach (counts, per-component verdict,
   reason, source link, overrides), plus the same data as JSON.
 - A re-run reads the recorded verdicts instead of deciding again, so the report is stable.
+- The report always names the package left out as "the product" (STORY-001 DR-9), so nothing
+  leaves the review silently.
 
 ## Acceptance Criteria
 
