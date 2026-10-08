@@ -104,6 +104,10 @@ def _cdx_flatten(components: object, out: list[JSONObject]) -> None:
 def _parse_cyclonedx(doc: JSONObject) -> list[Component]:
     flat: list[JSONObject] = []
     _cdx_flatten(doc.get("components", []), flat)
+    # The product itself is not a component, but its own sub-components are (DR-5, scan C17).
+    product = (doc.get("metadata") or {}).get("component") if isinstance(doc.get("metadata"), dict) else None
+    if isinstance(product, dict) and "components" in product:
+        _cdx_flatten(product["components"], flat)
     out = []
     for c in flat:
         purl = c.get("purl")
@@ -207,6 +211,9 @@ def _parse_spdx(doc: JSONObject) -> list[Component]:
 def parse_sbom(doc: object) -> list[Component]:
     if not isinstance(doc, dict):
         raise FormatError("an SBOM must be a JSON object")
+    if "bomFormat" in doc and "spdxVersion" in doc:
+        # A polyglot: reviewed as one format, the other format's packages would go unreviewed (scan C18).
+        raise FormatError("the document carries both CycloneDX and SPDX markers")
     if doc.get("bomFormat") == "CycloneDX":
         components = _parse_cyclonedx(doc)
     elif str(doc.get("spdxVersion", "")).startswith("SPDX-"):

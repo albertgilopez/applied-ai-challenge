@@ -160,3 +160,20 @@ def test_cyclonedx_marks_ai_models_by_type():  # DR-6
 def test_bad_documents_raise(doc, message):
     with pytest.raises(FormatError, match=message):
         parse_sbom(doc)
+
+
+def test_a_document_with_both_formats_is_a_format_error():  # S1-28, security scan C18
+    doc = {**CASES["S1-28"]["input"], "components": [{"type": "library", "name": "x"}], "packages": []}
+    with pytest.raises(FormatError, match="both"):
+        parse_sbom(doc)
+
+
+def test_components_under_metadata_component_are_reviewed():  # S1-29, security scan C17
+    case = CASES["S1-29"]
+    product = {
+        "type": "application",
+        "name": "product",
+        "components": [{"type": "library", "name": n} for n in case["cyclonedx_metadata_component_children"]],
+    }
+    parsed = parse_sbom(cdx({"type": "library", "name": "lib"}, metadata={"component": product}))
+    assert sorted(c.name for c in parsed) == case["expected_reviewed"]
