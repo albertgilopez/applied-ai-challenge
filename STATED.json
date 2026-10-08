@@ -1,8 +1,8 @@
 {
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
   "as_of": "2026-10-08",
-  "at_commit": "c587111",
-  "where_we_are": "Harness and STORY-001 done: both SBOM formats parsed and classified against the policy, 19 cases, 22 of 22 canaries caught.",
+  "at_commit": "1959d79",
+  "where_we_are": "Harness and STORY-001 done and reviewed (/improve + /simplify): 108 tests, 29 of 29 canaries caught.",
   "next": [
     "STORY-003: review/override, ledger and Legal report on STORY-001 decisions (not blocked)",
     "CI: GitHub Actions + Jenkinsfile",
