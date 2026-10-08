@@ -1,0 +1,247 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "sample-instrument-software-3.2.0",
+  "documentNamespace": "https://example.org/spdx/sample-instrument-software-3.2.0",
+  "creationInfo": {
+    "created": "2026-10-08T00:00:00Z",
+    "creators": [
+      "Tool: samples/build_samples.py"
+    ]
+  },
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-product",
+      "name": "sample-instrument-software",
+      "versionInfo": "3.2.0",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-requests",
+      "name": "requests",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "versionInfo": "2.32.3",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/requests@2.32.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-numpy",
+      "name": "numpy",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "BSD-3-Clause",
+      "versionInfo": "2.1.3",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/numpy@2.1.3"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyYAML",
+      "name": "PyYAML",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "versionInfo": "6.0.2",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pyyaml@6.0.2"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-psycopg2",
+      "name": "psycopg2",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "LicenseRef-LGPL-with-exceptions",
+      "versionInfo": "2.9.10",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/psycopg2@2.9.10"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-PyQt5",
+      "name": "PyQt5",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "GPL-3.0-only",
+      "versionInfo": "5.15.11",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/pyqt5@5.15.11"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-react",
+      "name": "react",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "versionInfo": "18.3.1",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/react@18.3.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef--babel-core",
+      "name": "@babel/core",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "versionInfo": "7.26.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/%40babel/core@7.26.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-lodash",
+      "name": "lodash",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "versionInfo": "4.17.21",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/lodash@4.17.21"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-slf4j-api",
+      "name": "slf4j-api",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "versionInfo": "2.0.13",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:maven/org.slf4j/slf4j-api@2.0.13"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-mysql-connector-j",
+      "name": "mysql-connector-j",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "GPL-2.0-only WITH Universal-FOSS-exception-1.0",
+      "versionInfo": "9.1.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:maven/com.mysql/mysql-connector-j@9.1.0"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Mistral-7B-v0.1",
+      "name": "Mistral-7B-v0.1",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:huggingface/mistralai/Mistral-7B-v0.1"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Llama-3.1-8B",
+      "name": "Llama-3.1-8B",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "LicenseRef-Llama-3.1-Community-License",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:huggingface/meta-llama/Llama-3.1-8B"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-gemma-2-2b",
+      "name": "gemma-2-2b",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "LicenseRef-Gemma-Terms-of-Use",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:huggingface/google/gemma-2-2b"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-internal-telemetry",
+      "name": "internal-telemetry",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "versionInfo": "0.4.0"
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-product"
+    }
+  ],
+  "hasExtractedLicensingInfos": [
+    {
+      "licenseId": "LicenseRef-LGPL-with-exceptions",
+      "name": "LGPL with exceptions",
+      "extractedText": "See the project's LGPL with exceptions."
+    },
+    {
+      "licenseId": "LicenseRef-Llama-3.1-Community-License",
+      "name": "Llama 3.1 Community License",
+      "extractedText": "See the project's Llama 3.1 Community License."
+    },
+    {
+      "licenseId": "LicenseRef-Gemma-Terms-of-Use",
+      "name": "Gemma Terms of Use",
+      "extractedText": "See the project's Gemma Terms of Use."
+    }
+  ]
+}

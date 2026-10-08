@@ -5,13 +5,13 @@ description = "First-pass open-source approval agent for CRA SBOMs, and KeysBenc
 requires-python = ">=3.11"
 dependencies = [
     "anthropic>=1.12,<2",
+    "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8",
     "pip-audit>=2.7",
-    "pyyaml>=6.0.3",
 ]
 
 [tool.pytest.ini_options]
