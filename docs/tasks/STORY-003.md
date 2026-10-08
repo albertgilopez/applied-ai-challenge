@@ -30,14 +30,14 @@ Parallel frontier: {T1, T2}. Critical path: T2 → T3 → T4 → T5 → T6.
 - Depends on: none
 
 ## T2 — Policy digest
-- Files: `core/policy.py`, `tests/story_003/test_cases.py` (digest unit)
+- Files: `core/policy.py`, `tests/story_003/test_review.py` (digest unit)
 - Closes: the policy part of S3-09
 - Done when: reordering a section or changing case does not change `Policy.digest()`; moving an id
   between sections does
 - Depends on: none
 
 ## T3 — Review rules: decision key, fold, refusals
-- Files: `core/review.py`, `tests/story_003/test_cases.py`
+- Files: `core/review.py`, `tests/story_003/test_review.py`
 - Closes: S3-01, S3-02, S3-03, S3-06, S3-07, S3-08 (logic, on in-memory ledger lines)
 - Done when: the key changes with license, source or policy digest; the latest reviewer line wins;
   blank `by`/`reason`, an unknown verdict or an unknown decision raise `ReviewError`

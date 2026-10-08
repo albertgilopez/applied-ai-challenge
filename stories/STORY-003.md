@@ -105,6 +105,8 @@ Report JSON (the data; the Markdown is derived from it):
 - The reviewer name is trusted as typed. Tying it to an identity (SSO, a signed commit) is the
   next step, not this story.
 - The ledger is not tamper-evident (no hash chain). It is append-only by convention and by code.
+- An `approve` line records who and when; the verdict it approved is recomputed when the ledger is
+  replayed and shown in the report. The report, not the raw JSONL, is the artifact Legal reads.
 
 ## Acceptance Criteria
 
