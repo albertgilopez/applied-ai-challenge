@@ -33,6 +33,10 @@ uv run mypy                  # types (core/ is held to --strict)
 uv run pytest                # all tests, offline (recorded model responses)
 python scripts/canaries.py   # break each guard on purpose, on a temp copy; every mutation must turn the suite red
 uv run pip-audit             # dependency vulnerability scan (CI fails on findings)
+uv run python -m review scan --sbom samples/sbom.cdx.json --policy samples/policy.yaml --ledger out/ledger.jsonl
+uv run python -m review list --ledger out/ledger.jsonl                       # pending items
+uv run python -m review override --ledger out/ledger.jsonl --decision ID --verdict Reject --by NAME --reason TEXT
+uv run python -m review report --sbom samples/sbom.cdx.json --policy samples/policy.yaml --ledger out/ledger.jsonl --out out
 uv run python state/python/state.py   # write state.json (derived facts + STATED.json)
 ```
 

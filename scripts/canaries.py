@@ -110,7 +110,7 @@ muts = [
     ),
     ("core/sbom.py", 'if isinstance(concluded, str) and concluded.strip().upper() == "NONE":', "if False:"),
     # DR-9 / scan C3: the product leaves the list only if unique and nothing depends on it.
-    ("core/sbom.py", '(product is not None and p.get("SPDXID") == product)', "False"),
+    ("core/sbom.py", 'if product is not None and p.get("SPDXID") == product:', "if False:"),
     ("core/sbom.py", "if len(described) != 1:", "if not described:"),
     (
         "core/sbom.py",
@@ -135,6 +135,35 @@ muts = [
     ("app/files.py", "doc = json.loads(text, object_pairs_hook=_no_duplicate_keys)", "doc = json.loads(text)"),  # C11
     ("app/files.py", 'raise PolicyError(f"{Path(path).name} is nested too deeply") from exc', "raise"),  # C16
     ("core/purl.py", 'parts = [unquote(p) for p in body.split("/") if p]', 'parts = [p for p in body.split("/") if p]'),
+    # STORY-003: one mutation per domain rule.
+    (
+        "core/review.py",
+        '"license_expression": component.license_expression,',
+        '"license_expression": None,',
+    ),  # DR-4 / C12: the license is part of the key
+    (
+        "core/review.py",
+        '"policy_sha256": policy_sha256,\n        },',
+        '"policy_sha256": "",\n        },',
+    ),  # DR-5: a policy change reopens the item
+    ("core/sbom.py", 'if url.lower().startswith("https://"):', "if True:"),  # DR-6 / C5
+    ("core/report.py", "if unicodedata.category(ch) in _UNSAFE_CATEGORIES else ch", "if False else ch"),  # DR-7 / C4
+    ("core/report.py", "if ch in _MARKDOWN else ch for ch in out", "if False else ch for ch in out"),  # DR-7 / C4
+    ("core/report.py", 'return out.replace("://", "[:]//").replace("www.", "www[.]")', "return out"),  # DR-7
+    ("core/report.py", 'return "<" + quote(url, safe=_URL_SAFE) + ">"', 'return "<" + url + ">"'),  # DR-7
+    ("core/review.py", "if value is None or not value.strip():", "if value is None:"),  # DR-2
+    ("core/review.py", "if decision_id not in states:", "if False:"),  # DR-1
+    (
+        "core/review.py",
+        "return self.reviews[-1].verdict if self.reviews",
+        "return self.reviews[0].verdict if self.reviews",
+    ),  # DR-3 latest wins
+    ("review/cli.py", "if key in known:", "if False:"),  # DR-9 a re-run never decides again
+    (
+        "core/sbom.py",
+        'named = Product(str(product["name"]), version if isinstance(version, str) else None)',
+        "named = None",
+    ),  # DR-8 the product is named
 ]
 # Every anchor is checked before anything is mutated: a reformat that splits a
 # line should report all the stale anchors at once, not stop at the first.

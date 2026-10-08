@@ -63,3 +63,15 @@ Model responses are recorded once and replayed. A request the recording never sa
 instead of reaching the network.
 **Why:** reproducible CI, no secrets in the pipeline, and the recordings double as a regression
 eval of the prompt.
+
+## D-08 — A frozen decision is keyed on every input it was decided from
+
+A recorded decision is reused only when its key matches: the component identity, its license
+expression, its source link and the digest of the policy as loaded. A field that `decide()` starts
+reading must be added to the key in the same change; two canaries remove a field each and the suite
+goes red.
+**Why:** keyed on identity alone, two packages with the same name and version but different licenses
+shared one verdict, and a re-run ignored a policy edit (security review C12). Both are an `Allow`
+that the current inputs never produced.
+**Cost:** a policy change reopens every item it touches, and the reviewer looks at them again; an
+override does not carry over to a new policy.
