@@ -44,7 +44,8 @@ flowchart TB
 CREATE core/license_expr.py   tokenizer + recursive-descent parser (OR < AND < WITH < +), ParseError
 CREATE core/policy.py         Policy.from_dict, PolicyError, lookup(term) -> verdict | None
 CREATE core/purl.py           minimal purl parser (type/namespace/name/version, percent-decoding), url_for
-CREATE core/sbom.py           Component, FormatError, parse_sbom (CycloneDX + SPDX), flatten, source link
+CREATE core/component.py      Component (shared by sbom and decide)
+CREATE core/sbom.py           FormatError, parse_sbom (CycloneDX + SPDX), flatten, source link
 CREATE core/decide.py         Decision, evaluate(ast, policy), decide(component, policy)
 CREATE app/__init__.py, app/files.py   load_sbom(path), load_policy(path): size caps, safe_load, typed errors
 CREATE samples/policy.yaml

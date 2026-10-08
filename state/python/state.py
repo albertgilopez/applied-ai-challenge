@@ -8,7 +8,7 @@ Two halves, kept apart on purpose:
   unchanged from `STATED.json`. It carries the commit it was written at, so a
   reader can tell when it has gone stale.
 
-Run: `python state/python/state.py` (CI runs it after the tests).
+Run: `uv run python state/python/state.py` (CI runs it after the tests).
 """
 from __future__ import annotations
 
@@ -29,10 +29,19 @@ def _git(*args: str) -> str | None:
 
 
 def _tests() -> dict:
-    r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"],
+    # pyproject already adds -q; a second -q would suppress the summary line.
+    r = subprocess.run([sys.executable, "-m", "pytest", "-p", "no:cacheprovider"],
                        cwd=ROOT, capture_output=True, text=True)
-    last = (r.stdout.strip().splitlines() or [""])[-1]
-    return {"exit_code": r.returncode, "summary": last}
+    summary = next((l.strip(" =") for l in reversed(r.stdout.splitlines()) if " in " in l and ("passed" in l or "failed" in l or "error" in l)), "")
+    return {"exit_code": r.returncode, "summary": summary}
+
+
+def _stale(at_commit: str | None) -> bool:
+    """The judgement is stale once anything other than STATED.json changed after it was written."""
+    if not at_commit:
+        return True
+    changed = _git("log", "--format=%h", f"{at_commit}..HEAD", "--", ".", ":(exclude)STATED.json")
+    return changed is None or bool(changed)
 
 
 def build(run_tests: bool = True) -> dict:
@@ -46,8 +55,8 @@ def build(run_tests: bool = True) -> dict:
         "dirty": bool(_git("status", "--porcelain")),
         "tests": _tests() if run_tests else None,
     }
-    if stated and head:
-        stated = {**stated, "stale": stated.get("at_commit") != head}
+    if stated:
+        stated = {**stated, "stale": _stale(stated.get("at_commit"))}
     return {"schema": 1, "derived": derived, "stated": stated}
 
 
