@@ -24,12 +24,14 @@ muts = [
 ]
 bad = 0
 for f, a, b in muts:
-    p = pathlib.Path(f); orig = p.read_text(encoding="utf-8")
+    # Bytes in, bytes out: text mode on Windows would rewrite line endings on restore.
+    p = pathlib.Path(f); raw = p.read_bytes(); orig = raw.decode("utf-8")
     assert a in orig, f"mutation anchor missing: {a[:50]}"
-    p.write_text(orig.replace(a, b, 1), encoding="utf-8")
-    assert p.read_text(encoding="utf-8") != orig
+    p.write_bytes(orig.replace(a, b, 1).encode("utf-8"))
+    assert p.read_bytes() != raw
     r = subprocess.run(["uv", "run", "pytest", "-q", "-x"], capture_output=True, text=True)
-    p.write_text(orig, encoding="utf-8")
+    p.write_bytes(raw)
+    assert p.read_bytes() == raw, f"{f} was not restored byte for byte"
     status = "KILLED" if r.returncode != 0 else "SURVIVED"
     bad += status == "SURVIVED"
     print(f"{status:9} {f}: {a[:60]}")
