@@ -1,13 +1,13 @@
 {
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
   "as_of": "2026-10-08",
-  "at_commit": "ec8af8b",
+  "at_commit": "c587111",
   "where_we_are": "Harness and STORY-001 done: both SBOM formats parsed and classified against the policy, 19 cases, 22 of 22 canaries caught.",
   "next": [
-    "STORY-002: model cards with grounded extraction (waiting on the panel brief)",
-    "STORY-003: review, ledger, report",
+    "STORY-003: review/override, ledger and Legal report on STORY-001 decisions (not blocked)",
     "CI: GitHub Actions + Jenkinsfile",
-    "README"
+    "README",
+    "STORY-002: model cards with grounded extraction (after the panel brief)"
   ],
   "blocked": [],
   "waiting_on": [
