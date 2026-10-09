@@ -1,289 +1,337 @@
 # Design — STORY-004: KeysBench
 
-Spec: `stories/STORY-004.md` (DR-1..DR-13), cases: `stories/STORY-004.cases.yaml` (S4-01..S4-16).
-Level: **medium-complex** — a new package (`keysbench/`), one new pure module in `core/`, and four
-small changes to `harness/` that the benchmark needs and the agent of STORY-002 also benefits from.
+Spec: `stories/STORY-004.md` (DR-1..DR-15), cases: `stories/STORY-004.cases.yaml` (S4-01..S4-19).
+Level: **medium-complex** — a new package (`keysbench/`), one new pure module in `core/`, and five
+changes to `harness/` that the benchmark needs and the STORY-002 agent also benefits from.
+
+Revised after an adversarial review of the first version (six lenses, every finding re-checked by
+a verifier that tried to refute it): `docs/design/STORY-004-challenge.md` lists each finding, its
+verdict and what it changed here.
 
 ## Verified before designing (2026-10-09)
 
 | Question | Answer | How it was checked |
 |---|---|---|
-| SDK version in the repo | `anthropic` 1.12.1 | `uv pip show anthropic`; PyPI lists 1.12.1 as current (2026-10-08) |
-| How effort is sent | `output_config={"effort": "low" \| "medium" \| "high" \| "xhigh" \| "max"}` on `messages.create` | the installed `types/output_config_param.py`; Context7 docs for the SDK |
-| Which models accept effort | Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5: all five levels | `models.retrieve(id).capabilities.effort` for each, and a live call with `effort: high` on Haiku 5.5 and Sonnet 5.5 (200, `end_turn`) |
-| What `usage` looks like | `input_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`, `cache_creation.{ephemeral_5m,ephemeral_1h}_input_tokens`, `output_tokens`, `output_tokens_details.thinking_tokens`, `inference_geo` | the same live calls |
-| Claude Code headless | `claude --bare -p --model M --effort E --output-format json --max-budget-usd N` returns `usage` with the same split, `iterations` (one entry per model call), `modelUsage[M].costUSD` with `costBasis: "unknown"`, `ttft_ms`, `duration_ms`, `num_turns`, `stop_reason`, `is_error` | one run (Claude Code 2.1.285, Haiku 5.5, a one-file task in a temp dir) |
-| Prices | per million tokens: Fable 5.1 10 / 12.50 / 20 / 0.25 / 50 · Opus 5.5 4 / 5 / 8 / 0.20 / 20 · Sonnet 5.5 2 / 2.50 / 4 / 0.10 / 10 · Haiku 5.5 (prompt ≤ 100k) 0.10 / 0.125 / 0.20 / 0.01 / 0.50 (input / 5-min write / 1-h write / read / output) | the provider's pricing page, 2026-10-09 |
-
-Two consequences for the spec, both recorded there:
-
-- **Arm A cost can be measured too.** The CLI reports the same `usage` split per call (`iterations`),
-  so arm-A cost is computed from it with the same table, labelled `cli-usage`; the CLI's own
-  `costUSD` is stored beside it as a cross-check, not used.
-- **Claude Code takes `--effort`**, so arm A runs at the same fixed effort as arm B.
+| SDK version in the repo | `anthropic` 1.12.1 | `uv pip show anthropic`; PyPI lists 1.12.1 as current |
+| How effort is sent | `output_config={"effort": "low" \| "medium" \| "high" \| "xhigh" \| "max"}` | the installed `types/output_config_param.py`; the SDK docs |
+| Which models accept effort | Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5: all five levels | `models.retrieve(id).capabilities.effort`; live calls at `high` on Haiku 5.5 and Sonnet 5.5 |
+| `usage` shape | flat `input_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`, `output_tokens`; **nested** `cache_creation.{ephemeral_5m,ephemeral_1h}_input_tokens` and `output_tokens_details.thinking_tokens`; `inference_geo` | the same live calls |
+| Thinking and `max_tokens` | thinking counts toward `max_tokens`; the provider's guidance at `high` is a large `max_tokens` with streaming | the provider's effort documentation |
+| Non-streaming limit | the SDK refuses a non-streaming call when `3600 × max_tokens / 128000 > 600` (above 21,333 tokens) | `anthropic/_base_client.py`, and a mock-transport test (21,333 ok, 21,334 refused) |
+| Request id | `message._request_id` is set on the parsed message and dropped by `model_dump` | `anthropic/_models.py`; a mock-transport test |
+| Top-level `cache_control` | accepted by `messages.create`; marks the last cacheable block | `types/message_create_params.py` |
+| Claude Code headless | `--bare -p --model --effort --output-format json --max-budget-usd` returns `usage` (same split), `iterations` per call, its own cost estimate, `ttft_ms`; `--restricted` ignores user/project/local settings, confines file tools to the working directories and drops command tools unless `--tools` names them; `--settings`, `--tools`, `--no-session-persistence` exist (2.1.285) | one run on a one-file task; `claude --help`; the CLI and permissions documentation |
+| `--bare` alone | does **not** skip settings files: the user `env` block and `permissions.allow` would still apply | the CLI help and permissions documentation (inferred, confirmed in the pilot) |
+| Prices | per million tokens, input / 5-min write / 1-h write / read / output: Fable 5.1 10 / 12.50 / 20 / 0.25 / 50 · Opus 5.5 4 / 5 / 8 / 0.20 / 20 · Sonnet 5.5 2 / 2.50 / 4 / 0.10 / 10 · Haiku 5.5 (prompt ≤ 100k) 0.10 / 0.125 / 0.20 / 0.01 / 0.50; region `global` | the provider's pricing page |
 
 ## Modules
 
 ```mermaid
 flowchart TB
   subgraph kb["keysbench/ (files, subprocess, clock)"]
-    CLI[cli.py · run / score / check-graders · exit 0 / 2]
-    PL[plan.py · contestants, tasks, k, effort, budget]
-    TK[tasks/KB-01..07 · task.yaml, prompt.md, workspace/, reference/, antipattern/, hidden/]
-    IN[instrument/ · simulated KX-100 meter + MANUAL.md]
-    AB[arm_b.py · harness Agent, tools confined to the workspace]
-    AA[arm_a.py · claude --bare -p subprocess]
-    GR[graders.py · oracle on a temp copy, outside the loop]
-    JU[judge.py · governed prompt, quote check, frozen verdict]
-    BU[budget.py · BudgetedProvider, worst-case check]
-    RE[report.py · results.json, results.md escaped]
+    CLI[cli.py · run / score / check-graders · plan · budget · resume]
+    CO[contestants.py · B on harness/ · A and A0 on the CLI · transcript audit]
+    GR[graders.py · isolated pytest + junit · numeric · structured · judge]
+    TK[tasks/KB-01..06 · instruction.md, environment/, tests/, solution/, antipattern/, hacks/]
+    IN[instrument/ · KX-100 simulator + MANUAL.md]
+    EX[extract.py · history task from a fix commit]
   end
   subgraph h["harness/ (changed)"]
-    AG[loop.py · effort, per-call usage and timing]
-    PR[providers.py · latency_s and request_id per call]
-    US[usage.py · price table, cache split, thinking, tiers]
+    GA[gate.py · paths relative to a base]
+    AG[loop.py · effort, cache_control, per-call cost and latency]
+    PR[providers.py · streaming, request id, latency, no SDK retries]
+    US[usage.py · price table, nested usage, tier, region]
+    RP2[replay.py · one recording per attempt]
   end
   subgraph core["core/ (stdlib only)"]
-    SC[bench_score.py · wilson, pass@k, pass^k, p95, saturation, cells, A-B, ranking]
+    SC[bench_score.py · wilson · task-clustered t · pass^k · p95 · cells · saturation · paired deltas · memo · sizing]
     RP[report.py · safe_text, md_cell: reused]
   end
-  CLI --> PL --> TK
-  CLI --> AB --> AG --> PR
-  AB --> BU
-  CLI --> AA
-  AB --> GR
-  AA --> GR
-  GR --> JU
+  CLI --> CO --> AG --> PR
+  CO --> GA
+  CLI --> GR
   CLI --> SC
-  CLI --> RE --> RP
+  CLI --> RP
   AG --> US
+  CLI --> RP2
 ```
 
 ```text
- keysbench/  (files, subprocess, clock)                         harness/  (changed)
- ┌─────────────────────────────────────────────────┐            ┌─────────────────────────────────────┐
- │ cli.py      run · score · check-graders  0 / 2  │            │ loop.py      effort sent + recorded │
- │ plan.py     contestants × tasks × k, budget     │  arm B ──► │              per-call usage, timing │
- │ arm_b.py    Agent + list/read/write in workspace│ ─────────► │ providers.py latency_s, request_id  │
- │ budget.py   BudgetedProvider (worst case first) │            │ usage.py     price table, cache 5m/ │
- │ arm_a.py    claude --bare -p --model --effort   │            │              1h/read, thinking, tier│
- │ graders.py  oracle on a temp copy, after the run│            └─────────────────────────────────────┘
- │ judge.py    KB-07 only: quote checked, frozen   │            core/  (stdlib only)
- │ report.py   results.json raw → results.md       │ ─────────► ┌─────────────────────────────────────┐
- │ tasks/      KB-01..KB-07 + instrument/ (KX-100) │            │ bench_score.py  wilson · pass@k ·   │
- │ cassettes/  arm-B + judge calls, arm-A outputs  │            │   pass^k · p95 · saturation · cells │
- │ results/    2026-10/ the recorded live run      │            │   · A−B · ranking statement         │
- └─────────────────────────────────────────────────┘            │ report.py  safe_text, md_cell       │
-                                                                └─────────────────────────────────────┘
+ keysbench/  (files, subprocess, clock)                       harness/  (changed)
+ ┌──────────────────────────────────────────────────┐         ┌──────────────────────────────────────┐
+ │ cli.py         run · score · check-graders       │         │ gate.py      paths relative to base  │
+ │                plan, budget, resume, rounds      │  B ───► │ loop.py      effort, cache_control,  │
+ │ contestants.py B on harness/                     │ ──────► │              per-call cost + latency │
+ │                A, A0 on claude --restricted      │         │ providers.py stream, request id,     │
+ │                transcript audit → invalid        │         │              latency, max_retries=0  │
+ │ graders.py     declared files only, python -I,   │         │ usage.py     table, nested, tier,    │
+ │                junit, subprocess call, judge     │         │              region → null if unknown│
+ │ extract.py     fix commit → history task         │         │ replay.py    one file per attempt    │
+ │ tasks/ KB-01..06   instrument/ KX-100            │         └──────────────────────────────────────┘
+ └──────────────────────────────────────────────────┘         core/  (stdlib only)
+                          │                                   ┌──────────────────────────────────────┐
+                          └─────────────────────────────────► │ bench_score.py  wilson · t by task · │
+                                                              │   pass^k · p95 · cells · saturation ·│
+                                                              │   paired deltas · memo · sizing      │
+                                                              │ report.py       safe_text, md_cell   │
+                                                              └──────────────────────────────────────┘
 ```
 
-The rule of the split is the one STORY-003 used: **everything the conclusion rests on is pure and in
-`core/`** (how a pass rate becomes an interval, what saturated means, when a ranking is allowed).
-`keysbench/` runs things and moves files.
+The rule of the split is STORY-003's: **everything the conclusion rests on is pure and in `core/`**
+(how pass rates become intervals, what saturated means, how a delta is paired, what the memo says,
+how many tasks a decision needs). `keysbench/` runs things and moves files. Four modules, not eight:
+plan loading and the budget live in `cli.py`; the three configurations share `contestants.py`.
 
 ## One attempt, end to end
 
 ```mermaid
 sequenceDiagram
   participant R as runner
-  participant B as budget
   participant W as workspace (temp copy)
-  participant C as contestant (arm A or B)
-  participant G as grader
-  participant J as judge (KB-07)
-  participant L as results ledger
-  R->>B: worst case of this attempt fits?
-  B-->>R: yes (else budget_stopped, stop)
-  R->>W: copy tasks/KB-nn/workspace
-  R->>C: prompt.md, tools confined to W
-  C-->>R: files written in W, usage and latency per call
-  R->>G: copy W + hidden/ into a second temp dir, run the oracle
-  G->>J: KB-07: review text (anonymised) + diff + rubric
-  J-->>G: verdict + quote, quote checked against the diff
-  G-->>R: pass / fail + detail
-  R->>L: attempt line (contestant, outcome, calls, cost, latency, grader, judge)
+  participant C as contestant (B, A or A0)
+  participant G as grader (second temp copy)
+  participant J as judge (KB-06)
+  participant L as ledger
+  R->>L: already recorded? skip
+  R->>W: copy environment/ (no history, no solutions)
+  R->>C: instruction.md, relative paths only
+  C-->>R: files in W · per call: usage, latency, request id, retries
+  R->>R: A and A0: audit transcript, outside W → invalid
+  R->>G: declared editable files + tests/ into a fresh dir
+  G->>G: python -I -B -m pytest --noconftest, junit outside, contestant code in a subprocess
+  G->>J: KB-06: review as data + diff + rubric (anonymised)
+  J-->>G: verdict + review_quote; code checks it is in the review and points at the planted line
+  G-->>R: pass / fail / failed checks
+  R->>L: attempt line (judge verdict frozen here)
 ```
 
 ```text
- runner ──worst case fits?──► budget ──no──► budget_stopped (rest of the plan), stop
-   │ yes
-   ├──► copy tasks/KB-nn/workspace ──► temp dir W
-   ├──► contestant (arm B: harness, list/read/write in W · arm A: claude in W) ──► files in W
-   │                                        usage + latency + request id per call
-   ├──► grader: copy W + hidden/ to a second temp dir, run the oracle (outside the loop)
-   │       └── KB-07: judge(review anonymised, diff, rubric) ──► quote in diff? else fail
-   └──► results ledger: one attempt line
+ runner ──recorded already?──yes──► skip (resume)
+   │ no
+   ├─► copy environment/ to W (no .git, no solution/, no tests/)
+   ├─► contestant B / A / A0 in W ──► files · usage, latency, request id, retries per call
+   ├─► A, A0: audit every tool input in the transcript ──outside W──► invalid
+   ├─► grader: declared files + tests/ ─► fresh dir ─► python -I -B -m pytest --noconftest
+   │        junit outside the dir · contestant code called in a subprocess · type-strict compare
+   │        └── KB-06: judge(review as data, diff, rubric) ─► review_quote in review? at planted line?
+   └─► ledger: one attempt line, judge verdict frozen on it
 ```
 
 ## Key decisions
 
-- **Per-call facts are captured by the provider, not reconstructed (DR-4).** `AnthropicProvider`
-  times the call and reads the `request-id` header (`with_raw_response`), and adds them to the
-  returned dict as `"_call": {"latency_s", "request_id"}`. `RecordingProvider` stores the dict as it
-  is, so the cassette carries the measured latency and `ReplayProvider` returns it: a replayed run
-  reports what was measured, not its own near-zero time. The loop copies `_call` into each
-  `model_call` ledger line. The response has no credential in it; a test asserts the cassette has no
-  `api_key`, `x-api-key` or `sk-ant` string.
-- **Effort goes in the request (DR-2).** `Agent(effort=...)` sends `output_config={"effort": effort}`
-  on every call and writes it in `run_start`. Because it is part of the request, it is part of the
-  cassette key: a recording made at `high` cannot answer a run at `medium`.
-- **Cost per call, then summed; one unpriced call makes the total unpriced (DR-3).** `usage.py` gets
-  `PRICES: dict[str, Price]` with `Price(input, cache_write_5m, cache_write_1h, cache_read, output,
-  max_prompt_tokens)`, `PRICES_CHECKED_ON = "2026-10-09"`. `call_cost(raw_usage, model)` returns
-  `None` for an unknown model, for a call whose prompt (all three input counters) is above
-  `max_prompt_tokens` (Haiku 5.5's 100k tier is not in the table on purpose), and for cache writes that
-  come without the 5m/1h split, and for any `inference_geo` other than `global` (the `us` geo is priced
-  ×1.1; an underprice by 10 % is the same mistake as a missing price). `Usage` also accumulates the
-  5m/1h writes and `thinking_tokens`; these are **nested** in the API's `usage`
-  (`cache_creation.ephemeral_5m_input_tokens`, `output_tokens_details.thinking_tokens`), so `Usage.add`
-  can no longer read every field as a flat key. The loop keeps the list of per-call costs; the run's
-  `cost_usd` is their sum, or `None` if any is `None`.
-- **A refusal is a stop reason, mapped by the runner (DR-5).** The loop already ends on any non
-  `tool_use` stop and returns `stop_reason`; the runner maps `refusal` to the `refused` outcome. No
-  loop change; a test pins it.
-- **Arm B tools: list, read, write, nothing that runs code (DR-6).** Three `harness` tools whose
-  `path_args` are confined by the existing `Gate` to the attempt's workspace. A write outside it is
-  denied by the gate, as for the STORY-002 agent. `max_steps = 12`, `max_tokens = 4000`.
-- **Arm A: Claude Code on a temp copy, with a small tool allowlist (DR-6).** `claude --bare -p
-  <prompt> --model M --effort E --output-format json --max-budget-usd <remaining>
-  --permission-mode dontAsk --allowedTools <file tools and python only>` with `cwd` = the workspace and
-  a reduced environment holding the API key. It can run Python in the workspace (that is part of the
-  product harness), and nothing else. No network isolation: written in Limits. **Not yet measured:**
-  the probe exercised one tool (`Read`) and the full environment minus `ANTHROPIC_*`/`CLAUDE*`. The
-  exact permission pattern for "python only", and the smallest environment `claude` starts with on
-  Windows, are fixed in the pilot and written here then; until then they are a plan, not a fact.
-- **Arm A in CI: replay the outcome, not the conversation.** CI cannot replay a CLI. Each live arm-A
-  attempt stores its JSON output and the files it changed in the workspace
-  (`cassettes/arm_a/<task>-<model>-<effort>-<n>.json`, keyed on the task digest). Offline, the runner
-  writes those files into a fresh workspace and grades them: the grader and the report are exercised
-  in CI; the model is not called.
-- **Budget is a provider wrapper, checked before each call (DR-11).** `BudgetedProvider(inner, budget)`
-  computes the worst case of the next call before making it: an upper bound of its prompt (UTF-8 bytes
-  of the request ÷ 2, a deliberately high tokens estimate) at the input price, plus `max_tokens` at the
-  output price. If `spent + worst_case > cap`, it raises `BudgetStopped`, and the runner records that
-  attempt and every remaining cell as `budget_stopped`. After the call it adds the real cost. Arm A
-  passes `cap − spent` to `--max-budget-usd` and adds the measured cost after. Unpriced calls cannot be
-  budgeted, so the runner refuses to start a live run for a model without a price.
-- **Graders run after the attempt, on a second copy (DR-6, DR-7).** The contestant never sees
-  `hidden/`. `graders.py` copies the attempt's workspace plus `hidden/` into another temp dir and runs
-  the oracle: `python -m pytest -q -B -p no:cacheprovider` with `PYTHONDONTWRITEBYTECODE=1` (the same
-  stale-`.pyc` lesson as the canaries) and a wall-clock limit. KB-04 and KB-06 compare numbers with a
-  stated tolerance; KB-05 reads `answer.json` and checks `feasible: false` and that `quote` is a
-  substring of `MANUAL.md`; KB-07 calls the judge.
-- **Each grader is validated by the three solutions every task ships (DR-7).** `check-graders` runs
-  each grader on `workspace/` (base), `reference/` and `antipattern/`, expecting 0, 1, 0. It runs in CI
-  (offline: the KB-07 judge calls for the three are recorded). Canaries break graders, not tests: one
-  per grader family (a pytest grader that ignores the exit code, a numeric grader with the tolerance
-  widened, a quote check that always passes, a saturation rule that never fires).
-- **The judge (DR-8).** One governed prompt (`keysbench/judge/prompt.md`, approved by hash in the
-  existing `PromptRegistry`). Input: the rubric, the diff, and the contestant's review with every model
-  id and model family name replaced by `<contestant>`. Output: structured `{verdict: pass | fail,
-  defect_found: bool, quote}`. The code checks `quote` is in the diff (whitespace-normalised, never
-  quote characters), else `fail / quote not found`. Judge model: Opus 5.5, or Sonnet 5.5 when the
-  contestant is Opus 5.5. The verdict is frozen in the results ledger under
-  `judge_key = sha256({task_sha256, artifact_sha256, rubric_sha256, judge_prompt_sha256, judge_model})`;
-  `score` reads a frozen verdict and calls the judge only for a key it has not seen.
-- **The scorer is pure (DR-9, DR-10, DR-13).** `core/bench_score.py`: `wilson(passes, n)`,
-  `pass_at_k(n, c, k)` (unbiased estimator), `pass_hat_k(n, c, k)`, `percentile(values, 0.95)` by
-  nearest rank, `cells(rows)` grouped by `(task_id, task_sha256, arm, model, effort)` so two task
-  digests never merge, `saturated(cells, arm)`, `harness_delta(cells)` (A pass rate − B pass rate per
-  model over the tasks both arms ran), and `ranking_statement(n_tasks)` returning `"none: n <= 8 tasks"`
-  for n ≤ 8. `report.py` orders contestants by name, never by score, when the statement is `none`.
-- **The report reuses STORY-003's escaping (case S4-16).** `results.md` is derived from
-  `results.json` through `core.report.safe_text` and `md_cell`; contestant text (an answer, a review
-  excerpt, a grader detail) is data.
+### Harness
 
-## The fictitious instrument (KX-100) and the tasks
+- **Paths are relative to the workspace (DR-12).** `Gate(read_roots, write_roots, base=W)` resolves
+  `(base / raw).resolve()`; the arm-B tools take workspace-relative paths, refuse absolute paths and
+  `..`, and resolve through the same function as the gate, so the gate and the tool check one path.
+  `list` returns sorted `/`-separated paths. The prompt never names the temporary directory, so a
+  recording made on Windows replays on Linux. (Today `Gate` resolves against the process working
+  directory: a relative path is denied, which a verifier reproduced with the real class.)
+- **One recording per attempt (DR-12).** Three attempts of a cell send the same first request, and
+  `ReplayProvider` keeps the last recording of a key: three attempts replayed as three copies of the
+  last (reproduced). Recordings are stored as `cassettes/<task_sha256[:12]>/<config>-<model>-<effort>-<n>.jsonl`;
+  the runner opens the recording of the attempt it is replaying. `ReplayProvider` itself does not change.
+- **Streaming, `max_tokens = 32000`, no SDK retries (DR-4, DR-5).** At `high`, thinking counts toward
+  `max_tokens`; 4,000 would end attempts on the cap rather than on ability, and the SDK refuses
+  non-streaming calls above 21,333. `AnthropicProvider` streams (`messages.stream(...)` → final message),
+  records time to first token and total time, reads `_request_id` before `model_dump`, and is built with
+  `max_retries=0`; the runner retries (twice, with backoff) and each try is its own `model_call` line.
+  The returned dict carries `"_call": {latency_s, ttft_s, request_id}`; it is response data, not
+  request data, so cassette keys do not change. A `max_tokens` stop is `truncated`.
+- **Effort and caching are part of the request (DR-2).** `Agent(effort=..., cache=True)` sends
+  `output_config={"effort": effort}` and top-level `cache_control={"type": "ephemeral"}` on every call
+  (the history grows each step; without caching each step pays for it again, and A and A0 already
+  cache). Both enter the cassette key, so a recording at one setting cannot answer a run at another.
+- **Cost per call, summed; one unpriced call makes the total unpriced (DR-3).** `usage.py`:
+  `PRICES: dict[str, Price(input, cache_write_5m, cache_write_1h, cache_read, output, max_prompt_tokens)]`,
+  `PRICES_CHECKED_ON = "2026-10-09"`, `PRICED_REGION = "global"`. `call_cost(raw_usage, model)` returns
+  `None` for an unknown model, a prompt above `max_prompt_tokens` (Haiku 5.5's 100k tier is left out on
+  purpose), a cache write without its 5m/1h split, or a region other than `global`. `Usage.add` reads
+  the nested keys explicitly. The loop keeps per-call costs; the run's cost is their sum, or `None`.
+- **Latency of an attempt = sum of recorded call latencies (DR-4).** `run_end` gets `latency_s`
+  (that sum) and `wall_s` (the clock around the loop, tools included). Replay reports the first.
 
-`keysbench/instrument/` holds a stdlib simulator of an RF power meter and its manual. The simulator is
-an in-process session with `write`, `read`, `query`, a termination character and a timeout, so a
-driver talks to it the way it would talk to a VISA session. It implements `*IDN?`, `*RST`, `*OPC?`,
-`SYST:ERR?`, `SENS:FREQ`, `SENS:AVER:COUN`, `CONF:POW:RANG`, `INIT`, `FETC?` and `TRAC:DATA?` (an IEEE
-488.2 definite-length block). Readings are deterministic for a given seed, and a measurement with
-averaging count N takes N × 25 ms of simulated time, which is what makes the KB-03 timeout bug real.
-`MANUAL.md` (about 150 lines) carries the command reference, the specification table used by KB-04 and
-the limits used by KB-05 (resolution 0.01 dB, 10 MHz to 18 GHz).
+### Contestants
 
-| Task | `workspace/` (what the contestant gets) | `hidden/` (oracle) | antipattern |
-|---|---|---|---|
-| KB-01 | `core/` copy with one seeded regression + `BUG.md` in prose | the repo's tests for that module | fixes the symptom in the test, not the code |
-| KB-02 | `driver.py` stub, `MANUAL.md`, simulator | tests: frequency set before the read, averaging applied, `SYST:ERR?` checked | reads before `INIT` (returns the previous value) |
-| KB-03 | a driver with a fixed 1 s timeout and a wrong terminator for block reads | a test at averaging 64 that hangs on the buggy driver | raises the timeout to 60 s for every command |
-| KB-04 | `uncertainty.py` stub, the manual's spec table | reference value at three readings, tolerance 0.5 % | adds contributions linearly instead of root-sum-square |
-| KB-05 | a request for 0.001 dB at 40 GHz | `answer.json` says not feasible and quotes a manual line | returns a value anyway |
-| KB-06 | `trace.py` stub, a recorded block | RMS within 1e-9; truncated and wrong-length blocks raise `ValueError` | ignores the length header |
-| KB-07 | `change.diff` (dBm→W conversion with `/20` instead of `/10`), `REVIEW.md` to write | judge + rubric, quote checked against the diff | a review that praises the change and nits style |
+- **B (baseline)**: the harness `Agent` with three tools (`list`, `read`, `write`), `max_steps = 12`.
+- **A and A0**: `claude --restricted --bare -p <instruction> --model M --effort high --output-format
+  stream-json --verbose --max-budget-usd <remaining> --settings <file> --strict-mcp-config
+  --no-session-persistence --permission-mode dontAsk`, with `--tools "Read,Edit,Write,Glob,Grep,Bash"`
+  for A and `--tools "Read,Edit,Write,Glob,Grep"` for A0. The settings file allows `Bash(python *)` only,
+  sets `blockReadsOutsideWorkingDirectories`, and has an empty `env`; the process environment holds only
+  what the CLI needs to start (measured in the pilot) and the API key. `--restricted` is the reason user
+  settings (an `env` block naming credential files, a broad `allow`) do not reach the session; `--bare`
+  alone would not stop them.
+- **Audit, then grade (DR-14).** The stream-json transcript is kept. Every tool input is checked: a
+  file path that resolves outside W, or any absolute path in a command, makes the attempt `invalid`.
+  This is detection: Python can build a path at runtime, and the report says so.
+- **Arm A offline.** CI cannot replay a CLI. A live A/A0 attempt stores its transcript and the files it
+  changed; offline, the runner writes those files (each path through the same relative-path resolver)
+  into a fresh workspace and grades them, so the grader, the audit and the report are exercised in CI.
 
-Prompts are frozen in `prompt.md` and describe the work the way a ticket would, without naming the
-oracle. Every task directory has a digest (`task_sha256`, over every file, sorted) that goes on each
-row.
+### Graders (DR-6, DR-7)
 
-## Plan file
+- **Only declared files cross over.** `task.toml` lists `editable` files. The grader builds a fresh
+  directory from those files plus `tests/`, nothing else the contestant created.
+- **Isolated run.** `python -I -B -m pytest --noconftest -p no:cacheprovider -c <grader ini outside the
+  dir> --rootdir <dir> --junitxml=<outside>`, `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, an explicit
+  environment with no `ANTHROPIC_*`/`CREDENTIALS_*`, a wall-clock limit. (`-B` belongs to Python, not
+  pytest; `-I` is what stops a `pytest.py` in the directory from shadowing pytest; `--noconftest` is
+  what stops a planted `conftest.py`.)
+- **Pass = the report lists every expected test id as passed.** A missing report (an `os._exit(0)` at
+  import) is a fail; a skip, an xfail or an error is a fail.
+- **The contestant's code runs out of the test process.** Hidden tests call it through
+  `python -I -c "import <module>; print(json.dumps(<call>))"` in the grading dir and compare the parsed
+  value with type checks. An object equal to everything, or a patched test runner, cannot reach the
+  assertion. (Measured: with the code imported in-process, both still passed under the junit rule.)
+- **Structured answers (KB-05).** `answer.json` must say `feasible: false`, and `quote` must contain one
+  of the task's declared limit lines (whitespace-normalised). A one-character quote was a pass under
+  "substring of the manual"; it is not now.
+- **The judge (KB-06).** One governed prompt (approved by hash). Input: the rubric, the diff, and the
+  review between data delimiters with model ids replaced by `<contestant>`. Output:
+  `{verdict, defect_found, review_quote}`. Code: `review_quote` is in `REVIEW.md` (whitespace-normalised)
+  **and** contains the planted line or its declared marker (`/ 20`); otherwise `fail` with the reason.
+  The judge model is Opus 5.5, or Sonnet 5.5 when the contestant is Opus 5.5. It runs during the
+  attempt and its verdict is written on the attempt line with the prompt, rubric and artifact digests;
+  `score` never calls it.
+- **Seen failing.** `check-graders` runs every task's `environment/` (base), `solution/`, `antipattern/`
+  and each `hacks/<name>/` through its grader and expects 1 for the solution and 0 for the rest. Canaries
+  break graders: the junit rule (accept exit code), `--noconftest` removed, `-I` removed, the KB-05 limit
+  check (accept any substring), the KB-06 quote check (accept a quote from the diff), saturation that
+  removes tasks, the clustered interval replaced by pooled Wilson.
 
-`keysbench/plans/2026-10.yaml`: benchmark label, budget (60 USD), k (3), effort (`high`), the four
-model ids as returned by `/v1/models`, arms (A, B), judge models, and the `not_run` list (Codex CLI,
-Cursor agent, with the reason). The runner refuses a plan whose model ids are not in the price table.
+### Scorer (core/bench_score.py, pure)
+
+- `wilson(passes, n)` per cell; `pass_hat_k(n, c, k)`; `any_pass`; `percentile(values, 0.95)` by nearest
+  rank; `cells(rows)` grouped by `(task_id, task_sha256, config, model, effort)`.
+- `task_clustered(rates)`: mean of per-task pass rates and a t interval with `df = n_tasks − 1`, clipped
+  to [0, 1] (t critical values for df 1..30 in a table: stdlib has no t distribution). The task is the
+  independent unit; Wilson over pooled attempts was about half as wide as it should be.
+- `saturated(cells, config)` flags; it never filters. `paired_delta(rates_x, rates_y)`: per-task
+  differences over the tasks both configurations ran, mean and clustered t interval. Deltas: A0 − B and
+  A − A0 per model.
+- `memo(cells, rows)`: per-task results with cost per pass and p95; commodity = saturated tasks with the
+  cheapest passing contestant and its cost per pass; failure modes = failed check ids mapped to the names
+  each task declares, counted per contestant; decision grade = the measured discordance rate between
+  contestants and the paired sample size for a 15-point difference at α 0.05 two-sided and 80 % power
+  (`n = (z_{α/2} √d + z_β √(d − δ²))² / δ²`), times this run's measured cost per task.
+- `ranking_statement(n_tasks)`: `"none: n <= 8 tasks"` for n ≤ 8; contestants are then ordered by name.
+
+### Runner (cli.py)
+
+- **Plan.** `keysbench/plans/2026-10.yaml`: label, cap (60 USD), k (3), effort (`high`), the four model
+  ids as returned by `/v1/models`, configurations (B, A0, A), judge models, `not_run` with reasons.
+  A model with no price is refused before anything runs.
+- **Rounds and resume (DR-15).** Attempts run round by round (attempt 1 of every cell, cheapest models
+  first within a round, then attempt 2…). Before each attempt the runner checks the ledger and skips
+  what is already recorded.
+- **Budget (DR-11).** Projection before a live run: measured mean cost per attempt per (config, model)
+  from the ledger (a pilot run first) × the attempts left; above the cap → exit 2. Per call: reserve
+  `prompt bound × input price + max_tokens × output price`, where the prompt bound is the previous
+  call's measured input plus one token per byte of what was added since; settle with the measured cost.
+  A call that would cross the cap is not made; the attempt is `budget_stopped` with its spend counted.
+  A and A0 get `--max-budget-usd = cap − spent`.
+- **Traceability (DR-13).** `results.json.inputs` records the sha256 of the ledger and of every
+  recording it was scored from.
+
+## Tasks
+
+Task folders follow the layout of the Terminal-Bench / Harbor format (`instruction.md`,
+`environment/`, `tests/`, `solution/`) plus `antipattern/` and `hacks/`, so a container runner can take
+them later. `task.toml` holds the id, family, editable files, expected test ids, tolerance, declared
+limit lines (KB-05), the planted line and its marker (KB-06), and failure-mode names per check.
+
+| Task | Source | `environment/` | Oracle | antipattern |
+|---|---|---|---|---|
+| KB-01 | fix commit `341fb07` (deep nesting → `RecursionError`) | the parent tree of `core/` and its tests, no history, the report in prose | the test the fix added (fails on the parent) plus the module's tests | catches `RecursionError` and returns `Needs review` for everything |
+| KB-02 | fix commit `9e92220` (nested SBOM components) | as above | the 2 tests the fix added plus the module's tests | flattens only one level |
+| KB-03 | KX-100 | `driver.py` stub, `MANUAL.md`, the simulator | hidden tests through the simulator: frequency set before the read, averaging applied, `SYST:ERR?` checked | reads before `INIT` (returns the previous value) |
+| KB-04 | KX-100 | `uncertainty.py` stub, the specification table | reference at three readings, tolerance 0.5 % | adds contributions linearly instead of root-sum-square |
+| KB-05 | KX-100 | a request for 0.001 dB at 40 GHz | `answer.json`: not feasible, quote contains a declared limit line | returns a value anyway |
+| KB-06 | KX-100 | `change.diff` with dBm→W using `/ 20`, `REVIEW.md` to write | judge + rubric, quote in the review at the planted line | a review that praises the change and nits style |
+
+`extract.py` builds KB-01 and KB-02 from their commits: export the parent tree without `.git`, add the
+tests the fix added, keep only the tests that fail on the parent (one of `9e92220`'s did not), and store
+the fix as `solution/`. Pointed at another repository, the same script is the monthly feed.
+
+The KX-100 simulator is an in-process session (`write`, `read`, `query`, termination, timeout) with
+`*IDN?`, `*RST`, `*OPC?`, `SYST:ERR?`, `SENS:FREQ`, `SENS:AVER:COUN`, `CONF:POW:RANG`, `INIT`, `FETC?`;
+deterministic for a seed. `MANUAL.md` (about 120 lines) holds the command reference, the specification
+table (KB-04) and the limits (resolution 0.01 dB, 10 MHz to 18 GHz) that KB-05 must quote.
 
 ## File map
 
 ```
-CREATE: keysbench/__init__.py, keysbench/__main__.py, keysbench/cli.py, keysbench/plan.py
-CREATE: keysbench/arm_a.py, keysbench/arm_b.py, keysbench/budget.py, keysbench/graders.py
-CREATE: keysbench/judge.py, keysbench/judge/prompt.md, keysbench/judge/rubric-kb07.yaml
-CREATE: keysbench/report.py, keysbench/plans/2026-10.yaml
-CREATE: keysbench/instrument/sim.py, keysbench/instrument/MANUAL.md
-CREATE: keysbench/tasks/KB-01..KB-07/{task.yaml, prompt.md, workspace/, reference/, antipattern/, hidden/}
-CREATE: keysbench/cassettes/ (arm B + judge recordings, arm A outcomes)
-CREATE: keysbench/results/2026-10/{ledger.jsonl, results.json, results.md}   (from the live run)
+CREATE: keysbench/{__init__,__main__,cli,contestants,graders,extract}.py
+CREATE: keysbench/judge/{prompt.md,rubric-kb06.toml}, keysbench/arm_a/settings.json
+CREATE: keysbench/instrument/{sim.py,MANUAL.md}, keysbench/plans/2026-10.yaml
+CREATE: keysbench/tasks/KB-01..KB-06/{task.toml,instruction.md,environment/,tests/,solution/,antipattern/,hacks/}
+CREATE: keysbench/cassettes/<task>/… (B and judge recordings; A/A0 transcripts and changed files)
+CREATE: keysbench/results/2026-10/{ledger.jsonl,results.json,results.md}   (from the live run)
 CREATE: core/bench_score.py
-CREATE: tests/story_004/{__init__.py, test_score.py, test_usage_prices.py, test_runner.py, test_graders.py, test_judge.py, test_report.py}
-MODIFY: harness/usage.py      (Price table, call_cost, cache split, thinking, tier)
-MODIFY: harness/providers.py  (latency_s, request_id per call)
-MODIFY: harness/loop.py       (effort, per-call cost list, _call into model_call lines)
-MODIFY: prompts/approved.json (judge prompt approval)
-MODIFY: scripts/canaries.py   (grader, scorer, budget, usage canaries)
-MODIFY: scripts/ci.sh         (check-graders; the leak gate as a failing check)
-MODIFY: pyproject.toml        (mypy files += keysbench)
-MODIFY: AGENTS.md, DOCTRINE.md (D-09, D-10), README.md, STATED.json
+CREATE: tests/story_004/{__init__,test_score,test_usage_prices,test_gate_relative,test_replay_attempts,
+        test_runner,test_graders,test_judge,test_arm_a_audit,test_report}.py
+MODIFY: harness/{gate,loop,providers,usage}.py
+MODIFY: prompts/approved.json (judge prompt)
+MODIFY: scripts/canaries.py (grader, scorer, budget, usage, gate canaries)
+MODIFY: scripts/ci.sh (check-graders; the leak gate as a failing check over tracked files)
+MODIFY: pyproject.toml (mypy files += keysbench)
+MODIFY: AGENTS.md, DOCTRINE.md (D-09..D-11), README.md, STATED.json
 ```
 
 ## AGENTS.md changes
 
-Two lines would contradict this story and are replaced in the same change:
-
 - Layout row `agent/ … The only place a model is called` becomes: *`agent/` (STORY-002) and
   `keysbench/` (STORY-004) are the only places a model is called; both go through `harness/`, except
-  arm A, which runs the Claude Code CLI as a black box.*
-- *Decided NOT to do: … code-execution sandboxes* becomes: *No code-execution sandbox: in KeysBench
-  arm B the model cannot run code (the grader runs tests after the attempt, on a copy); arm A runs the
-  Claude Code CLI on a temporary copy with a Python-only tool allowlist, which is a limit, not a
-  sandbox.* A new layout row for `keysbench/` with its rule: *a grader is trusted once it has been
-  seen failing (D-10)*.
+  configurations A and A0, which run the Claude Code CLI as a black box.*
+- *Decided NOT to do: … code-execution sandboxes* becomes: *No code-execution sandbox. In KeysBench
+  configuration B the model cannot run code (the grader runs tests after the attempt, on a copy).
+  Configurations A and A0 run the Claude Code CLI in restricted mode on a temporary copy, with a
+  Python-only allowance in A and an audit of every tool input: a limit, not a sandbox.*
+- New layout row for `keysbench/`: *a grader is trusted once it has been seen failing (D-10).*
 
 ## Doctrine to add
 
-- **D-09 — A result belongs to (harness, model, effort).** Every row names all three plus the harness
-  version; arm A and arm B never share a ranked table. **Why:** the same model moves by more than the
-  gap between neighbouring models when the harness changes. **Cost:** twice the runs for one question.
-- **D-10 — A grader is trusted once it has been seen failing.** Base 0, reference 1, antipattern 0, in
-  CI, and a canary per grader family. **Why:** a grader that cannot fail turns every contestant green.
-  **Cost:** three solutions per task, written before the task is used.
+- **D-09 — A result belongs to (configuration, model, effort).** Every row names all three plus the
+  harness version; configurations never share a ranked table. **Why:** the same model moves by more than
+  the gap between neighbouring models when the harness changes, and running code is a capability of
+  its own (A − A0). **Cost:** three configurations for one question.
+- **D-10 — A grader is trusted once it has been seen failing, including against reward hacking.**
+  Solution 1, everything else 0, in CI, with a canary per grader family. **Why:** a pytest grader that
+  trusted the exit code passed a planted `conftest.py`, an `os._exit(0)` and a shadowing `pytest.py`;
+  a quote check against the wrong artifact passed a review that never found the defect. **Cost:** a
+  reference, an antipattern and a set of hacks per task, written before the task is used.
+- **D-11 — The task is the unit of a benchmark interval.** Intervals over contestants are clustered by
+  task; Wilson is per cell only. **Why:** attempts of one task are correlated, and pooled Wilson was about
+  half as wide as the task-clustered interval. **Cost:** with few tasks, honest intervals are wide.
 
 ## Risks
 
-- **Saturation.** Tasks the four models all pass carry no information. The saturation rule makes that
-  visible instead of hiding it in an average; the pilot (one task, one model, both arms) shows whether
-  the set is too easy before the grid spends the budget.
-- **Arm A runs code on this machine.** Limited to `python` in a temp copy, with a stripped environment;
-  no network isolation. Acceptable for a POC driven by its author, not for a shared runner.
-- **Cost.** Fable 5.1 dominates. The cap stops the run; the order of the grid is Haiku, Sonnet, Opus,
-  Fable, so a stop leaves the cheapest complete rather than the most expensive half-done.
-- **Judge bias.** Same family as the contestants; mitigated (anonymised, different model, quote checked),
-  not removed. Stated in the report.
-- **Leak gate.** The task files are new text; the CI check `git grep -i -E` over tracked files (not
-  only the tree at hand) must stay at zero.
+- **Budget.** Worst case is far above the cap (one Fable call at 32k output is 1.60 USD), so the cap is
+  enforced per call and the full grid is gated on a projection from a measured pilot (KB-03, all four
+  models, B, A0 and A, one attempt). If the projection is above 60 USD the run is refused and k or the
+  task set is reduced before spending, by decision, not by the order the budget happened to stop in.
+- **Saturation.** Tasks the four models all pass carry little information about ranking; the memo turns
+  them into a cost fact (commodity, cheapest passing contestant), which is information about contracts.
+- **The pilot settles two unmeasured points**: the smallest environment the CLI starts with on Windows,
+  and that `--restricted` with `--tools` and a `Bash(python *)` allowance behaves as documented.
+- **History tasks** come from a repository built with an AI assistant; contestants from the same family
+  may share its style. Stated in Limits.
+- **Leak gate.** New task text must stay at zero in the CI check over tracked files.
+
+## Not adopted, and why
+
+- **A container runner (Harbor, the Terminal-Bench 2.0 harness) for A and A0.** It would give network
+  isolation and ready integrations for Codex and Cursor. Not now: it needs Python ≥ 3.12 (the repo is
+  3.11), its cost path reads the CLI's estimate or a third-party table and turns missing tokens into 0
+  (against DR-3), and it has not been run here. The task layout follows its format so it can be adopted.
+- **A context ablation for the "moat" question** (the same tasks with and without house engineering
+  notes). Proposed as the next measurement, with the requester, rather than built on a fictitious
+  instrument where the answer would be partly staged.
+- **A monthly diff command and a scheduled pipeline.** The ledger and digests make both possible; the
+  live run is what the POC needs to show.
 
 ## Concept candidates
 
-None marked in the spec. The cross-file invariant that matters (a frozen verdict is keyed on every
-input) already lives in DOCTRINE D-08, and `judge_key` follows it.
+None marked in the spec. The cross-file invariants that matter (a frozen verdict keyed on every input,
+D-08; the task as the statistical unit, D-11) live in DOCTRINE with a canary each.
