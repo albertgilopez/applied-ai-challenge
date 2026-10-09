@@ -1,0 +1,116 @@
+# STORY-004 cases. Prices: USD per million tokens, checked on 2026-10-09 against the provider's
+# pricing page. Effort for every arm-B contestant: "high". Attempts per cell: k = 3.
+# Unless a case says otherwise, it runs offline (no --live): model responses are recordings.
+- id: S4-01
+  run: { task: KB-02, arm: B, model: claude-sonnet-5-5, effort: high, attempts: 1 }
+  expected:
+    row_fields_present: [contestant.harness, contestant.model, contestant.effort, contestant.harness_version, task_sha256, arm]
+- id: S4-02
+  run: { task: KB-02, arm: B, model: claude-haiku-5-5, effort: high, attempts: 1 }
+  expected:
+    every_request_carries: { effort: high }
+    row: { contestant.effort: high }
+- id: S4-03
+  rows:
+    - usage: { model: claude-sonnet-5-5, input: 1000, output: 200, cache_read: 500 }
+      expected: { cost_usd: 0.00405, cost_basis: measured-usage }
+    - usage: { model: claude-fable-5-1, input: 0, output: 0, cache_write_5m: 1000 }
+      expected: { cost_usd: 0.0125, cost_basis: measured-usage }
+    - usage: { model: claude-unknown-9, input: 1000, output: 200 }
+      expected: { cost_usd: null, cost_basis: unpriced }
+    - usage: { model: claude-haiku-5-5, input: 150000, output: 200 }   # > 100k-token tier not in the table
+      expected: { cost_usd: null, cost_basis: unpriced }
+- id: S4-04
+  recording: { calls: [ { latency_s: 1.25 }, { latency_s: 0.75 } ] }
+  run: { task: KB-02, arm: B, model: claude-sonnet-5-5, effort: high, attempts: 1, live: false }
+  expected:
+    calls_latency_s: [1.25, 0.75]
+    attempt_latency_s_at_least: 2.0
+- id: S4-05
+  recording: { stop_reason: refusal }
+  run: { task: KB-05, arm: B, model: claude-opus-5-5, effort: high, attempts: 1 }
+  expected: { outcome: refused, counted_as_fail: false }
+- id: S4-06
+  rows:
+    - { task: KB-01, base: 0, reference: 1, antipattern: 0 }
+    - { task: KB-02, base: 0, reference: 1, antipattern: 0 }
+    - { task: KB-03, base: 0, reference: 1, antipattern: 0 }
+    - { task: KB-04, base: 0, reference: 1, antipattern: 0 }
+    - { task: KB-05, base: 0, reference: 1, antipattern: 0 }
+    - { task: KB-06, base: 0, reference: 1, antipattern: 0 }
+    - { task: KB-07, base: 0, reference: 1, antipattern: 0 }   # judge recorded; reference finds the planted defect
+- id: S4-07
+  rows:
+    - judge_response: { verdict: pass, quote: "a line that is not in the diff" }
+      expected: { outcome: fail, reason: quote not found }
+    - judge_response: { verdict: pass, quote: "<the planted line, verbatim>" }
+      expected: { outcome: pass, quote_found: true }
+    - contestant_model: claude-sonnet-5-5
+      expected: { judge_model_differs_from: claude-sonnet-5-5 }
+    - contestant_review_text_contains: claude-sonnet-5-5
+      expected: { judge_input_contains_model_name: false }
+- id: S4-08
+  steps: [score, score]
+  expected: { judge_calls_on_second_score: 0 }
+  rows:
+    - { change: artifact, expected: { judge_called_again: true } }
+    - { change: rubric, expected: { judge_called_again: true } }
+    - { change: judge_prompt, expected: { judge_called_again: true } }
+    - { change: judge_model, expected: { judge_called_again: true } }
+    - { change: task, expected: { judge_called_again: true } }
+- id: S4-09
+  ledger:
+    - { task: KB-02, arm: B, model: m1, outcomes: [pass, pass, pass] }
+    - { task: KB-02, arm: B, model: m2, outcomes: [pass, pass, pass] }
+    - { task: KB-04, arm: B, model: m1, outcomes: [pass, fail, pass] }
+    - { task: KB-04, arm: B, model: m2, outcomes: [fail, fail, pass] }
+  expected:
+    saturated: { KB-02: true, KB-04: false }
+    aggregate_tasks_counted: [KB-04]
+    saturated_rows_still_listed: true
+- id: S4-10
+  rows:
+    - { tasks: 7, expected: { ranking: "none: n <= 8 tasks", contestants_ordered_by: name } }
+    - { tasks: 8, expected: { ranking: "none: n <= 8 tasks" } }
+- id: S4-11
+  budget_usd: 0.05
+  plan: { task: KB-02, arm: B, model: claude-fable-5-1, effort: high, attempts: 3, max_tokens: 4000 }
+  expected:
+    attempts_started_at_most: 0     # worst case of one attempt: 4000 x $50/MTok = $0.20 > $0.05
+    remaining_outcome: budget_stopped
+    exit_code: 2                    # the cap is reached before the first attempt
+- id: S4-12
+  rows:
+    - { recording: present, expected: { network_calls: 0, outcome_is_from_recording: true } }
+    - { recording: missing_request, expected: { stops_with: CassetteMiss, network_calls: 0 } }
+    - { live: true, api_key: absent, expected: { exit_code: 2 } }
+- id: S4-13
+  rows:
+    - { passes: 2, attempts: 3, expected: { wilson_95: [0.2077, 0.9385], pass_at_1: 0.6667, pass_at_3: 1.0, pass_hat_2: 0.3333, pass_hat_3: 0.0 } }
+    - { passes: 3, attempts: 3, expected: { wilson_95: [0.4385, 1.0], pass_hat_3: 1.0 } }
+    - { passes: 0, attempts: 3, expected: { wilson_95: [0.0, 0.5615], pass_at_3: 0.0 } }
+    - { passes: 14, attempts: 21, expected: { wilson_95: [0.4537, 0.8281] } }
+    - { latencies_s: [1.0, 2.0, 3.0, 4.0, 10.0], expected: { median: 3.0, p95: 10.0 } }   # p95 by nearest rank
+    - { cost_usd_total: 0.30, passes: 2, expected: { cost_per_pass: 0.15 } }
+    - { cost_usd_total: 0.30, passes: 0, expected: { cost_per_pass: null } }
+    - { cost_usd_total: null, passes: 2, expected: { cost_per_pass: null } }
+- id: S4-14
+  ledger:
+    - { task: KB-02, arm: A, model: m1, outcomes: [pass, pass, fail] }
+    - { task: KB-02, arm: B, model: m1, outcomes: [pass, fail, fail] }
+  expected:
+    harness_delta: [ { model: m1, a_minus_b: 0.3333 } ]
+    not_run_contestants: [codex-cli, cursor-agent]
+    not_run_have_reason: true
+- id: S4-15
+  ledger:
+    - { task: KB-02, task_sha256: aaa, arm: B, model: m1, outcomes: [pass] }
+    - { task: KB-02, task_sha256: bbb, arm: B, model: m1, outcomes: [fail] }
+  expected: { cells_for_KB-02_m1: 2 }
+- id: S4-16
+  contestant_text: "ok | x\nnew row `code` [click](https://evil.example)\u001b[31m"
+  expected:
+    markdown_has_control_chars: false
+    markdown_links_to_evil_example: false
+    markdown_table_rows_per_cell: 1
+    json_text_is_raw: true
