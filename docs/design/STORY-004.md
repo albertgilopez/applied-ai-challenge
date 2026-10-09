@@ -132,8 +132,12 @@ sequenceDiagram
   max_prompt_tokens)`, `PRICES_CHECKED_ON = "2026-10-09"`. `call_cost(raw_usage, model)` returns
   `None` for an unknown model, for a call whose prompt (all three input counters) is above
   `max_prompt_tokens` (Haiku 5.5's 100k tier is not in the table on purpose), and for cache writes that
-  come without the 5m/1h split. `Usage` also accumulates `thinking_tokens`. The loop keeps the list of
-  per-call costs; the run's `cost_usd` is their sum, or `None` if any is `None`.
+  come without the 5m/1h split, and for any `inference_geo` other than `global` (the `us` geo is priced
+  ×1.1; an underprice by 10 % is the same mistake as a missing price). `Usage` also accumulates the
+  5m/1h writes and `thinking_tokens`; these are **nested** in the API's `usage`
+  (`cache_creation.ephemeral_5m_input_tokens`, `output_tokens_details.thinking_tokens`), so `Usage.add`
+  can no longer read every field as a flat key. The loop keeps the list of per-call costs; the run's
+  `cost_usd` is their sum, or `None` if any is `None`.
 - **A refusal is a stop reason, mapped by the runner (DR-5).** The loop already ends on any non
   `tool_use` stop and returns `stop_reason`; the runner maps `refusal` to the `refused` outcome. No
   loop change; a test pins it.
@@ -142,10 +146,12 @@ sequenceDiagram
   denied by the gate, as for the STORY-002 agent. `max_steps = 12`, `max_tokens = 4000`.
 - **Arm A: Claude Code on a temp copy, with a small tool allowlist (DR-6).** `claude --bare -p
   <prompt> --model M --effort E --output-format json --max-budget-usd <remaining>
-  --permission-mode dontAsk --allowedTools Read Edit Write Glob Grep "Bash(python *)"` with `cwd` = the
-  workspace and an environment that holds only `PATH`, `SYSTEMROOT`/`HOME` and the API key. It can run
-  Python in the workspace (that is part of the product harness), and nothing else. No network
-  isolation: written in Limits.
+  --permission-mode dontAsk --allowedTools <file tools and python only>` with `cwd` = the workspace and
+  a reduced environment holding the API key. It can run Python in the workspace (that is part of the
+  product harness), and nothing else. No network isolation: written in Limits. **Not yet measured:**
+  the probe exercised one tool (`Read`) and the full environment minus `ANTHROPIC_*`/`CLAUDE*`. The
+  exact permission pattern for "python only", and the smallest environment `claude` starts with on
+  Windows, are fixed in the pilot and written here then; until then they are a plan, not a fact.
 - **Arm A in CI: replay the outcome, not the conversation.** CI cannot replay a CLI. Each live arm-A
   attempt stores its JSON output and the files it changed in the workspace
   (`cassettes/arm_a/<task>-<model>-<effort>-<n>.json`, keyed on the task digest). Offline, the runner
@@ -183,7 +189,7 @@ sequenceDiagram
   digests never merge, `saturated(cells, arm)`, `harness_delta(cells)` (A pass rate − B pass rate per
   model over the tasks both arms ran), and `ranking_statement(n_tasks)` returning `"none: n <= 8 tasks"`
   for n ≤ 8. `report.py` orders contestants by name, never by score, when the statement is `none`.
-- **The report reuses STORY-003's escaping (DR-16 in the cases).** `results.md` is derived from
+- **The report reuses STORY-003's escaping (case S4-16).** `results.md` is derived from
   `results.json` through `core.report.safe_text` and `md_cell`; contestant text (an answer, a review
   excerpt, a grader detail) is data.
 
@@ -240,6 +246,19 @@ MODIFY: scripts/ci.sh         (check-graders; the leak gate as a failing check)
 MODIFY: pyproject.toml        (mypy files += keysbench)
 MODIFY: AGENTS.md, DOCTRINE.md (D-09, D-10), README.md, STATED.json
 ```
+
+## AGENTS.md changes
+
+Two lines would contradict this story and are replaced in the same change:
+
+- Layout row `agent/ … The only place a model is called` becomes: *`agent/` (STORY-002) and
+  `keysbench/` (STORY-004) are the only places a model is called; both go through `harness/`, except
+  arm A, which runs the Claude Code CLI as a black box.*
+- *Decided NOT to do: … code-execution sandboxes* becomes: *No code-execution sandbox: in KeysBench
+  arm B the model cannot run code (the grader runs tests after the attempt, on a copy); arm A runs the
+  Claude Code CLI on a temporary copy with a Python-only tool allowlist, which is a limit, not a
+  sandbox.* A new layout row for `keysbench/` with its rule: *a grader is trusted once it has been
+  seen failing (D-10)*.
 
 ## Doctrine to add
 
