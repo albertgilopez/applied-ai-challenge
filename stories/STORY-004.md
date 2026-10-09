@@ -13,7 +13,7 @@
   - **Arm B, bare model**: this repo's `harness/` with the same tools, the same prompt and a fixed
     `effort`, for Claude Fable 5.1, Opus 5.5, Sonnet 5.5 and Haiku 5.5.
   - **Arm A, product harness**: Claude Code (`claude --bare -p --model <id>`) on the same tasks with
-    the same grader, for the same four models.
+    the same grader and the same fixed effort, for the same four models.
   - The report gives **A − B per model**: same model, different harness, so the difference is what
     the harness adds. That is the number a tool contract is about.
 - Three attempts per (task, contestant) in both arms.
@@ -99,7 +99,7 @@ Attempt line (ledger):
 { kind: "attempt", task_id, task_sha256, arm: "A" | "B", contestant: { model, effort, harness, harness_version },
   attempt: 1..k, outcome: "pass" | "fail" | "refused" | "error" | "budget_stopped",
   calls: [ { request_id, latency_s, usage: { input, cache_write_5m, cache_write_1h, cache_read, output, thinking } } ],
-  cost_usd: number | null, cost_basis: "measured-usage" | "client-estimate" | "unpriced",
+  cost_usd: number | null, cost_basis: "measured-usage" | "cli-usage" | "unpriced",
   latency_s, grader: { name, detail }, judge: { model, verdict, quote, quote_found } | null, at }
 ```
 
@@ -125,8 +125,9 @@ Results JSON:
 - **DR-3 Measured, not estimated.** Arm-B tokens come from the API's `usage` per call; cost is tokens
   times the price table checked on a stated date, split into uncached input, 5-minute cache write,
   1-hour cache write, cache read and output. A model with no price, or a price tier the table does not
-  cover, gives `cost_usd: null` (`unpriced`), never 0. Arm-A cost is the CLI's figure and is labelled
-  `client-estimate`.
+  cover, gives `cost_usd: null` (`unpriced`), never 0. Arm-A cost is computed the same way from the
+  per-call usage the CLI reports, labelled `cli-usage`; the CLI's own cost estimate is stored beside
+  it as a cross-check.
 - **DR-4 Latency is per call and is recorded.** Each model call's wall time and request id are stored
   when it is made. A replayed run reports the recorded latency, not the replay's near-zero time.
 - **DR-5 A refusal is its own outcome.** A model that stops with `refusal` is `refused`, counted apart
@@ -170,7 +171,7 @@ Results JSON:
   an organisation's own knowledge is the advantage need its own repositories and specifications.
 - One provider family. The judge is from the same family as the contestants; anonymisation, a judge
   model different from the contestant and a code-checked quote reduce that bias, they do not remove it.
-- Arm A has no network isolation and its cost is the CLI's estimate.
+- Arm A has no network isolation; its usage is what the CLI reports.
 - Codex CLI and Cursor agent are not run here; the protocol is written so they can be.
 
 ## Acceptance Criteria
