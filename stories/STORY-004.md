@@ -176,7 +176,9 @@ Results JSON:
   name, and shows intervals clustered by task (the task is the independent unit; attempts of one task
   are not). Wilson intervals are reported per cell only.
 - **DR-11 A hard budget.** Before a live run, the runner projects its cost from measured cost per
-  attempt (the pilot, or this run's completed attempts) and refuses a projection above the cap. During
+  attempt (the pilot, or this run's completed attempts) and refuses a projection above the cap; with
+  nothing measured yet for a contestant, the projection is skipped and only the per-call reservation
+  applies. During
   the run it reserves the worst case of each call (its prompt bound at input price plus `max_tokens` at
   output price) before making it, and settles the measured cost after. A call that would cross the cap
   is not made: that attempt and the remaining ones are `budget_stopped`, with what was already spent

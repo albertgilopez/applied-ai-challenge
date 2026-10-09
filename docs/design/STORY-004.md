@@ -231,6 +231,18 @@ sequenceDiagram
   call's measured input plus one token per byte of what was added since; settle with the measured cost.
   A call that would cross the cap is not made; the attempt is `budget_stopped` with its spend counted.
   A and A0 get `--max-budget-usd = cap − spent`.
+- **The first live run has nothing to project from.** For a (config, model) with no measured attempt in
+  the ledger, the projection is skipped and only the per-call reservation applies. That is the rule the
+  pilot runs under; the grid runs after it, with a projection.
+- **Recordings `check-graders` needs.** The KB-06 solution, antipattern and fake-verdict hack each need a
+  judge call. `check-graders --live` records those three once (Sonnet 5.5 or Opus 5.5, a few cents);
+  every later `check-graders`, CI included, replays them.
+- **Task trees are data, not repo code.** `keysbench/tasks/` holds planted `conftest.py` and `pytest.py`
+  files and two old copies of `core/`. Pytest only collects `tests/` (`testpaths`), and `ruff` and `mypy`
+  exclude `keysbench/tasks/`; a test asserts the repo suite never collects anything under it.
+- **Every A/A0 row records the CLI version.** The installed CLI is 2.1.285; the headless documentation
+  says bare-mode limits held only partly before 2.1.286. The pilot runs on the newest CLI and checks that
+  no user `env` name reaches a `Bash` subprocess.
 - **Traceability (DR-13).** `results.json.inputs` records the sha256 of the ledger and of every
   recording it was scored from.
 
@@ -275,7 +287,7 @@ MODIFY: harness/{gate,loop,providers,usage}.py
 MODIFY: prompts/approved.json (judge prompt)
 MODIFY: scripts/canaries.py (grader, scorer, budget, usage, gate canaries)
 MODIFY: scripts/ci.sh (check-graders; the leak gate as a failing check over tracked files)
-MODIFY: pyproject.toml (mypy files += keysbench)
+MODIFY: pyproject.toml (mypy files += keysbench; ruff and mypy exclude keysbench/tasks)
 MODIFY: AGENTS.md, DOCTRINE.md (D-09..D-11), README.md, STATED.json
 ```
 
