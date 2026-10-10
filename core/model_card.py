@@ -109,8 +109,13 @@ def _card_verdict(extraction: Extraction, card: str, policy: Policy) -> tuple[st
     return verdict, f"{reason} (quoted: {extraction.quote!r})", spdx, True
 
 
-def review_model(component: Component, extraction: Extraction, card: str, policy: Policy) -> CardReview:
-    card_verdict, card_reason, spdx, grounded = _card_verdict(extraction, card, policy)
+def review_model(component: Component, extraction: Extraction | None, card: str, policy: Policy) -> CardReview:
+    """`extraction` is None when the model's answer could not be read: that is a review, never an allow."""
+    if extraction is None:
+        card_verdict, card_reason, spdx, grounded = REVIEW, "the model's answer could not be read", None, False
+        extraction = Extraction(None, None, ())
+    else:
+        card_verdict, card_reason, spdx, grounded = _card_verdict(extraction, card, policy)
     kept = tuple(r for r in extraction.restrictions if _grounded_restriction(r, card))
     dropped = len(extraction.restrictions) - len(kept)
 
@@ -133,11 +138,29 @@ def review_model(component: Component, extraction: Extraction, card: str, policy
     return CardReview(decision, spdx, grounded, kept, dropped)
 
 
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.replace("\r\n", "\n").encode("utf-8")).hexdigest()
+
+
+def card_key(card: str, prompt_sha256: str, model: str, effort: str) -> str:
+    """What a card decision is made from, beyond the component and the policy (DOCTRINE D-08, DR-5).
+
+    Inputs only, so a re-run can tell it may reuse a decision before calling the model. A field the
+    review starts reading must be added here; a canary removes the card digest and the suite goes red.
+    """
+    canonical = json.dumps(
+        {"card_sha256": _sha256(card), "prompt_sha256": prompt_sha256, "model": model, "effort": effort},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def evidence_digest(card: str, extraction: Extraction) -> str:
-    """Every input `review_model` reads beyond the component and the policy (DOCTRINE D-08)."""
+    """The model's extraction and the card it was read from, recorded on the decision as evidence."""
     canonical = json.dumps(
         {
-            "card_sha256": hashlib.sha256(card.replace("\r\n", "\n").encode("utf-8")).hexdigest(),
+            "card_sha256": _sha256(card),
             "license_id": extraction.license_id,
             "quote": extraction.quote,
             "restrictions": [[r.text, r.quote] for r in extraction.restrictions],

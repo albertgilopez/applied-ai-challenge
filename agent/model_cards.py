@@ -31,6 +31,15 @@ def valid_model_id(model_id: object) -> bool:
     return isinstance(model_id, str) and bool(_MODEL_ID.fullmatch(model_id)) and ".." not in model_id
 
 
+def model_id_from_purl(purl: str | None) -> str | None:
+    """`pkg:huggingface/<org>/<name>[@version][?qualifiers]` → `<org>/<name>`, or None."""
+    prefix = "pkg:huggingface/"
+    if not purl or not purl.startswith(prefix):
+        return None
+    candidate = purl[len(prefix) :].split("?")[0].split("#")[0].split("@")[0]
+    return candidate if valid_model_id(candidate) else None
+
+
 def card_path(model_id: str, cards_dir: Path) -> Path:
     org, name = model_id.split("/")
     return cards_dir / f"{org}__{name}.md"

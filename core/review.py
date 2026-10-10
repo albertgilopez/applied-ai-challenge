@@ -28,30 +28,36 @@ class ReviewError(ValueError):
     pass
 
 
-def decision_key(component: Component, policy_sha256: str) -> str:
+def decision_key(component: Component, policy_sha256: str, card_key: str | None = None) -> str:
     """When a recorded decision may be reused: every input `decide()` reads, plus the policy.
 
     Identity alone was not enough (security review C12): two packages with the same name and version
     but different licenses would share one verdict, and a policy edit would be ignored on a re-run.
-    A field added to `decide()` must be added here too (DOCTRINE D-08).
+    A field added to `decide()` must be added here too (DOCTRINE D-08). An AI model reviewed against
+    its card adds `card_key` (STORY-002 DR-5); every other decision keeps the key it had.
     """
-    canonical = json.dumps(
-        {
-            "identity": component.identity,
-            "license_expression": component.license_expression,
-            "source_url": component.source_url,
-            "policy_sha256": policy_sha256,
-        },
-        sort_keys=True,
-        separators=(",", ":"),
-    )
+    fields: JSONObject = {
+        "identity": component.identity,
+        "license_expression": component.license_expression,
+        "source_url": component.source_url,
+        "policy_sha256": policy_sha256,
+    }
+    if card_key is not None:
+        fields["card_key"] = card_key
+    canonical = json.dumps(fields, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def decision_record(component: Component, decision: Decision, policy_sha256: str) -> JSONObject:
-    return {
+def decision_record(
+    component: Component,
+    decision: Decision,
+    policy_sha256: str,
+    card_key: str | None = None,
+    evidence: JSONObject | None = None,
+) -> JSONObject:
+    record: JSONObject = {
         "kind": "decision",
-        "key": decision_key(component, policy_sha256),
+        "key": decision_key(component, policy_sha256, card_key),
         "identity": component.identity,
         "name": component.name,
         "version": component.version,
@@ -60,6 +66,9 @@ def decision_record(component: Component, decision: Decision, policy_sha256: str
         "source_url": decision.source_url,
         "policy_sha256": policy_sha256,
     }
+    if evidence is not None:
+        record["model_card"] = evidence
+    return record
 
 
 @dataclass(frozen=True)

@@ -85,8 +85,10 @@ Model answer (structured output, validated by code):
   only add evidence or a restriction. When the SBOM declares none, the grounded card license is the
   license (that is the gap the card fills); an ungrounded card leaves it `Needs review`.
 - **DR-5 A model decision is keyed on the card too (DOCTRINE D-08).** The decision key of an AI model
-  reviewed against its card includes the digest of the card and of the grounded extraction, so a
-  changed card or a re-extraction is a new decision, and a re-run with the same inputs reuses the old one.
+  reviewed against its card includes the digest of what the decision was made from: the card, the
+  prompt that read it, the model and the effort. A changed card is a new decision; a re-run with the
+  same inputs reuses the recorded one without calling the model again. The model's extraction is not
+  an input, it is recorded on the decision line as evidence.
 - **DR-6 The model call is governed and recorded.** The system prompt is approved by hash; every call
   goes through the harness (gate, ledger, usage); CI replays recorded responses and never calls a model.
 

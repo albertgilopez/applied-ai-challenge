@@ -18,16 +18,39 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TextIO
 
+from agent.model_cards import CardNotFound, InvalidModelId, http_fetch, load_card, model_id_from_purl
 from app.files import load_policy, load_sbom_document
-from core.decide import decide
-from core.policy import PolicyError
+from core.component import Component
+from core.decide import Decision, decide
+from core.model_card import card_key, evidence_digest, review_model
+from core.policy import REVIEW, Policy, PolicyError
 from core.report import build_report, safe_text, to_markdown
 from core.review import VERDICTS, ReviewError, check_approve, check_override, decision_key, decision_record, fold
 from core.sbom import FormatError
 from harness.ledger import Ledger
-from harness.storage import CorruptRecord, utc_stamp
+from harness.prompts import UnapprovedPrompt, digest
+from harness.providers import Provider
+from harness.replay import CassetteMiss
+from harness.storage import CorruptRecord, JSONObject, utc_stamp
 
 REFUSED = 2
+DEFAULT_RECORDINGS = Path(__file__).resolve().parents[1] / "tests" / "cassettes" / "story_002"
+
+# (model id, live, recordings dir) -> the provider for that model's review
+ProviderFactory = Callable[[str, bool, Path], Provider]
+
+
+def recorded_provider(model_id: str, live: bool, recordings: Path) -> Provider:
+    """Live: call the model and record every response. Offline: replay, and refuse what was never recorded."""
+    from harness.providers import AnthropicProvider
+    from harness.replay import RecordingProvider, ReplayProvider
+
+    path = recordings / f"{model_id.replace('/', '__')}.jsonl"
+    if live:
+        return RecordingProvider(AnthropicProvider(), path)
+    if not path.is_file():
+        raise ReviewError(f"no recording for {model_id} in {recordings}; run scan with --live to record it")
+    return ReplayProvider(path)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -38,6 +61,9 @@ def _parser() -> argparse.ArgumentParser:
     scan.add_argument("--sbom", required=True)
     scan.add_argument("--policy", required=True)
     scan.add_argument("--ledger", required=True)
+    scan.add_argument("--model-cards", help="review AI models against their cards, read from this directory")
+    scan.add_argument("--recordings", default=str(DEFAULT_RECORDINGS), help="recorded model responses to replay")
+    scan.add_argument("--live", action="store_true", help="call the model (and record); fetch missing cards")
 
     pending = sub.add_parser("list", help="decisions no reviewer has looked at")
     pending.add_argument("--ledger", required=True)
@@ -63,19 +89,69 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
-def _scan(args: argparse.Namespace, out: TextIO) -> None:
+def _card_decision(
+    c: Component,
+    policy: Policy,
+    args: argparse.Namespace,
+    ledger: Ledger,
+    factory: ProviderFactory,
+    card: str,
+    model_id: str,
+) -> tuple[Decision, JSONObject]:
+    from agent.reviewer import review_card
+
+    provider = factory(model_id, args.live, Path(args.recordings))
+    fetch = http_fetch if args.live else None
+    result = review_card(model_id, provider=provider, ledger=ledger, cards_dir=args.model_cards, fetch=fetch)
+    review = review_model(c, result.extraction, card, policy)
+    x = result.extraction
+    evidence: JSONObject = {
+        "model_id": model_id,
+        "license": review.license,
+        "grounded": review.grounded,
+        "quote": x.quote if x else None,
+        "restrictions": [{"text": r.text, "quote": r.quote} for r in review.restrictions],
+        "restrictions_not_grounded": review.dropped,
+        "extraction_sha256": evidence_digest(card, x) if x else None,
+        "cost_usd": result.run.cost_usd,
+    }
+    return review.decision, evidence
+
+
+def _scan(args: argparse.Namespace, out: TextIO, factory: ProviderFactory) -> None:
+    from agent.reviewer import EFFORT, MODEL, PROMPT
+
     doc, _ = load_sbom_document(args.sbom)
     policy = load_policy(args.policy)
-    digest = policy.digest()
+    policy_digest = policy.digest()
     ledger = Ledger(args.ledger)
     known = {s.key for s in fold(ledger.read()).values()}
     decided = reused = 0
     for c in doc.components:
-        key = decision_key(c, digest)
+        model_id = model_id_from_purl(c.purl) if (args.model_cards and c.is_ai_model) else None
+        ckey: str | None = None
+        card: str | None = None
+        if args.model_cards and c.is_ai_model:
+            try:
+                card = load_card(model_id or "", args.model_cards, http_fetch if args.live else None)
+            except (InvalidModelId, CardNotFound):
+                card = None
+            # Keyed on what the decision is made from: the card, and the prompt, model and effort that read it.
+            ckey = card_key(card or "", digest(PROMPT), MODEL, EFFORT)
+        key = decision_key(c, policy_digest, ckey)
         if key in known:
             reused += 1  # the recorded verdict stands; a re-run never decides again (DR-9)
             continue
-        ledger.append(decision_record(c, decide(c, policy), digest))
+        evidence: JSONObject | None = None
+        if ckey is None:
+            decision = decide(c, policy)
+        elif card is None or model_id is None:
+            what = "no model id in the SBOM entry" if model_id is None else f"no model card for {model_id}"
+            decision = Decision(c.ref, REVIEW, f"{decide(c, policy).reason}; model card: {what}", c.source_url)
+            evidence = {"model_id": model_id, "license": None, "grounded": False}
+        else:
+            decision, evidence = _card_decision(c, policy, args, ledger, factory, card, model_id)
+        ledger.append(decision_record(c, decision, policy_digest, ckey, evidence))
         known.add(key)
         decided += 1
     print(f"{decided} decided, {reused} reused", file=out)
@@ -126,6 +202,7 @@ def main(
     now: Callable[[], str] = utc_stamp,
     out: TextIO = sys.stdout,
     err: TextIO = sys.stderr,
+    provider_factory: ProviderFactory = recorded_provider,
 ) -> int:
     try:
         args = _parser().parse_args(argv)
@@ -133,14 +210,22 @@ def main(
         return int(exc.code or 0)
     try:
         if args.command == "scan":
-            _scan(args, out)
+            _scan(args, out, provider_factory)
         elif args.command == "list":
             _list(args, out)
         elif args.command in ("approve", "override"):
             _review(args, out)
         else:
             _report(args, out, now)
-    except (ReviewError, FormatError, PolicyError, CorruptRecord, FileNotFoundError) as exc:
+    except (
+        ReviewError,
+        FormatError,
+        PolicyError,
+        CorruptRecord,
+        FileNotFoundError,
+        CassetteMiss,
+        UnapprovedPrompt,
+    ) as exc:
         print(f"refused: {safe_text(str(exc))}", file=err)
         return REFUSED
     return 0

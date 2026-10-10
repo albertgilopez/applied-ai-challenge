@@ -38,3 +38,19 @@ def test_a_missing_card_is_not_fetched_unless_a_fetcher_is_given(tmp_path):
 
     assert load_card("org/missing", tmp_path, fetch=fetch).startswith("---")
     assert seen == ["https://huggingface.co/org/missing/raw/main/README.md"]  # the host is fixed by the code
+
+
+@pytest.mark.parametrize(
+    ("purl", "expected"),
+    [
+        ("pkg:huggingface/mistralai/Mistral-7B-v0.1", "mistralai/Mistral-7B-v0.1"),
+        ("pkg:huggingface/meta-llama/Llama-3.1-8B@abc123?x=1", "meta-llama/Llama-3.1-8B"),
+        ("pkg:pypi/requests@2.32.3", None),
+        ("pkg:huggingface/../etc", None),
+        (None, None),
+    ],
+)
+def test_the_model_id_comes_from_the_purl_or_not_at_all(purl, expected):
+    from agent.model_cards import model_id_from_purl
+
+    assert model_id_from_purl(purl) == expected

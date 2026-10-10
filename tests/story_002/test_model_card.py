@@ -135,3 +135,15 @@ def test_the_evidence_digest_changes_with_the_card_and_with_the_answer():
     assert evidence_digest(text, a) == base
     assert evidence_digest(text + "\nnew line", a) != base
     assert evidence_digest(text, Extraction("mit", "license: mit", ())) != base
+
+
+def test_s2_10_the_card_key_changes_with_every_input_the_review_reads():
+    from core.model_card import card_key
+
+    text = card("mistralai__Mistral-7B-v0.1")
+    base = card_key(text, "p", "m", "medium")
+    assert card_key(text, "p", "m", "medium") == base
+    assert card_key(text + "x", "p", "m", "medium") != base
+    assert card_key(text, "q", "m", "medium") != base
+    assert card_key(text, "p", "n", "medium") != base
+    assert card_key(text, "p", "m", "high") != base
