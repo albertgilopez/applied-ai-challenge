@@ -1,0 +1,33 @@
+# Marketplace policy: what the organisation allows. Reviewed like code; the validator checks it too.
+# Hosts are exact lowercase names (no wildcards); lists must be lists.
+contact_domains: [example.com]
+source_hosts: [bitbucket.example.com]
+
+# Hosts that are model APIs, and the provider each one belongs to. An egress to one of them needs a
+# declared `model` with that provider.
+model_hosts:
+  api.anthropic.com: anthropic
+  api.openai.com: openai
+  llm.internal.example.com: internal
+
+# Scopes too broad to name precisely what an asset touches.
+forbidden_scopes: [all, any, admin, root, full-access, everything]
+
+# What each data sensitivity may reach. `restricted` (export-controlled) reaches nothing external.
+sensitivity:
+  public:
+    providers: [anthropic, openai, internal]
+    egress: [api.anthropic.com, api.openai.com, llm.internal.example.com, jira.example.com, confluence.example.com, polaris.example.com, sim.example.com]
+  internal:
+    providers: [anthropic, internal]
+    egress: [api.anthropic.com, llm.internal.example.com, jira.example.com, confluence.example.com, polaris.example.com, sim.example.com]
+  confidential:
+    providers: [internal]
+    egress: [llm.internal.example.com, jira.example.com, confluence.example.com, polaris.example.com, sim.example.com]
+  restricted:
+    providers: []
+    egress: []
+
+scan:
+  max_critical: 0
+  max_high: 0

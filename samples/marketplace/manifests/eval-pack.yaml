@@ -1,0 +1,31 @@
+apiVersion: marketplace/v1
+id: scpi-driver-eval
+version: "2026.10.0"
+kind: eval-pack
+domains: [hardware-firmware, software]
+owner: { team: ai-productivity, contact: ai-productivity@example.com }
+summary: Engineering tasks with executable checks (SCPI drivers, an uncertainty budget, a review with a planted defect) to measure a model or an asset before it is rolled out.
+data: { sensitivity: public }
+permissions: []
+egress: []
+secrets: []
+tools:
+  - name: list_tasks
+    effect: read
+    requires_human_approval: false
+    definition_sha256: c7932d7e885e9ccaf7b2590fda168803d767aab9231a42e80a00db4a2488043d
+  - name: run_task
+    effect: read
+    requires_human_approval: false
+    definition_sha256: a03cc2058550b8f9affd0204304caccfd614a61e135754731f0c9d85a740fef5
+artifact:
+  ref: artifactory://ai-assets/scpi-driver-eval
+  digest: sha256:c2a2761b50ec4fc79572ddfc4e80b99ced1b32fadbba71315e4f20cca7b55382
+source: https://bitbucket.example.com/scm/aiprod/scpi-driver-eval
+security_scan:
+  tool: polaris
+  id: PLR-2026-10-0455
+  artifact_digest: sha256:c2a2761b50ec4fc79572ddfc4e80b99ced1b32fadbba71315e4f20cca7b55382
+  status: passed
+  critical: 0
+  high: 0

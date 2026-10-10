@@ -1,0 +1,33 @@
+apiVersion: marketplace/v1
+id: lab-instrument-mcp
+version: "0.9.0"
+kind: mcp-server
+domains: [hardware-firmware]
+owner: { team: rf-lab-automation, contact: rf-lab@example.com }
+summary: MCP server for the RF bench. Reads measurements freely; changing the output power waits for a human.
+data: { sensitivity: restricted }
+permissions:
+  - { resource: "lab:bench/rf-07", access: read }
+  - { resource: "lab:bench/rf-07", access: write }
+egress: []
+secrets: []
+tools:
+  - name: read_measurement
+    effect: read
+    requires_human_approval: false
+    definition_sha256: 39a25eec35f68c8ff9b87e1c034e269fd001eb0027b684b3d3d52fad3a2dd52b
+  - name: set_output_power
+    effect: physical
+    requires_human_approval: true
+    definition_sha256: 5382e724c5aba9f5453cbd5e8ececa74a869eedde162b857a8f36931d205e9f6
+artifact:
+  ref: artifactory://ai-assets/lab-instrument-mcp
+  digest: sha256:df1d124e2b76cfcdf2586017322a8b896632beddcd8713cca6f55e4d75491afd
+source: https://bitbucket.example.com/scm/rf/lab-instrument-mcp
+security_scan:
+  tool: black-duck
+  id: BD-2026-10-0102
+  artifact_digest: sha256:df1d124e2b76cfcdf2586017322a8b896632beddcd8713cca6f55e4d75491afd
+  status: passed
+  critical: 0
+  high: 0

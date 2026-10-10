@@ -1,97 +1,121 @@
 # STORY-B01 — Marketplace: a manifest validator that rejects unsafe AI assets
 
-**As** the platform team that runs an internal marketplace of AI assets (agents, skills, MCP servers)
+**As** the platform team that runs an internal marketplace of AI assets (agents, skills, MCP servers,
+evaluation packs)
 **I want** every asset's manifest checked against the organisation's policy before it is published
-**so that** nothing reaches other teams with a secret inside, a wildcard permission, an unpinned
-artifact, a failed security scan, or a model call its data may not make.
+**so that** nothing reaches other teams with a secret inside, a vague permission, an unpinned or unscanned
+artifact, a tool that acts on the world without a human, or a model call its data may not make.
 
 Challenge B of the take-home. The design of the whole marketplace is in `docs/marketplace/DESIGN.md`;
 this story is its one working piece.
 
+> Revised after an adversarial design review (six lenses, findings reproduced by verifiers):
+> `docs/design/STORY-B01-challenge.md`.
+
 ## Scope
 
-- A manifest format (YAML) that every asset declares: identity, owner, kind and domains, data
-  sensitivity, the model it calls, permissions, network egress, secrets (as references), tools with
-  their effects, the pinned artifact, the source, the security scan, the lifecycle state.
-- An organisation policy (YAML) that the validator reads: approved egress hosts and model providers per
-  sensitivity, contact domains, source hosts, scan thresholds.
+- A manifest format (YAML) every asset declares, and an organisation policy (YAML) the validator reads.
 - `python -m marketplace validate --manifest PATH --policy PATH [--json]`: accept or reject, with every
-  finding (rule, path in the manifest, message). Exit 0 accepted, 1 rejected, 2 unreadable.
-- Sample manifests for the four example assets of the brief plus one of our own, and unsafe variants.
+  finding (rule, path, message, hint), the computed risk tier, and the digests of what was checked.
+- Sample manifests for the four example assets of the brief plus our own (an evaluation pack), and one
+  unsafe manifest for the demo.
 
-**Why deterministic, not a model:** these are invariants that must never fail (a secret in a manifest,
-a wildcard permission); the decision has to be the same every time and explainable line by line. A
-model can help an author **write** a manifest or explain a rejection; it never decides acceptance.
+**What the validator is, and what it is not.** It is the stateless gate in the publish pipeline: it checks
+what a manifest says, its shape, and its consistency with the policy and with the evidence the pipeline
+attached. It does not approve assets (that is registry state, set by a human sign-off), does not scan code
+for secrets (a scanner stage does), and cannot see how assets are combined at install time. Those are
+named controls in the design doc.
+
+**Why deterministic, not a model:** these are invariants that must never fail, and the answer has to be
+the same every time and explainable line by line. A model can help an author write a manifest or explain
+a finding; it never decides acceptance.
 
 ## Interface contract
 
-Manifest (`apiVersion: marketplace/v1`):
+Manifest:
 
 ```
-id: kebab-case                     name: str              version: semver
-kind: agent | skill | mcp-server   domains: [software | hardware-firmware | simulation]
-owner: { team: str, contact: email }                       summary: str
-data: { sensitivity: public | internal | confidential | restricted }
-model: { provider: str, id: str } | absent                 # assets that call a model
+apiVersion: marketplace/v1
+id: <name>                         # 1-64 chars, lowercase letters, digits, single hyphens (the SKILL.md name rule)
+version: "<semver>"                # a quoted string
+kind: agent | skill | mcp-server | eval-pack
+domains: [software | hardware-firmware | simulation]
+owner: { team: <name>, contact: <email> }
+summary: <text>
+data: { sensitivity: public | internal | confidential | restricted }   # the most sensitive data it handles
+model: { provider: <name>, id: <model id> }          # required if it calls a model; absent for eval-pack
 permissions: [ { resource: "<system>:<scope>", access: read | write } ]
-network: { egress: [host] }                                 # empty: no network
-secrets: [ { name: str, ref: "vault://<path>" } ]           # references only
-tools: [ { name: str, effect: read | write | outward | physical, requires_human_approval: bool } ]
+egress: [<host>]                                      # empty list: no network
+secrets: [ { name: <NAME>, ref: "vault://<owner.team>/<path>" } ]
+tools: [ { name: <name>, effect: read | write | outward | physical,
+           requires_human_approval: <bool>, definition_sha256: <64 hex> } ]
 artifact: { ref: "artifactory://<repo>/<name>", digest: "sha256:<64 hex>" }
-source: https URL
-security_scan: { tool: black-duck | polaris, id: str, status: passed | failed, critical: int, high: int }
-lifecycle: { status: draft | approved | deprecated | retired }
+source: <https URL>
+security_scan: { tool: black-duck | polaris, id: <id>, artifact_digest: "sha256:<64 hex>",
+                 status: passed | failed, critical: <int ≥ 0>, high: <int ≥ 0> }   # written by the scan stage
 ```
 
-Policy:
+Policy: `contact_domains`, `source_hosts`, `model_hosts` (host → provider), `forbidden_scopes`,
+`sensitivity.<level>.{providers, egress}`, `scan.{max_critical, max_high}`. The policy is validated too.
 
-```
-contact_domains: [domain]                source_hosts: [host]
-sensitivity: { <level>: { egress: [host], model_providers: [provider] } }
-scan: { max_critical: int, max_high: int }
-```
+Result: `{ verdict: accept | reject, tier: 1 | 2 | 3, findings: [ { rule, path, message, hint } ],
+checked: { api_version, manifest_sha256, policy_sha256, validator_version } }`.
 
-Result: `{ verdict: accept | reject, findings: [ { rule, path, message } ] }`; JSON keeps manifest text
-raw, the terminal output escapes it.
+Exit codes: 0 accepted · 1 rejected · 2 the manifest cannot be read (missing, not UTF-8, over the size cap,
+not YAML) or the policy is invalid.
 
-## Domain rules
+## Rules (each finding names one)
 
-- **DR-1 Fail closed.** A manifest that does not parse, misses a required field, has a field the format
-  does not define, or a value outside its enum is rejected. Unknown is never accepted.
-- **DR-2 No secret inside.** A secret is declared only as a `vault://` reference. Any string anywhere in
-  the manifest that has the format of a credential (provider key prefixes, private key blocks, a
-  `user:password@` in a URL) rejects the manifest, and the finding never echoes the secret.
-- **DR-3 No wildcard.** A permission whose scope is `*` or ends in `*`, an egress of `*` or a CIDR, or an
-  access other than `read`/`write` is rejected: the manifest must say what it touches.
-- **DR-4 Data decides where calls may go.** The model provider and every egress host must be approved
-  for the asset's sensitivity in the policy. `restricted` (export-controlled) allows only what the
-  policy lists for it, which can be nothing.
-- **DR-5 Effects that reach the world need a human.** A tool with effect `outward` (sends, publishes,
-  creates outside the asset) or `physical` (drives an instrument, a lab bench, firmware) must declare
-  `requires_human_approval: true`.
-- **DR-6 Pinned and scanned.** The artifact is pinned by a sha256 digest (no tag, no `latest`); the
-  security scan passed and its critical and high counts are within the policy's thresholds.
-- **DR-7 Accountable.** The owner has a team and a contact on an approved domain; the source is an
-  `https` URL on an approved host; `id` is kebab-case and `version` is semver.
-- **DR-8 Retired is not publishable.** A manifest whose lifecycle is `retired` is rejected for publishing.
-- **DR-9 Every finding, not the first.** The validator reports every rule a manifest breaks, so an author
-  fixes them in one pass; the verdict is `reject` if there is at least one.
-- **DR-10 Manifest text is data.** A summary or a name that asks the validator to skip a check changes
-  nothing; text printed to a terminal is escaped.
+- **R1 Well-formed, or rejected.** `apiVersion` is a version this validator supports. Every required field is
+  there, no field the format does not define, every value of its exact type (a boolean is not a number, a
+  count is never negative, `version` is a quoted semver string) and inside its enum. A YAML document that
+  parses but uses constructs a manifest has no need for (duplicate keys at any level, anchors and aliases,
+  merge keys, non-string keys, custom tags) is rejected: two readers must never see two manifests.
+- **R2 No secret inside.** A secret is declared only as `vault://<owner.team>/<path>` (no `..`, no other
+  team's path). Any key or value with the format of a credential rejects the manifest, and **no output**
+  (terminal or JSON, any rule's finding) ever contains it.
+- **R3 Named precisely.** A resource follows `<system>:<scope>` with a positive grammar; a `*` anywhere, or
+  a scope the policy lists as forbidden (`all`, `admin`…), is rejected. A host is a lowercase hostname: no IP
+  literal, no port, no trailing dot, matched exactly against the policy.
+- **R4 Data decides where it may go.** The model provider and every egress host must be approved for the
+  asset's sensitivity. An egress host the policy knows as a model API requires the matching `model`. An
+  evaluation pack calls no model.
+- **R5 Effects that reach the world need a human, and tools are pinned.** An `outward` or `physical` tool
+  declares `requires_human_approval: true` (a real boolean). An agent or MCP server lists its tools, each
+  with the sha256 of its definition, so a tool that changes after approval is a new version. An evaluation
+  pack has no `outward` or `physical` tool.
+- **R6 Pinned and scanned.** The artifact is pinned by a sha256 digest; the scan covers **that** digest,
+  passed, and is within the policy's thresholds.
+- **R7 Accountable.** The owner's contact is on an approved domain (exact match after the single `@`); the
+  source is an `https` URL on an approved host, with no user info, backslash, encoded backslash or port.
+
+## Properties of the validator
+
+- **P1 Every finding, in one pass**, each with its rule, its path in the manifest, a message and a fix hint.
+- **P2 Manifest text is data.** Nothing in the manifest changes which checks run; terminal output is escaped
+  and every output is redacted.
+- **P3 The result says what was decided from**: the risk tier computed from the manifest (3 if any outward or
+  physical tool or restricted data; 2 if any write permission or confidential data; else 1), and the digests
+  of the manifest, the policy and the validator version.
+- **P4 The policy fails closed too**: an unknown key, a scalar where a list is expected, a missing sensitivity
+  level or threshold is exit 2, never a permissive default.
 
 ## Acceptance Criteria
 
-- [ ] The five sample manifests (four from the brief and our own) are accepted (case: SB1-01)
-- [ ] A manifest that does not parse, misses a required field or has an unknown field is rejected (case: SB1-02)
-- [ ] A literal credential anywhere in the manifest is rejected and not echoed (case: SB1-03)
-- [ ] A secret that is not a vault reference is rejected (case: SB1-04)
-- [ ] A wildcard permission or egress is rejected (case: SB1-05)
-- [ ] A model provider or egress host not approved for the sensitivity is rejected (case: SB1-06)
-- [ ] An outward or physical tool without human approval is rejected (case: SB1-07)
-- [ ] An unpinned artifact is rejected (case: SB1-08)
-- [ ] A failed scan, or findings above the thresholds, is rejected (case: SB1-09)
-- [ ] An owner contact or source host outside the policy, a bad id or version, is rejected (case: SB1-10)
-- [ ] A retired manifest is rejected for publishing (case: SB1-11)
-- [ ] All findings are reported in one run, each with its rule and path (case: SB1-12)
-- [ ] Text in the manifest cannot skip a check, and the terminal output is escaped (case: SB1-13)
-- [ ] The CLI exits 0 accepted, 1 rejected, 2 unreadable (case: SB1-14)
+- [ ] The five sample manifests (four from the brief and the evaluation pack) are accepted (case: SB1-01)
+- [ ] A missing, unknown, mistyped or out-of-enum field, or an unsupported apiVersion, is rejected (case: SB1-02)
+- [ ] Duplicate keys, aliases, merge keys, non-string keys and custom tags are rejected (case: SB1-03)
+- [ ] A credential in any key or value is rejected and appears in no output (case: SB1-04)
+- [ ] A secret that is not a vault reference under the owner's team is rejected (case: SB1-05)
+- [ ] A wildcard, a forbidden scope or a malformed resource or host is rejected (case: SB1-06)
+- [ ] A provider or egress host not approved for the sensitivity, or a model API host without a model, is rejected (case: SB1-07)
+- [ ] An outward or physical tool without human approval, or tools without a definition digest, is rejected (case: SB1-08)
+- [ ] An unpinned artifact, a scan of another digest, a failed scan or findings above the thresholds are rejected (case: SB1-09)
+- [ ] An owner or source outside the policy, or a source URL with user info, backslash or port, is rejected (case: SB1-10)
+- [ ] An evaluation pack that calls a model or has an outward or physical tool is rejected (case: SB1-11)
+- [ ] Every finding is reported in one run with rule, path, message and hint (case: SB1-12)
+- [ ] Manifest text cannot change the checks, and terminal output is escaped (case: SB1-13)
+- [ ] The CLI exits 0 accepted, 1 rejected, 2 unreadable manifest or invalid policy (case: SB1-14)
+- [ ] The result carries the tier and the digests of the manifest, the policy and the validator (case: SB1-15)
+- [ ] An invalid policy fails closed with exit 2 (case: SB1-16)
+- [ ] Every case in this file is executed by a test (case: SB1-17)

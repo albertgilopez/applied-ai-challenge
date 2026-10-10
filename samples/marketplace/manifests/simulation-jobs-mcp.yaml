@@ -1,0 +1,35 @@
+apiVersion: marketplace/v1
+id: simulation-jobs-mcp
+version: "1.2.0"
+kind: mcp-server
+domains: [simulation]
+owner: { team: sim-platform, contact: sim-platform@example.com }
+summary: MCP server that submits simulation jobs to the cluster and summarises the results. Submitting spends cluster time, so it waits for a human.
+data: { sensitivity: internal }
+model: { provider: internal, id: llm-internal-small }
+permissions:
+  - { resource: "sim:queue/batch", access: write }
+  - { resource: "sim:results/team-rf", access: read }
+egress: [sim.example.com, llm.internal.example.com]
+secrets:
+  - { name: SIM_TOKEN, ref: "vault://sim-platform/job-submitter" }
+tools:
+  - name: submit_job
+    effect: outward
+    requires_human_approval: true
+    definition_sha256: 0aa9f849f4906694885e4d8d46deb0c36111841a8feb8e83175f289dd9f1c61b
+  - name: read_results
+    effect: read
+    requires_human_approval: false
+    definition_sha256: c2b3bbc4b884e024b9ca391e8e91808f015848a968dcb02ca92a849661399005
+artifact:
+  ref: artifactory://ai-assets/simulation-jobs-mcp
+  digest: sha256:0869b7586c47ac10648e9c2a47d8743081361e851f3df99a19a5999980764a9c
+source: https://bitbucket.example.com/scm/sim/simulation-jobs-mcp
+security_scan:
+  tool: polaris
+  id: PLR-2026-10-0390
+  artifact_digest: sha256:0869b7586c47ac10648e9c2a47d8743081361e851f3df99a19a5999980764a9c
+  status: passed
+  critical: 0
+  high: 0

@@ -1,0 +1,36 @@
+apiVersion: marketplace/v1
+id: test-plan-agent
+version: "1.4.0"
+kind: agent
+domains: [software]
+owner: { team: sw-test-automation, contact: qa-tools@example.com }
+summary: Turns a Jira story into a test plan and drafts it as a Confluence page for the team to review.
+data: { sensitivity: internal }
+model: { provider: anthropic, id: claude-sonnet-5-5 }
+permissions:
+  - { resource: "jira:project/QA", access: read }
+  - { resource: "confluence:space/QA", access: write }
+egress: [api.anthropic.com, jira.example.com, confluence.example.com]
+secrets:
+  - { name: JIRA_TOKEN, ref: "vault://sw-test-automation/jira-reader" }
+  - { name: CONFLUENCE_TOKEN, ref: "vault://sw-test-automation/confluence-writer" }
+tools:
+  - name: read_story
+    effect: read
+    requires_human_approval: false
+    definition_sha256: 2f28e969fcfdc7c24403ddf5f5570257eb0e3778424746103327d70767a3661f
+  - name: create_test_plan
+    effect: write
+    requires_human_approval: false
+    definition_sha256: d598e2f5f888e1d47a00aab6920f17c65f09583c8c1f2ec099dccad1b600d74d
+artifact:
+  ref: artifactory://ai-assets/test-plan-agent
+  digest: sha256:37f10736b6c0aa7f828638887ef915871edd417e0324ad583b17fc2cba1d50ae
+source: https://bitbucket.example.com/scm/qa/test-plan-agent
+security_scan:
+  tool: polaris
+  id: PLR-2026-10-0412
+  artifact_digest: sha256:37f10736b6c0aa7f828638887ef915871edd417e0324ad583b17fc2cba1d50ae
+  status: passed
+  critical: 0
+  high: 0

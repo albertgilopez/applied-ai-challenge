@@ -1,0 +1,34 @@
+apiVersion: marketplace/v1
+id: security-triage-skill
+version: "2.0.1"
+kind: skill
+domains: [software, hardware-firmware, simulation]
+owner: { team: product-security, contact: psirt-tools@example.com }
+summary: Triage a Black Duck or Polaris finding - reachability, severity in context, a proposed owner - for a human to confirm.
+data: { sensitivity: confidential }
+model: { provider: internal, id: llm-internal-large }
+permissions:
+  - { resource: "polaris:project/firmware-x", access: read }
+egress: [llm.internal.example.com, polaris.example.com]
+secrets:
+  - { name: POLARIS_TOKEN, ref: "vault://product-security/polaris-reader" }
+tools:
+  - name: read_finding
+    effect: read
+    requires_human_approval: false
+    definition_sha256: b336d24bbc083f7a435cf44812f9f4e91cead81f5d8d6cf7a37562d8827d40be
+  - name: triage_finding
+    effect: read
+    requires_human_approval: false
+    definition_sha256: 01bf3247981c875947f5e7e2b08a8f1e61876f83c66dfbc0d2d5d62e97078855
+artifact:
+  ref: artifactory://ai-assets/security-triage-skill
+  digest: sha256:147b4719c1243560db0b7cf30f2b46852464641f369046fbf3d77a2f4af7afac
+source: https://bitbucket.example.com/scm/psirt/security-triage-skill
+security_scan:
+  tool: black-duck
+  id: BD-2026-10-0077
+  artifact_digest: sha256:147b4719c1243560db0b7cf30f2b46852464641f369046fbf3d77a2f4af7afac
+  status: passed
+  critical: 0
+  high: 0
