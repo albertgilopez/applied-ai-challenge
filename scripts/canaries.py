@@ -153,9 +153,10 @@ muts = [
     ),  # DR-4 / C12: the license is part of the key
     (
         "core/review.py",
-        '"policy_sha256": policy_sha256,\n        },',
-        '"policy_sha256": "",\n        },',
+        '"policy_sha256": policy_sha256,\n    }\n    if card_key',
+        '"policy_sha256": "",\n    }\n    if card_key',
     ),  # DR-5: a policy change reopens the item
+    ("core/review.py", 'fields["card_key"] = card_key', "pass"),  # STORY-002 DR-5: the card is part of the key
     ("core/sbom.py", 'if url.lower().startswith("https://"):', "if True:"),  # DR-6 / C5
     ("core/report.py", "if unicodedata.category(ch) in _UNSAFE_CATEGORIES else ch", "if False else ch"),  # DR-7 / C4
     ("core/report.py", "if ch in _MARKDOWN else ch for ch in out", "if False else ch for ch in out"),  # DR-7 / C4
@@ -174,6 +175,26 @@ muts = [
         'named = Product(str(product["name"]), version if isinstance(version, str) else None)',
         "named = None",
     ),  # DR-8 the product is named
+    # STORY-002: one mutation per domain rule.
+    ("core/model_card.py", 'and normalise(license_id) in normalise(quote or "")', "and True"),  # DR-1 names the id
+    ("core/model_card.py", "if _grounded_restriction(r, card))", "if True)"),  # DR-2
+    (
+        "core/model_card.py",
+        "verdict = min((sbom.verdict, card_verdict), key=lambda v: RANK[v])",
+        "verdict = card_verdict",
+    ),
+    ("core/model_card.py", '{"card_sha256": _sha256(card), "prompt_sha256"', '{"card_sha256": "", "prompt_sha256"'),
+    (
+        "core/model_card.py",
+        'REVIEW, "the model\'s answer could not be read"',
+        '"Allow", "the model\'s answer could not be read"',
+    ),
+    ("agent/model_cards.py", '_PART = r"[A-Za-z0-9][A-Za-z0-9._-]', '_PART = r"[A-Za-z0-9.][A-Za-z0-9._-]'),  # D-04
+    (
+        "core/report.py",
+        "decision_key(c, policy_sha256, (card_keys or {}).get(c.identity))",
+        "decision_key(c, policy_sha256)",
+    ),
 ]
 # Every anchor is checked before anything is mutated: a reformat that splits a
 # line should report all the stale anchors at once, not stop at the first.

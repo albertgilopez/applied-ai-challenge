@@ -27,8 +27,12 @@ class CardNotFound(LookupError):
 
 
 def valid_model_id(model_id: object) -> bool:
-    """A format check, so a pattern is the right tool: `org/name`, no `..`, nothing else."""
-    return isinstance(model_id, str) and bool(_MODEL_ID.fullmatch(model_id)) and ".." not in model_id
+    """A format check, so a pattern is the right tool: exactly `org/name`, nothing else.
+
+    Each part starts with a letter or a digit, so `..` can never be a part: a separate `..` test here
+    guarded nothing (a canary showed it: removing it turned no test red).
+    """
+    return isinstance(model_id, str) and bool(_MODEL_ID.fullmatch(model_id))
 
 
 def model_id_from_purl(purl: str | None) -> str | None:

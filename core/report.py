@@ -18,6 +18,7 @@ written as `<...>` autolinks with the characters that could end one percent-enco
 from __future__ import annotations
 
 import unicodedata
+from collections.abc import Mapping
 from typing import Any
 from urllib.parse import quote
 
@@ -77,12 +78,17 @@ def build_report(
     sbom_sha256: str,
     policy_sha256: str,
     generated_at: str,
+    card_keys: Mapping[str, str] | None = None,
 ) -> JSONObject:
-    """The report as data. Raises ReviewError if a component of this SBOM was never scanned."""
+    """The report as data. Raises ReviewError if a component of this SBOM was never scanned.
+
+    `card_keys` (identity → card key) are the keys the scan used for AI models reviewed against their
+    cards (STORY-002 DR-5); the caller computes them the same way the scan did.
+    """
     by_key = {s.key: s for s in states.values()}  # file order: a later decision for a key wins
     rows: list[tuple[tuple[str, str], JSONObject]] = []
     for c in components:
-        key = decision_key(c, policy_sha256)
+        key = decision_key(c, policy_sha256, (card_keys or {}).get(c.identity))
         state = by_key.get(key)
         if state is None:
             raise ReviewError(f"{safe_text(c.identity)} has no recorded decision under this policy: run scan first")

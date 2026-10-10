@@ -1,0 +1,193 @@
+{
+  "components": [
+    {
+      "decided_verdict": "Needs review",
+      "decision_id": "888450ed7b84",
+      "identity": "internal-telemetry@0.4.0",
+      "name": "internal-telemetry",
+      "reason": "no license declared; no source declared",
+      "reviews": [],
+      "source_url": null,
+      "status": "pending",
+      "verdict": "Needs review",
+      "version": "0.4.0"
+    },
+    {
+      "decided_verdict": "Needs review",
+      "decision_id": "8a9e457ecc34",
+      "identity": "pkg:huggingface/google/gemma-2-2b",
+      "name": "gemma-2-2b",
+      "reason": "SBOM: custom license LicenseRef-Gemma-Terms-of-Use not in policy; model card: custom license LicenseRef-gemma not in policy (quoted: 'license: gemma'); restrictions: Use is subject to the Gemma Prohibited Use Policy; Models may not be used to generate content that infringes intellectual property rights or to facilitate harm; Use restrictions must be passed on to anyone the model or a derivative is distributed to",
+      "reviews": [],
+      "source_url": "https://huggingface.co/google/gemma-2-2b",
+      "status": "pending",
+      "verdict": "Needs review",
+      "version": null
+    },
+    {
+      "decided_verdict": "Needs review",
+      "decision_id": "736aaaf471fc",
+      "identity": "pkg:huggingface/meta-llama/Llama-3.1-8B",
+      "name": "Llama-3.1-8B",
+      "reason": "SBOM: custom license LicenseRef-Llama-3.1-Community-License not in policy; model card: custom license LicenseRef-llama3.1 not in policy (quoted: 'license: llama3.1'); restrictions: Attribution: provide a copy of the Agreement with any distributed Llama Materials and prominently display \"Built with Llama\".; Must comply with applicable laws and regulations, including trade compliance laws, and adhere to the Acceptable Use Policy.; User threshold: licensees with more than 700 million monthly active users must request a license from Meta, which may be granted at Meta's sole discretion.",
+      "reviews": [
+        {
+          "at": "2026-10-10T07:31:45Z",
+          "by": "A. Reviewer",
+          "kind": "override",
+          "reason": "Under 700M monthly active users; 'Built with Llama' shown on the about page; AUP accepted",
+          "verdict": "Allow"
+        }
+      ],
+      "source_url": "https://huggingface.co/meta-llama/Llama-3.1-8B",
+      "status": "overridden",
+      "verdict": "Allow",
+      "version": null
+    },
+    {
+      "decided_verdict": "Allow",
+      "decision_id": "ab5f3c5ddfe8",
+      "identity": "pkg:huggingface/mistralai/Mistral-7B-v0.1",
+      "name": "Mistral-7B-v0.1",
+      "reason": "SBOM: Apache-2.0 is allowed by policy; model card: Apache-2.0 is allowed by policy (quoted: 'license: apache-2.0')",
+      "reviews": [],
+      "source_url": "https://huggingface.co/mistralai/Mistral-7B-v0.1",
+      "status": "pending",
+      "verdict": "Allow",
+      "version": null
+    },
+    {
+      "decided_verdict": "Needs review",
+      "decision_id": "92e1f18d6d6e",
+      "identity": "pkg:maven/com.mysql/mysql-connector-j@9.1.0",
+      "name": "mysql-connector-j",
+      "reason": "GPL-2.0-only WITH Universal-FOSS-exception-1.0 not in policy",
+      "reviews": [],
+      "source_url": "https://central.sonatype.com/artifact/com.mysql/mysql-connector-j/9.1.0",
+      "status": "pending",
+      "verdict": "Needs review",
+      "version": "9.1.0"
+    },
+    {
+      "decided_verdict": "Allow",
+      "decision_id": "225783641c80",
+      "identity": "pkg:maven/org.slf4j/slf4j-api@2.0.13",
+      "name": "slf4j-api",
+      "reason": "MIT is allowed by policy",
+      "reviews": [],
+      "source_url": "https://central.sonatype.com/artifact/org.slf4j/slf4j-api/2.0.13",
+      "status": "pending",
+      "verdict": "Allow",
+      "version": "2.0.13"
+    },
+    {
+      "decided_verdict": "Allow",
+      "decision_id": "3c425dc77d2d",
+      "identity": "pkg:npm/%40babel/core@7.26.0",
+      "name": "@babel/core",
+      "reason": "MIT is allowed by policy",
+      "reviews": [],
+      "source_url": "https://www.npmjs.com/package/@babel/core/v/7.26.0",
+      "status": "pending",
+      "verdict": "Allow",
+      "version": "7.26.0"
+    },
+    {
+      "decided_verdict": "Allow",
+      "decision_id": "0e51bdffe821",
+      "identity": "pkg:npm/lodash@4.17.21",
+      "name": "lodash",
+      "reason": "MIT is allowed by policy",
+      "reviews": [],
+      "source_url": "https://www.npmjs.com/package/lodash/v/4.17.21",
+      "status": "pending",
+      "verdict": "Allow",
+      "version": "4.17.21"
+    },
+    {
+      "decided_verdict": "Allow",
+      "decision_id": "c5a1cf67b506",
+      "identity": "pkg:npm/react@18.3.1",
+      "name": "react",
+      "reason": "MIT is allowed by policy",
+      "reviews": [],
+      "source_url": "https://www.npmjs.com/package/react/v/18.3.1",
+      "status": "pending",
+      "verdict": "Allow",
+      "version": "18.3.1"
+    },
+    {
+      "decided_verdict": "Allow",
+      "decision_id": "ad74e58eee33",
+      "identity": "pkg:pypi/numpy@2.1.3",
+      "name": "numpy",
+      "reason": "BSD-3-Clause is allowed by policy",
+      "reviews": [],
+      "source_url": "https://pypi.org/project/numpy/2.1.3/",
+      "status": "pending",
+      "verdict": "Allow",
+      "version": "2.1.3"
+    },
+    {
+      "decided_verdict": "Needs review",
+      "decision_id": "1c2d9069a4b3",
+      "identity": "pkg:pypi/psycopg2@2.9.10",
+      "name": "psycopg2",
+      "reason": "custom license LicenseRef-LGPL-with-exceptions not in policy",
+      "reviews": [],
+      "source_url": "https://pypi.org/project/psycopg2/2.9.10/",
+      "status": "pending",
+      "verdict": "Needs review",
+      "version": "2.9.10"
+    },
+    {
+      "decided_verdict": "Reject",
+      "decision_id": "ef3e0caa33ad",
+      "identity": "pkg:pypi/pyqt5@5.15.11",
+      "name": "PyQt5",
+      "reason": "GPL-3.0-only is rejected by policy",
+      "reviews": [],
+      "source_url": "https://pypi.org/project/pyqt5/5.15.11/",
+      "status": "pending",
+      "verdict": "Reject",
+      "version": "5.15.11"
+    },
+    {
+      "decided_verdict": "Allow",
+      "decision_id": "76243e0ed9bf",
+      "identity": "pkg:pypi/pyyaml@6.0.2",
+      "name": "PyYAML",
+      "reason": "MIT is allowed by policy",
+      "reviews": [],
+      "source_url": "https://pypi.org/project/pyyaml/6.0.2/",
+      "status": "pending",
+      "verdict": "Allow",
+      "version": "6.0.2"
+    },
+    {
+      "decided_verdict": "Allow",
+      "decision_id": "a4f0943543eb",
+      "identity": "pkg:pypi/requests@2.32.3",
+      "name": "requests",
+      "reason": "Apache-2.0 is allowed by policy",
+      "reviews": [],
+      "source_url": "https://pypi.org/project/requests/2.32.3/",
+      "status": "pending",
+      "verdict": "Allow",
+      "version": "2.32.3"
+    }
+  ],
+  "counts": {
+    "Allow": 9,
+    "Needs review": 4,
+    "Reject": 1,
+    "pending": 13
+  },
+  "generated_at": "2026-10-10T08:00:00Z",
+  "policy_sha256": "d78e5e952f623f686076e39ef8c101e213d1aaf87f24875f6eed362c58668478",
+  "product": {
+    "name": "sample-instrument-software",
+    "version": "3.2.0"
+  },
+  "sbom_sha256": "571b377f9b8ef30b9ddf527cb69b4a2ffc76c969fbcf345883320791a50ca6f0"
+}

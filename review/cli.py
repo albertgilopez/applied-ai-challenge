@@ -86,6 +86,7 @@ def _parser() -> argparse.ArgumentParser:
     report.add_argument("--policy", required=True)
     report.add_argument("--ledger", required=True)
     report.add_argument("--out", required=True)
+    report.add_argument("--model-cards", help="the same directory the scan used, if it reviewed AI models")
     return p
 
 
@@ -118,9 +119,25 @@ def _card_decision(
     return review.decision, evidence
 
 
-def _scan(args: argparse.Namespace, out: TextIO, factory: ProviderFactory) -> None:
+def _card_inputs(c: Component, model_cards: str | None, live: bool) -> tuple[str | None, str | None, str | None]:
+    """(model id, card text, card key) for an AI model reviewed against its card; Nones otherwise.
+
+    `scan` and `report` both call this, so the key a report looks up is the key the scan wrote.
+    """
     from agent.reviewer import EFFORT, MODEL, PROMPT
 
+    if not (model_cards and c.is_ai_model):
+        return None, None, None
+    model_id = model_id_from_purl(c.purl)
+    try:
+        card: str | None = load_card(model_id or "", model_cards, http_fetch if live else None)
+    except (InvalidModelId, CardNotFound):
+        card = None
+    # Keyed on what the decision is made from: the card, and the prompt, model and effort that read it.
+    return model_id, card, card_key(card or "", digest(PROMPT), MODEL, EFFORT)
+
+
+def _scan(args: argparse.Namespace, out: TextIO, factory: ProviderFactory) -> None:
     doc, _ = load_sbom_document(args.sbom)
     policy = load_policy(args.policy)
     policy_digest = policy.digest()
@@ -128,16 +145,7 @@ def _scan(args: argparse.Namespace, out: TextIO, factory: ProviderFactory) -> No
     known = {s.key for s in fold(ledger.read()).values()}
     decided = reused = 0
     for c in doc.components:
-        model_id = model_id_from_purl(c.purl) if (args.model_cards and c.is_ai_model) else None
-        ckey: str | None = None
-        card: str | None = None
-        if args.model_cards and c.is_ai_model:
-            try:
-                card = load_card(model_id or "", args.model_cards, http_fetch if args.live else None)
-            except (InvalidModelId, CardNotFound):
-                card = None
-            # Keyed on what the decision is made from: the card, and the prompt, model and effort that read it.
-            ckey = card_key(card or "", digest(PROMPT), MODEL, EFFORT)
+        model_id, card, ckey = _card_inputs(c, args.model_cards, args.live)
         key = decision_key(c, policy_digest, ckey)
         if key in known:
             reused += 1  # the recorded verdict stands; a re-run never decides again (DR-9)
@@ -181,6 +189,11 @@ def _write(path: Path, text: str) -> None:
 def _report(args: argparse.Namespace, out: TextIO, now: Callable[[], str]) -> None:
     doc, sbom_sha256 = load_sbom_document(args.sbom)
     policy = load_policy(args.policy)
+    card_keys = {}
+    for c in doc.components:
+        _, _, ckey = _card_inputs(c, args.model_cards, live=False)
+        if ckey is not None:
+            card_keys[c.identity] = ckey
     report = build_report(
         doc.components,
         doc.product,
@@ -188,6 +201,7 @@ def _report(args: argparse.Namespace, out: TextIO, now: Callable[[], str]) -> No
         sbom_sha256=sbom_sha256,
         policy_sha256=policy.digest(),
         generated_at=now(),
+        card_keys=card_keys,
     )
     target = Path(args.out)
     target.mkdir(parents=True, exist_ok=True)

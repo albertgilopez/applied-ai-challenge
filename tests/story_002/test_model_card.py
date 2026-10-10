@@ -147,3 +147,11 @@ def test_s2_10_the_card_key_changes_with_every_input_the_review_reads():
     assert card_key(text, "q", "m", "medium") != base
     assert card_key(text, "p", "n", "medium") != base
     assert card_key(text, "p", "m", "high") != base
+
+
+def test_an_answer_that_could_not_be_read_is_never_allow():
+    review = review_model(model("Apache-2.0"), None, card("mistralai__Mistral-7B-v0.1"), POLICY)
+    assert review.decision.verdict == "Needs review"
+    assert "could not be read" in review.decision.reason
+    review = review_model(model(None), None, card("mistralai__Mistral-7B-v0.1"), POLICY)
+    assert review.decision.verdict == "Needs review"

@@ -94,3 +94,14 @@ def test_the_agent_lines_share_the_ledger_with_the_decisions(tmp_path):
     run("scan", "--sbom", SBOM, "--policy", POLICY, "--ledger", str(ledger), "--model-cards", str(CARDS), calls=[])
     kinds = {json.loads(line)["kind"] for line in ledger.read_text("utf-8").splitlines() if line.strip()}
     assert {"run_start", "model_call", "tool_intent", "tool", "run_end", "decision"} <= kinds
+
+
+def test_the_report_finds_decisions_made_against_the_cards(tmp_path):
+    ledger, out = tmp_path / "l.jsonl", tmp_path / "out"
+    base = ["--sbom", SBOM, "--policy", POLICY, "--ledger", str(ledger), "--model-cards", str(CARDS)]
+    assert run("scan", *base, calls=[])[0] == 0
+    code, _, err = run("report", *base, "--out", str(out), factory=False)
+    assert code == 0, err
+    report = json.loads((out / "report.json").read_text("utf-8"))
+    llama = next(r for r in report["components"] if r["name"] == "Llama-3.1-8B")
+    assert "model card" in llama["reason"]

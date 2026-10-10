@@ -17,21 +17,28 @@ append-only ledger line, and the result is a report Legal can attach to the CRA 
 | Story | What | State |
 |---|---|---|
 | [STORY-001](stories/STORY-001.md) | Parse CycloneDX 1.6 and SPDX 2.3, classify each component's license expression | done |
-| [STORY-002](stories/STORY-002.md) | AI models: read the license and usage restrictions from each model card | specified, not built |
+| [STORY-002](stories/STORY-002.md) | AI models: read the license and usage restrictions from each model card | done |
 | [STORY-003](stories/STORY-003.md) | Reviewer CLI, audit ledger, Legal report | done |
+| [STORY-004](stories/STORY-004.md) | KeysBench: a monthly measurement of frontier models (optional) | specified and designed, reviewed adversarially; not built |
 
-Until STORY-002 lands, an AI model is classified from the license its SBOM entry declares; a custom
-model license (Llama, Gemma) is `Needs review`, which is the safe answer, not the final one.
+A generated report, from the steps in `samples/build_report.py`, is in [`samples/report/`](samples/report/report.md):
+the scan with the model cards, one reviewer override (Llama 3.1), and the report Legal attaches.
 
 ## Try it
 
 ```bash
 uv sync
-uv run python -m review scan   --sbom samples/sbom.cdx.json --policy samples/policy.yaml --ledger out/ledger.jsonl
+S="--sbom samples/sbom.cdx.json --policy samples/policy.yaml --ledger out/ledger.jsonl --model-cards samples/model-cards"
+uv run python -m review scan   $S            # AI models read against their cards (recorded answers; --live to call the model)
 uv run python -m review list   --ledger out/ledger.jsonl
 uv run python -m review override --ledger out/ledger.jsonl --decision <id> --verdict Reject --by "A. Reviewer" --reason "..."
-uv run python -m review report --sbom samples/sbom.cdx.json --policy samples/policy.yaml --ledger out/ledger.jsonl --out out
+uv run python -m review report $S --out out
 ```
+
+Without `--model-cards` the scan classifies every component from the license its SBOM entry declares.
+With it, each AI model is reviewed by `agent/` (Claude Haiku 5.5 through `harness/`): the model reads the
+card and quotes it, the code checks every quote and applies the policy. The recorded run cost 0.0012 USD
+for the three models (measured from `usage`).
 
 The samples hold 14 real components (PyPI, npm, Maven, GitHub, three Hugging Face models), the same
 list in both formats.
@@ -74,6 +81,10 @@ record/replay of model calls so CI never calls a model.
 - The reviewer name is recorded as typed; there is no authentication.
 - The ledger is append-only by code, not tamper-evident (no hash chain).
 - One model provider, no streaming, no code-execution sandbox: out of scope at this size.
+- Model cards for gated models (Llama, Gemma) are local copies in `samples/model-cards/`; a stale copy is
+  a stale review. A card that states its license only in an image or behind a link is `Needs review`.
+- The model's quotes are checked word for word: a paraphrase is set aside as ungrounded (`Needs review`),
+  never accepted.
 - Jenkins was run locally in Docker, not on a shared CI server; the audit probe was run on Actions only.
 
 ## How this was built
