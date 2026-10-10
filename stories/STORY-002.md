@@ -80,8 +80,10 @@ Model answer (structured output, validated by code):
   license (`apache-2.0` → `Apache-2.0`); anything else becomes `LicenseRef-<id>` (custom), which
   `core/decide` sends to `Needs review` unless the policy lists it. `null` → `Needs review`, `no license
   found in model card`.
-- **DR-4 The worst verdict wins.** The model's verdict is the worse of the SBOM-declared license and
-  the card license. A card cannot upgrade what the SBOM says; it can only add evidence or a restriction.
+- **DR-4 The worst verdict wins.** When the SBOM declares a license, the model's verdict is the worse
+  of the SBOM-declared license and the card license: a card cannot upgrade what the SBOM says, it can
+  only add evidence or a restriction. When the SBOM declares none, the grounded card license is the
+  license (that is the gap the card fills); an ungrounded card leaves it `Needs review`.
 - **DR-5 A model decision is keyed on the card too (DOCTRINE D-08).** The decision key of an AI model
   reviewed against its card includes the digest of the card and of the grounded extraction, so a
   changed card or a re-extraction is a new decision, and a re-run with the same inputs reuses the old one.
