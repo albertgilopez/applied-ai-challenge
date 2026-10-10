@@ -1,25 +1,63 @@
-# Model cards live in samples/model-cards/; model responses are recorded under tests/cassettes/.
+# STORY-002 cases. Model cards live in samples/model-cards/<org>__<name>.md; recorded model responses
+# under tests/cassettes/story_002/. Policy: samples/policy.yaml (allowed MIT, Apache-2.0, BSD-3-Clause;
+# rejected GPL-3.0-only, AGPL-3.0-only). Unit cases use a scripted model answer; S2-12 runs `review scan`.
 - id: S2-01
-  card: permissive
-  expected: Allow
+  card: mistralai__Mistral-7B-v0.1
+  model_answer: { license_id: apache-2.0, quote: "license: apache-2.0", restrictions: [] }
+  expected: { verdict: Allow, license: Apache-2.0, grounded: true }
 - id: S2-02
-  card: custom-license
-  expected: Needs review
-  restrictions: non-empty
+  card: meta-llama__Llama-3.1-8B
+  model_answer:
+    license_id: llama3.1
+    quote: "license: llama3.1"
+    restrictions:
+      - { text: "700 million monthly active users threshold", quote: "greater than 700 million monthly active users" }
+      - { text: "display Built with Llama", quote: "prominently display “Built with Llama”" }
+  expected: { verdict: Needs review, license: LicenseRef-llama3.1, restrictions: 2 }
 - id: S2-03
-  card: permissive
-  model_quote: a sentence that is not in the card
-  expected: Needs review
-  reason_contains: grounding failed
+  card: mistralai__Mistral-7B-v0.1
+  model_answer: { license_id: apache-2.0, quote: "This model is released under the Apache 2.0 license.", restrictions: [] }
+  expected: { verdict: Needs review, reason_contains: grounding failed }
 - id: S2-04
-  card: no-license
-  expected: Needs review
-  reason_contains: no license found
+  card: example__no-license-model
+  model_answer: { license_id: null, quote: null, restrictions: [] }
+  expected: { verdict: Needs review, reason_contains: no license found in model card }
 - id: S2-05
-  card: rejected-license
-  expected: Reject
+  card: example__agpl-model
+  model_answer: { license_id: agpl-3.0, quote: "license: agpl-3.0", restrictions: [] }
+  expected: { verdict: Reject, license: AGPL-3.0-only }
 - id: S2-06
-  tool_input: [https://evil.example/x, ../../etc/passwd, "org/name; rm -rf"]
+  tool_input: ["https://evil.example/x", "../../etc/passwd", "org/name; rm -rf", "org/../name", "/abs/path", "org/name/extra", ""]
   expected: refused
+  accepted: ["mistralai/Mistral-7B-v0.1", "meta-llama/Llama-3.1-8B", "google/gemma-2-2b"]
 - id: S2-07
-  expected: usage recorded (input_tokens, output_tokens, cost_usd or null, latency_s)
+  expected:
+    run_end_has: [input_tokens, output_tokens, cost_usd, latency_s]
+    cost_usd_is_number_or_null: true
+- id: S2-08
+  card: mistralai__Mistral-7B-v0.1
+  rows:
+    - { model_answer: { license_id: apache-2.0, quote: "the", restrictions: [] }, expected: { verdict: Needs review, reason_contains: grounding failed } }
+    - { model_answer: { license_id: mit, quote: "license: apache-2.0", restrictions: [] }, expected: { verdict: Needs review, reason_contains: grounding failed } }
+- id: S2-09
+  rows:
+    - { sbom_license: Apache-2.0, card_license: llama3.1, expected: Needs review }
+    - { sbom_license: null, card_license: apache-2.0, expected: Allow }      # the card supplies the missing license
+    - { sbom_license: GPL-3.0-only, card_license: apache-2.0, expected: Reject }   # a card cannot upgrade the SBOM
+- id: S2-10
+  steps: [scan, scan, edit_card, scan]
+  expected: { decisions_after: [3, 3, 4] }   # three AI models; the edited card adds one decision
+- id: S2-11
+  card: meta-llama__Llama-3.1-8B
+  model_answer:
+    license_id: llama3.1
+    quote: "license: llama3.1"
+    restrictions:
+      - { text: "real", quote: "greater than 700 million monthly active users" }
+      - { text: "invented", quote: "may not be used in Europe" }
+  expected: { restrictions: 1, reason_contains: "1 restriction not grounded" }
+- id: S2-12
+  rows:
+    - { args: "scan without --model-cards", expected: { same_ledger_as_story_003: true } }
+    - { args: "scan --model-cards samples/model-cards --recordings <empty dir>", expected: { exit_code: 2, network_calls: 0 } }
+    - { args: "scan --model-cards samples/model-cards (default recordings)", expected: { exit_code: 0, network_calls: 0, ai_models_reviewed: 3 } }
