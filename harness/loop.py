@@ -21,7 +21,7 @@ from harness.ledger import Ledger
 from harness.prompts import PromptRegistry, UnapprovedPrompt, digest
 from harness.providers import Provider
 from harness.storage import JSONObject
-from harness.usage import Usage, cost_usd
+from harness.usage import Usage, call_cost
 
 # (tool name, args, gate reason) -> what the human decided, as text for the model
 Escalation = Callable[[str, JSONObject, str], str]
@@ -56,12 +56,16 @@ class Agent:
         max_steps: int = 8,
         max_tokens: int = 2048,
         on_escalate: Escalation | None = None,
+        output_config: JSONObject | None = None,
     ) -> None:
         self.provider, self.model, self.system = provider, model, system
         self.prompt_id, self.registry = prompt_id, registry
         self.catalog, self.gate, self.ledger = catalog, gate, ledger
         self.env, self.max_steps, self.max_tokens = env, max_steps, max_tokens
         self.on_escalate = on_escalate
+        # Effort and the answer's format are part of every request, so they are part of the
+        # recording key too: a run recorded at one setting cannot answer a run at another.
+        self.output_config = output_config
 
     def _run_tool(self, call: JSONObject) -> tuple[JSONObject, JSONObject]:
         name, args = call["name"], call.get("input") or {}
@@ -120,20 +124,22 @@ class Agent:
                 "prompt_id": self.prompt_id,
                 "prompt_sha256": digest(self.system),
                 "prompt_approved": approved,
+                "output_config": self.output_config,
             }
         )
         started = time.monotonic()
-        usage, calls = Usage(), list[JSONObject]()
+        usage, calls, costs = Usage(), list[JSONObject](), list[float | None]()
         text, stop, step, error = "", "max_steps", 0, None
         try:
-            text, stop, step = self._loop(user, usage, calls)
+            text, stop, step = self._loop(user, usage, calls, costs)
         except Exception as exc:
             # A crashed run still closes in the ledger, with the error, before it propagates.
             stop, error = "error", f"{type(exc).__name__}: {exc}"
             raise
         finally:
             latency = time.monotonic() - started
-            cost = cost_usd(usage, self.model)
+            # Priced per call and summed; one call the table does not cover makes the run unpriced.
+            cost = None if not costs or any(c is None for c in costs) else sum(c for c in costs if c is not None)
             self.ledger.append(
                 {
                     "kind": "run_end",
@@ -149,19 +155,25 @@ class Agent:
             text=text, stop_reason=stop, steps=step, usage=usage, cost_usd=cost, latency_s=latency, tool_calls=calls
         )
 
-    def _loop(self, user: str, usage: Usage, calls: list[JSONObject]) -> tuple[str, str, int]:
+    def _loop(
+        self, user: str, usage: Usage, calls: list[JSONObject], costs: list[float | None]
+    ) -> tuple[str, str, int]:
         messages: list[JSONObject] = [{"role": "user", "content": user}]
         seen: dict[str, int] = {}
         text, stop, step = "", "max_steps", 0
         for step in range(1, self.max_steps + 1):
-            response = self.provider.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                system=self.system,
-                messages=messages,
-                tools=self.catalog.schemas(),
-            )
+            request: JSONObject = {
+                "model": self.model,
+                "max_tokens": self.max_tokens,
+                "system": self.system,
+                "messages": messages,
+                "tools": self.catalog.schemas(),
+            }
+            if self.output_config is not None:
+                request["output_config"] = self.output_config
+            response = self.provider.create(**request)
             usage.add(response.get("usage"))
+            costs.append(call_cost(response.get("usage"), self.model))
             self.ledger.append(
                 {
                     "kind": "model_call",

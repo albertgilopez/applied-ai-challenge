@@ -174,6 +174,30 @@ def test_usage_is_summed_across_calls(setup):
     assert (result.usage.input_tokens, result.usage.output_tokens) == (220, 30)
 
 
+def test_output_config_is_sent_on_every_call_and_recorded(setup):
+    provider = ScriptedProvider([tool_use("read_value", {"key": "k"}), final()])
+    config = {"effort": "medium"}
+    make_agent(setup, provider, output_config=config).run("go")
+    assert [r.get("output_config") for r in provider.requests] == [config, config]
+    _, _, ledger, _ = setup
+    start = next(r for r in ledger.read() if r["kind"] == "run_start")
+    assert start["output_config"] == config
+
+
+def test_the_run_cost_is_the_sum_of_its_calls_or_none_if_one_is_unpriced(setup):
+    priced = {"input_tokens": 1000, "output_tokens": 100, "inference_geo": "global"}
+    first, second = tool_use("read_value", {"key": "k"}), final()
+    first["usage"], second["usage"] = priced, priced
+    result = make_agent(setup, ScriptedProvider([first, second])).run("go")
+    assert result.cost_usd == pytest.approx(2 * (1000 * 2 + 100 * 10) / 1_000_000)
+
+    unpriced = final()
+    unpriced["usage"] = {"input_tokens": 1000, "output_tokens": 100}  # no region reported
+    first = tool_use("read_value", {"key": "k"})
+    first["usage"] = priced
+    assert make_agent(setup, ScriptedProvider([first, unpriced])).run("go").cost_usd is None
+
+
 def test_the_loop_stops_when_it_stops_making_progress(setup):
     same = [tool_use("read_value", {"key": "k"}, id=f"t{i}") for i in range(10)]
     result = make_agent(setup, ScriptedProvider(same), max_steps=10).run("go")
@@ -189,9 +213,12 @@ def test_cache_tokens_count_as_input():
 def test_a_cached_run_is_not_priced_as_plain_input(monkeypatch):
     import harness.usage as usage
 
-    monkeypatch.setitem(usage.PRICES, "m", (1.0, 1.0))
+    monkeypatch.setitem(usage.PRICES, "m", usage.Price(1.0, 2.0, 3.0, 0.5, 1.0))
     assert cost_usd(Usage(1_000_000, 0), "m") == 1.0
-    assert cost_usd(Usage(10, 0, cache_read_input_tokens=1000), "m") is None
+    # a cache read is priced at its own rate, not as plain input
+    assert cost_usd(Usage(0, 0, cache_read_input_tokens=1_000_000), "m") == 0.5
+    # a cache write whose 5m/1h split is unknown has no honest price
+    assert cost_usd(Usage(0, 0, cache_creation_input_tokens=1000), "m") is None
 
 
 def test_an_unknown_price_is_none_not_zero():

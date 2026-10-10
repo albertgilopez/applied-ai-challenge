@@ -57,7 +57,17 @@ muts = [
     ("harness/prompts.py", "if not by.strip() or not validation_ref.strip():", "if False:"),
     ("harness/loop.py", "if seen[key] >= REPEAT_LIMIT:", "if False:"),
     ("harness/replay.py", "if key not in self.data:", "if False:"),
-    ("harness/usage.py", "return None\n    per_in", "return 0.0\n    per_in"),
+    # Pricing: every way the table could under-price a call must stay None (S2-07, STORY-004 DR-3).
+    (
+        "harness/usage.py",
+        "if price is None:\n        return None\n    return _priced",
+        "if price is None:\n        return 0.0\n    return _priced",
+    ),
+    ("harness/usage.py", 'raw.get("inference_geo") != PRICED_REGION', "False"),
+    ("harness/usage.py", "u.total_input_tokens > price.max_prompt_tokens", "False"),
+    ("harness/usage.py", "if u.cache_creation_input_tokens != u.cache_write_5m + u.cache_write_1h:", "if False:"),
+    ("harness/loop.py", "cost = None if not costs or any(c is None for c in costs) else", "cost = 0.0 if False else"),
+    ("harness/loop.py", 'request["output_config"] = self.output_config', "pass"),
     # Boundary and story coverage: mutate what the test guards, not the test.
     ("core/__init__.py", 'tests/test_boundary.py).\n"""\n', 'tests/test_boundary.py).\n"""\nimport anthropic\n'),
     (
