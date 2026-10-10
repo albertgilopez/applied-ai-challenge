@@ -1,15 +1,13 @@
 {
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
-  "as_of": "2026-10-09",
-  "at_commit": "bac8c90",
-  "where_we_are": "STORY-001 and STORY-003 done. CI live: GitHub Actions and a Jenkinsfile over scripts/ci.sh (lint, types, 201 tests, 58/58 canaries, pip-audit). Actions seen failing on purpose twice on a probe branch: a broken case (test stage) and a vulnerable dependency (audit stage). The Jenkinsfile ran on a local Jenkins (ci/jenkins-local/): green on main, red at test on a broken-case branch.",
+  "as_of": "2026-10-10",
+  "at_commit": "1d8004a",
+  "where_we_are": "Challenge A complete: STORY-001, STORY-002 and STORY-003 done. STORY-002 reviews AI models against their model cards with Claude Haiku 5.5 on harness/ (governed prompt, read tool by id, structured answer); the code grounds every quote and applies the policy. The real run is recorded (0.0012 USD for three models) and replays offline in CI. A generated sample report is in samples/report/. 270 tests, every canary killed, pip-audit clean. KeysBench (STORY-004) is specified and designed after an adversarial review; not built.",
   "next": [
-    "KeysBench POC: 5-8 engineering tasks, rubric, grounded judge, results per model with measured cost and latency",
-    "Remaining LOW review findings (C10, C19, H5, H11, H12, H14, H16) when touching those files",
-    "STORY-002 after the panel brief"
+    "Challenge B: manifest validator with tests, a design doc of four pages at most with one diagram, a 20-minute presentation",
+    "Rehearse the live change for challenge A (a new story written, implemented and green in the pipeline)",
+    "KeysBench pilot if time allows: one task, configuration B, four models, one attempt"
   ],
   "blocked": [],
-  "waiting_on": [
-    "Which challenge the panel expects (A, B or both) and the panel time"
-  ]
+  "waiting_on": []
 }
