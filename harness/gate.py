@@ -3,7 +3,7 @@
 - `read`    → allow
 - `write`   → allow only inside the configured roots (paths resolved first, so
               `out/../secret` does not slip through)
-- `outward` → escalate to a human; the harness never runs it on its own
+- `outward`, `physical` → escalate to a human; the harness never runs them on its own
 - anything not in the catalog → deny
 """
 
@@ -57,6 +57,6 @@ class Gate:
             return self._check_paths(t, args, self.write_roots, "write") or Decision(
                 "allow", "write inside allowed roots"
             )
-        if t.effect == "outward":
-            return Decision("escalate", "outward effect needs a human")
+        if t.effect in ("outward", "physical"):
+            return Decision("escalate", f"{t.effect} effect needs a human")
         return Decision("deny", f"unknown effect {t.effect!r}")

@@ -14,7 +14,8 @@ from typing import Any, Literal, get_args
 
 from harness.storage import JSONObject
 
-Effect = Literal["read", "write", "outward"]
+# `physical` acts on an instrument or a bench: same vocabulary as the marketplace manifest.
+Effect = Literal["read", "write", "outward", "physical"]
 
 _JSON_TYPES = {str: "string", int: "integer", float: "number", bool: "boolean", list: "array", dict: "object"}
 

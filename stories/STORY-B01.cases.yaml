@@ -79,6 +79,8 @@
     - { patch: { tools: [ { name: publish_page, effect: outward, requires_human_approval: false, definition_sha256: "0000000000000000000000000000000000000000000000000000000000000000" } ] }, expected: { rules: [R5] } }
     - { file: samples/marketplace/manifests/lab-instrument-mcp.yaml, patch: { tools: [] }, expected: { rules: [R5] } }
     - { patch: { tools.0.definition_sha256: "<delete>" }, expected: { rules: [R1] } }
+    - { file: samples/marketplace/manifests/lab-instrument-mcp.yaml, patch: { kind: skill, tools: [] }, expected: { rules: [R5], paths: [tools] } }   # relabelled to escape the tool rule
+    - { file: samples/marketplace/manifests/lab-instrument-mcp.yaml, patch: { tools.1.effect: write }, expected: { rules: [R5] } }   # writes to a physical system without a physical tool
 - id: SB1-09
   rows:
     - { patch: { artifact.digest: "latest" }, expected: { rules: [R6], paths: [artifact.digest] } }
@@ -118,6 +120,7 @@
   files: [samples/marketplace/manifests/test-plan-agent.yaml, samples/marketplace/manifests/lab-instrument-mcp.yaml, samples/marketplace/manifests/eval-pack.yaml]
   expected:
     tiers: [2, 3, 1]
+    tier_of_lab_as_internal_skill_without_tools: 3   # writing to the bench keeps it at tier 3, whatever it declares
     checked_has: [api_version, manifest_sha256, policy_sha256, validator_version]
     policy_change_changes: policy_sha256
 - id: SB1-16

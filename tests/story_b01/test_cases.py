@@ -129,6 +129,13 @@ def test_sb1_15_tier_and_provenance(tmp_path):
         tiers.append(result["tier"])
         assert set(case["expected"]["checked_has"]) <= set(result["checked"])
     assert tiers == case["expected"]["tiers"]
+    relabelled = {
+        "file": "samples/marketplace/manifests/lab-instrument-mcp.yaml",
+        "patch": {"kind": "skill", "data.sensitivity": "internal", "tools": []},
+    }
+    sub = tmp_path / "relabelled"
+    sub.mkdir()
+    assert run(relabelled, sub)["result"]["tier"] == case["expected"]["tier_of_lab_as_internal_skill_without_tools"]
     a, b = tmp_path / "a", tmp_path / "b"
     a.mkdir()
     b.mkdir()

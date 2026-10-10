@@ -21,9 +21,10 @@ import tempfile
 muts = [
     (
         "harness/gate.py",
-        'return Decision("escalate", "outward effect needs a human")',
-        'return Decision("allow", "outward effect needs a human")',
+        'return Decision("escalate", f"{t.effect} effect needs a human")',
+        'return Decision("allow", f"{t.effect} effect needs a human")',
     ),
+    ("harness/gate.py", 'if t.effect in ("outward", "physical"):', 'if t.effect == "outward":'),
     (
         "harness/gate.py",
         'return Decision("deny", "tool is not in the catalog")',
@@ -221,7 +222,16 @@ muts = [
         'elif tool.get("requires_human_approval") is not True',
         "elif False and tool.get('x') is not True",
     ),
-    ("core/manifest.py", 'if kind in ("agent", "mcp-server") and not tools:', "if False:"),
+    ("core/manifest.py", "    if not tools:\n", "    if False:\n"),
+    # D1 of the MCP/CLI design review: relabelling an asset must not let it escape the tool rule or its tier.
+    ("core/manifest.py", "    if not tools:\n", '    if kind in ("agent", "mcp-server") and not tools:\n'),
+    ("core/manifest.py", 'and p["resource"].split(":", 1)[0] in policy.physical_systems', "and False"),
+    ("core/manifest.py", "        if not physical_tool:\n", "        if False:\n"),
+    (
+        "core/manifest.py",
+        'if level == "restricted" or reaches or _physical_writes(doc, policy):',
+        'if level == "restricted" or reaches:',
+    ),
     ("core/manifest.py", "if isinstance(digest, str) and not DIGEST.fullmatch(digest):", "if False:"),
     ("core/manifest.py", "if isinstance(covered, str) and covered != digest:", "if False:"),
     ("core/manifest.py", 'if scan.get("status") == "failed":', "if False:"),

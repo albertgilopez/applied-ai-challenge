@@ -10,7 +10,9 @@ Challenge B of the take-home. The design of the whole marketplace is in `docs/ma
 this story is its one working piece.
 
 > Revised after an adversarial design review (six lenses, findings reproduced by verifiers):
-> `docs/design/STORY-B01-challenge.md`.
+> `docs/design/STORY-B01-challenge.md`. A second review, on whether assets should ship as MCP servers or
+> CLIs, found that a relabelled asset escaped R5 and its tier; R5 and P3 were tightened
+> (`docs/design/marketplace-mcp-vs-cli-challenge.md`).
 
 ## Scope
 
@@ -56,6 +58,7 @@ security_scan: { tool: black-duck | polaris, id: <id>, artifact_digest: "sha256:
 ```
 
 Policy: `contact_domains`, `source_hosts`, `model_hosts` (host → provider), `forbidden_scopes`,
+`physical_systems` (systems whose resources are instruments or benches),
 `sensitivity.<level>.{providers, egress}`, `scan.{max_critical, max_high}`. The policy is validated too.
 
 Result: `{ verdict: accept | reject, tier: 1 | 2 | 3, findings: [ { rule, path, message, hint } ],
@@ -81,9 +84,10 @@ not YAML) or the policy is invalid.
   asset's sensitivity. An egress host the policy knows as a model API requires the matching `model`. An
   evaluation pack calls no model.
 - **R5 Effects that reach the world need a human, and tools are pinned.** An `outward` or `physical` tool
-  declares `requires_human_approval: true` (a real boolean). An agent or MCP server lists its tools, each
-  with the sha256 of its definition, so a tool that changes after approval is a new version. An evaluation
-  pack has no `outward` or `physical` tool.
+  declares `requires_human_approval: true` (a real boolean). Every asset, whatever its `kind`, lists its
+  tools, each with the sha256 of its definition, so a tool that changes after approval is a new version.
+  A write permission on a system the policy names as physical requires a declared `physical` tool. An
+  evaluation pack has no `outward` or `physical` tool.
 - **R6 Pinned and scanned.** The artifact is pinned by a sha256 digest; the scan covers **that** digest,
   passed, and is within the policy's thresholds.
 - **R7 Accountable.** The owner's contact is on an approved domain (exact match after the single `@`); the
@@ -95,7 +99,7 @@ not YAML) or the policy is invalid.
 - **P2 Manifest text is data.** Nothing in the manifest changes which checks run; terminal output is escaped
   and every output is redacted.
 - **P3 The result says what was decided from**: the risk tier computed from the manifest (3 if any outward or
-  physical tool or restricted data; 2 if any write permission or confidential data; else 1), and the digests
+  physical tool, a write on a physical system, or restricted data; 2 if any write permission or confidential data; else 1), and the digests
   of the manifest, the policy and the validator version.
 - **P4 The policy fails closed too**: an unknown key, a scalar where a list is expected, a missing sensitivity
   level or threshold is exit 2, never a permissive default.
@@ -109,7 +113,7 @@ not YAML) or the policy is invalid.
 - [x] A secret that is not a vault reference under the owner's team is rejected (case: SB1-05)
 - [x] A wildcard, a forbidden scope or a malformed resource or host is rejected (case: SB1-06)
 - [x] A provider or egress host not approved for the sensitivity, or a model API host without a model, is rejected (case: SB1-07)
-- [x] An outward or physical tool without human approval, or tools without a definition digest, is rejected (case: SB1-08)
+- [x] An outward or physical tool without human approval, tools without a definition digest, an asset with no tools, or a write to a physical system without a physical tool, is rejected (case: SB1-08)
 - [x] An unpinned artifact, a scan of another digest, a failed scan or findings above the thresholds are rejected (case: SB1-09)
 - [x] An owner or source outside the policy, or a source URL with user info, backslash or port, is rejected (case: SB1-10)
 - [x] An evaluation pack that calls a model or has an outward or physical tool is rejected (case: SB1-11)

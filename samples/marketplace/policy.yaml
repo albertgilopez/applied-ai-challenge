@@ -10,6 +10,9 @@ model_hosts:
   api.openai.com: openai
   llm.internal.example.com: internal
 
+# Systems whose resources are physical (instruments, benches): writing to them is a physical effect.
+physical_systems: [lab]
+
 # Scopes too broad to name precisely what an asset touches.
 forbidden_scopes: [all, any, admin, root, full-access, everything]
 

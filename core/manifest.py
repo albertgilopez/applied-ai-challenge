@@ -141,6 +141,7 @@ class MarketplacePolicy:
     source_hosts: frozenset[str]
     model_hosts: dict[str, str]
     forbidden_scopes: frozenset[str]
+    physical_systems: frozenset[str]
     providers: dict[str, frozenset[str]]
     egress: dict[str, frozenset[str]]
     max_critical: int
@@ -163,7 +164,15 @@ def _count(value: Any, where: str) -> int:
 
 
 def check_policy(data: Any) -> MarketplacePolicy:
-    keys = {"contact_domains", "source_hosts", "model_hosts", "forbidden_scopes", "sensitivity", "scan"}
+    keys = {
+        "contact_domains",
+        "source_hosts",
+        "model_hosts",
+        "forbidden_scopes",
+        "physical_systems",
+        "sensitivity",
+        "scan",
+    }
     if type(data) is not dict or set(data) != keys:
         raise InvalidPolicy(f"the policy must have exactly these keys: {', '.join(sorted(keys))}")
     hosts = data["model_hosts"]
@@ -187,6 +196,7 @@ def check_policy(data: Any) -> MarketplacePolicy:
         source_hosts=_str_list(data["source_hosts"], "source_hosts"),
         model_hosts=dict(hosts),
         forbidden_scopes=_str_list(data["forbidden_scopes"], "forbidden_scopes"),
+        physical_systems=_str_list(data["physical_systems"], "physical_systems"),
         providers=providers,
         egress=egress,
         max_critical=_count(scan["max_critical"], "scan.max_critical"),
@@ -390,13 +400,35 @@ def _r4_data(run: _Run, doc: dict[str, Any], policy: MarketplacePolicy) -> None:
             )
 
 
-def _r5_effects(run: _Run, doc: dict[str, Any]) -> None:
+def _physical_writes(doc: dict[str, Any], policy: MarketplacePolicy) -> list[int]:
+    """Indexes of the write permissions on a system the policy names as physical (an instrument, a bench)."""
+    return [
+        i
+        for i, p in enumerate(_list(doc, "permissions"))
+        if isinstance(p, dict)
+        and p.get("access") == "write"
+        and isinstance(p.get("resource"), str)
+        and p["resource"].split(":", 1)[0] in policy.physical_systems
+    ]
+
+
+def _r5_effects(run: _Run, doc: dict[str, Any], policy: MarketplacePolicy) -> None:
     tools = _list(doc, "tools")
     kind = doc.get("kind")
-    if kind in ("agent", "mcp-server") and not tools:
-        run.add(
-            "R5", "tools", f"an {kind} must list its tools", "list every tool with its effect and definition digest"
-        )
+    # Every kind lists its tools: the effect of a tool is what the tier and the human gate are decided
+    # from, so an asset that declares none would choose its own tier (a bench controller relabelled
+    # `kind: skill` with `tools: []` used to drop from tier 3 to 2).
+    if not tools:
+        run.add("R5", "tools", "an asset must list its tools", "list every tool with its effect and definition digest")
+    physical_tool = any(isinstance(t, dict) and t.get("effect") == "physical" for t in tools)
+    for i in _physical_writes(doc, policy):
+        if not physical_tool:
+            run.add(
+                "R5",
+                f"permissions.{i}",
+                "writes to a physical system but declares no physical tool",
+                "declare the tool that acts on the instrument as effect: physical, with human approval",
+            )
     for i, tool in enumerate(tools):
         if not isinstance(tool, dict) or tool.get("effect") not in REACHES_THE_WORLD:
             continue
@@ -473,11 +505,12 @@ def _r7_accountable(run: _Run, doc: dict[str, Any], policy: MarketplacePolicy) -
             )
 
 
-def tier_of(doc: dict[str, Any]) -> int:
+def tier_of(doc: dict[str, Any], policy: MarketplacePolicy) -> int:
     tools = _list(doc, "tools")
     perms = _list(doc, "permissions")
     level = _obj(doc, "data").get("sensitivity")
-    if level == "restricted" or any(isinstance(t, dict) and t.get("effect") in REACHES_THE_WORLD for t in tools):
+    reaches = any(isinstance(t, dict) and t.get("effect") in REACHES_THE_WORLD for t in tools)
+    if level == "restricted" or reaches or _physical_writes(doc, policy):
         return 3
     if level == "confidential" or any(isinstance(p, dict) and p.get("access") == "write" for p in perms):
         return 2
@@ -521,7 +554,7 @@ def validate(doc: Any, policy: MarketplacePolicy, checked: dict[str, str]) -> Re
     _r2_secrets(run, doc)
     _r3_names(run, doc, policy)
     _r4_data(run, doc, policy)
-    _r5_effects(run, doc)
+    _r5_effects(run, doc, policy)
     _r6_pinned(run, doc, policy)
     _r7_accountable(run, doc, policy)
-    return _finish(run, tier_of(doc), checked)
+    return _finish(run, tier_of(doc, policy), checked)

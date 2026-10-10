@@ -106,6 +106,23 @@ def test_an_outward_tool_is_escalated_and_not_executed(setup):
     assert result.tool_calls[0]["verdict"] == "escalate"
 
 
+def test_a_physical_tool_is_escalated_and_not_executed(setup):
+    # The manifest vocabulary has `physical` (an instrument, a bench); the harness must accept it
+    # and treat it like `outward`: the agent never drives hardware on its own.
+    catalog = setup[0]
+
+    @tool(catalog, effect="physical", description="Set the output power of the bench")
+    def set_output_power(dbm: int) -> str:  # pragma: no cover - must never run
+        raise AssertionError("a physical tool ran without a human")
+
+    seen = []
+    provider = ScriptedProvider([tool_use("set_output_power", {"dbm": 10}), final()])
+    agent = make_agent(setup, provider, on_escalate=lambda name, args, why: seen.append(name) or "declined")
+    result = agent.run("go")
+    assert seen == ["set_output_power"]
+    assert result.tool_calls[0]["verdict"] == "escalate"
+
+
 def test_a_write_outside_the_allowed_roots_is_denied(tmp_path):
     catalog = Catalog()
 
