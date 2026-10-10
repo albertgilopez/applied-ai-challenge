@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- Source of architecture.png. Open it in a browser, or render it headless (one screenshot of #diagram). -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --ink: #1f2933; --muted: #52606d; --line: #7b8794; --box: #f5f7fa; --edge: #cbd2d9;
+          --gate: #fff4e5; --gate-edge: #d9822b; --store: #eef4fb; --store-edge: #8fb1d6; }
+  body { margin: 0; background: #fff; font-family: Inter, "Segoe UI", Arial, sans-serif; color: var(--ink); }
+  #diagram { position: relative; width: 1180px; padding: 18px 20px 20px; }
+  .lane { border: 1px solid var(--edge); border-radius: 10px; padding: 26px 14px 14px; margin-bottom: 34px; position: relative; }
+  .lane:last-of-type { margin-bottom: 0; }
+  .lane > .title { position: absolute; top: 6px; left: 14px; background: #fff; padding: 0 6px; z-index: 1; font-size: 13px; font-weight: 700; color: var(--muted);
+                   letter-spacing: .02em; text-transform: uppercase; }
+  .row { display: flex; gap: 26px; align-items: stretch; }
+  .n { flex: 1; background: var(--box); border: 1px solid var(--edge); border-radius: 8px; padding: 9px 10px;
+       font-size: 15px; font-weight: 600; text-align: center; line-height: 1.3; }
+  .n small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .gate { background: var(--gate); border-color: var(--gate-edge); }
+  .store { background: var(--store); border-color: var(--store-edge); border-radius: 14px; }
+  svg { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+  .lbl { font-size: 12px; fill: var(--muted); }
+</style>
+</head>
+<body>
+<div id="diagram">
+  <div class="lane"><div class="title">1 · Publish — one Jenkins pipeline per asset version</div>
+    <div class="row">
+      <div class="n" id="bb">Bitbucket<small>code + manifest.yaml</small></div>
+      <div class="n" id="t">Tests<small>unit + evaluation</small></div>
+      <div class="n" id="bd">Black Duck / Polaris<small>scan of this digest</small></div>
+      <div class="n gate" id="mv">Manifest validator<small>policy as code · built</small></div>
+      <div class="n gate" id="j">Jira sign-off<small>by risk tier 1-3</small></div>
+      <div class="n" id="s">Sign + push<small>by digest</small></div>
+    </div>
+  </div>
+  <div class="lane"><div class="title">2 · Stores</div>
+    <div class="row">
+      <div class="n store" id="idx">Catalog index<small>validated manifests</small></div>
+      <div class="n store" id="af">Artifactory<small>signed artifact by digest</small></div>
+      <div class="n store" id="v">Vault<small>short-lived leases per asset role</small></div>
+      <div class="n store" id="lg">Audit log<small>append-only</small></div>
+    </div>
+  </div>
+  <div class="lane" style="padding: 14px 14px 26px"><div class="title" style="top:auto;bottom:6px">3 · Use — same governance whether the asset ships as a CLI or an MCP server</div>
+    <div class="row">
+      <div class="n" id="cf">Confluence page<small>generated from the index</small></div>
+      <div class="n" id="eng">Engineer or agent host<small>search, install by digest</small></div>
+      <div class="n gate" id="rt" style="flex:1.6">Asset runtime<small>catalog gate · human approval of outward and physical calls · egress allowlist</small></div>
+    </div>
+  </div>
+  <svg id="wires"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#7b8794"/></marker></defs></svg>
+</div>
+<script>
+  const D = document.getElementById('diagram').getBoundingClientRect();
+  const box = id => { const r = document.getElementById(id).getBoundingClientRect();
+    return { l: r.left - D.left, r: r.right - D.left, t: r.top - D.top, b: r.bottom - D.top,
+             cx: (r.left + r.right) / 2 - D.left, cy: (r.top + r.bottom) / 2 - D.top }; };
+  const svg = document.getElementById('wires');
+  const path = (d, label, lx, ly, dashed) => {
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', d); p.setAttribute('fill', 'none'); p.setAttribute('stroke', '#7b8794');
+    p.setAttribute('stroke-width', '1.6'); p.setAttribute('marker-end', 'url(#a)');
+    if (dashed) p.setAttribute('stroke-dasharray', '5 4');
+    svg.appendChild(p);
+    if (label) { const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', lx); t.setAttribute('y', ly); t.setAttribute('class', 'lbl'); t.textContent = label; svg.appendChild(t); }
+  };
+  const right = (a, b) => { const A = box(a), B = box(b); path(`M${A.r},${A.cy} L${B.l},${B.cy}`); };
+  const down = (a, b, label, dx = 0, dashed = false, off = 0) => { const A = box(a), B = box(b);
+    const x1 = A.cx + dx, x2 = B.cx + dx, my = (A.b + B.t) / 2 + off;
+    path(`M${x1},${A.b} L${x1},${my} L${x2},${my} L${x2},${B.t}`, label, Math.min(x1, x2) + 6, my - 5, dashed); };
+  const up = (a, b, label, dx = 0, dashed = false) => { const A = box(a), B = box(b);
+    const x1 = A.cx + dx, x2 = B.cx + dx, my = (A.t + B.b) / 2;
+    path(`M${x1},${A.t} L${x1},${my} L${x2},${my} L${x2},${B.b}`, label, Math.min(x1, x2) + 6, my - 5, dashed); };
+  ['bb', 't', 'bd', 'mv', 'j', 's'].reduce((a, b) => (right(a, b), b));
+  right('cf', 'eng'); right('eng', 'rt');
+  down('s', 'idx', 'publish', -30, false, -12); down('s', 'af', '', 30, false, -12);
+  down('mv', 'lg', 'findings', 0, true, 12); down('j', 'lg', 'approval', 25, true, 12);
+  up('cf', 'idx', 'read', 0); up('eng', 'af', 'pull by digest', 0);
+  up('rt', 'v', 'lease', -60); up('rt', 'lg', 'every call', 60, true);
+</script>
+</body>
+</html>
