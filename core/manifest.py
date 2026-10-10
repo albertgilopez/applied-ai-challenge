@@ -337,7 +337,7 @@ def _r3_names(run: _Run, doc: dict[str, Any], policy: MarketplacePolicy) -> None
         if not isinstance(res, str):
             continue
         path = f"permissions.{i}.resource"
-        if "*" in res or not RESOURCE.fullmatch(res):
+        if not RESOURCE.fullmatch(res):  # a positive grammar: a `*` anywhere can never match it
             run.add(
                 "R3", path, "not a precise resource", "name it as <system>:<scope>, no wildcards, e.g. jira:project/QA"
             )
@@ -459,10 +459,11 @@ def _r7_accountable(run: _Run, doc: dict[str, Any], policy: MarketplacePolicy) -
             )
     source = doc.get("source")
     if isinstance(source, str):
+        # The whole authority (everything between "https://" and the first "/") must BE an approved host.
+        # Exact membership rejects user info, ports and the `evil.com\@host` trick that parsers read
+        # differently (Python sees the approved host, a browser connects to evil.com): no parser involved.
         ok = source.startswith("https://")
         authority = source[len("https://") :].split("/", 1)[0] if ok else ""
-        if ok and any(c in authority.lower() for c in ("@", "\\", "%5c", ":")):
-            ok = False
         if not ok or authority not in policy.source_hosts:
             run.add(
                 "R7",

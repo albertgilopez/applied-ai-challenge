@@ -51,13 +51,15 @@ class StrictLoader(yaml.SafeLoader):
         return super().construct_object(node, deep=deep)
 
     def construct_mapping(self, node: MappingNode, deep: bool = False) -> dict[Any, Any]:
-        for key_node, _ in node.value:  # before flatten_mapping consumes '<<'
-            if key_node.tag == _Y + "merge":
-                raise RefusedConstruct(None, None, "merge key '<<' is not allowed", key_node.start_mark)
+        # Runs before the base class's flatten_mapping would apply a merge key: `<<` is tagged `merge`,
+        # not `str`, so the string-key check below refuses it too. (A separate merge guard was tried
+        # and a canary showed it guarded nothing this check does not.)
         seen: set[str] = set()
         for key_node, _ in node.value:
             if not (isinstance(key_node, ScalarNode) and key_node.tag == _Y + "str"):
-                raise RefusedConstruct(None, None, "every key must be a string", key_node.start_mark)
+                raise RefusedConstruct(
+                    None, None, f"every key must be a string (got {key_node.tag})", key_node.start_mark
+                )
             key = str(key_node.value)
             if key in seen:
                 raise RefusedConstruct(None, None, f"duplicate key {key!r}", key_node.start_mark)
