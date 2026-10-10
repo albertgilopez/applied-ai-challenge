@@ -29,7 +29,7 @@
     - { patch: { apiVersion: marketplace/v2 }, expected: { rules: [R1], paths: [apiVersion] } }
     - { patch: { security_scan.critical: true }, expected: { rules: [R1], paths: [security_scan.critical] } }
     - { patch: { security_scan.high: -1 }, expected: { rules: [R1], paths: [security_scan.high] } }
-    - { patch: { version: 1.1 }, expected: { rules: [R1], paths: [version] } }          # a number, not a quoted string
+    - { patch: { version: 1.1 }, expected: { rules: [R1] } }          # a number: refused by the loader, reported at "$" with its line
     - { patch: { version: "v1" }, expected: { rules: [R1], paths: [version] } }
     - { patch: { id: "Test Plan Agent" }, expected: { rules: [R1], paths: [id] } }
     - { patch: { id: "test--plan" }, expected: { rules: [R1], paths: [id] } }

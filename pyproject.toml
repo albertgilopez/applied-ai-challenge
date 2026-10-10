@@ -38,7 +38,7 @@ select = ["F", "E", "W", "I", "B", "UP", "SIM"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["core", "harness", "app", "agent", "review", "state", "scripts", "samples"]
+files = ["core", "harness", "app", "agent", "review", "marketplace", "state", "scripts", "samples"]
 warn_unused_ignores = true
 warn_redundant_casts = true
 check_untyped_defs = true
