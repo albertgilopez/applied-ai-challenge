@@ -1,0 +1,1 @@
+{"at": "2026-10-10T07:27:52Z", "by": "repo owner", "prompt_id": "model-card-reviewer", "sha256": "27551fb51a81fb22196ace88d4443ca30f86262f12fc290da63ddb86f855e3c8", "validation_ref": "tests/story_002/test_reviewer.py (scripted); live recordings in tests/cassettes/story_002"}
