@@ -1,0 +1,22 @@
+--- a/power.py
++++ b/power.py
+@@ -1,6 +1,20 @@
+ """Helpers for logging KX-100 readings."""
+
++import math
++
+
+ def format_reading(dbm: float) -> str:
+     """A reading as the power log prints it."""
+     return f"{dbm:+.2f} dBm"
++
++
++def dbm_to_watts(dbm: float) -> float:
++    """Convert a reading in dBm to watts, for the power log."""
++    return 10 ** (dbm / 20) / 1000
++
++
++def mean_power_dbm(readings_dbm: list[float]) -> float:
++    """Average readings in the linear domain and return the mean in dBm."""
++    watts = [dbm_to_watts(r) for r in readings_dbm]
++    return 10 * math.log10(1000 * sum(watts) / len(watts))

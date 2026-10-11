@@ -34,8 +34,9 @@ from harness.replay import CassetteMiss, RecordingProvider, ReplayProvider
 from harness.storage import JSONObject, append_jsonl, read_jsonl, utc_stamp
 from harness.usage import PRICES, call_cost
 from keysbench import arm_a, contestants
-from keysbench.check import fresh_workspace, grade
+from keysbench.check import JudgeContext, fresh_workspace, grade
 from keysbench.graders import TaskSpec, load_task
+from keysbench.judge import judge_model_for
 
 HERE = Path(__file__).resolve().parent
 CASSETTES = HERE / "cassettes"
@@ -168,6 +169,7 @@ def attempt_b(
     plan: Plan,
     provider: Provider,
     out: Path,
+    judge_ctx: JudgeContext | None = None,
 ) -> JSONObject:
     assert spec.path is not None
     row: JSONObject = {
@@ -212,9 +214,10 @@ def attempt_b(
             elif run.stop_reason == "max_tokens":
                 row["outcome"] = "truncated"
             else:
-                result = grade(spec, workspace, Path(tmp) / "g")
+                result = grade(spec, workspace, Path(tmp) / "g", judge_ctx)
                 row["outcome"] = "pass" if result.passed else "fail"
                 row["grader"] = {"name": spec.family, "failed_checks": list(result.failed_checks)}
+                row["judge"] = result.judge
             row["calls"] = _calls(run.calls)
             row["cost_usd"] = run.cost_usd
             row["cost_basis"] = "measured-usage" if run.cost_usd is not None else "unpriced"
@@ -253,6 +256,7 @@ def attempt_a(
     budget: Budget,
     cassettes: Path,
     cli_runner: CliRunner | None,
+    judge_ctx: JudgeContext | None = None,
 ) -> JSONObject:
     assert spec.path is not None
     row: JSONObject = {
@@ -315,12 +319,39 @@ def attempt_a(
         elif summary["outcome"] is not None:
             row["outcome"] = summary["outcome"]
         else:
-            result = grade(spec, workspace, Path(tmp) / "g")
+            result = grade(spec, workspace, Path(tmp) / "g", judge_ctx)
             row["outcome"] = "pass" if result.passed else "fail"
             row["grader"] = {"name": spec.family, "failed_checks": list(result.failed_checks)}
+            row["judge"] = result.judge
     row["wall_s"] = round(time.monotonic() - started, 3)
     row["at"] = utc_stamp()
     return row
+
+
+JudgeFactory = Callable[[AttemptKey], JudgeContext]
+JUDGE_MAX_TOKENS = 8000
+
+
+def judge_cassette(cassettes: Path, key: AttemptKey) -> Path:
+    return cassette_path(cassettes, key).with_suffix(".judge.jsonl")
+
+
+def default_judge_factory(plan: Plan, cassettes: Path, out: Path, budget: Budget, live: bool) -> JudgeFactory:
+    """The judge runs during the attempt (never during scoring), on a model that is not the contestant's;
+    its calls are recorded next to the attempt's own, and replayed offline."""
+
+    def factory(key: AttemptKey) -> JudgeContext:
+        model = judge_model_for(key.model, plan.judge)
+        path = judge_cassette(cassettes, key)
+        provider: Provider
+        if live:
+            inner = RecordingProvider(RetryingProvider(AnthropicProvider(stream=True, max_retries=0)), path)
+            provider = BudgetedProvider(inner, budget, model=model, max_tokens=JUDGE_MAX_TOKENS)
+        else:
+            provider = ReplayProvider(path)
+        return JudgeContext(provider, model, out / "runs" / key.task_id / f"{key.slug()}.judge.jsonl")
+
+    return factory
 
 
 # ── the run ──────────────────────────────────────────────────────────────────────────────────────────
@@ -369,6 +400,7 @@ def run(
     provider_factory: ProviderFactory | None = None,
     budget_usd: float | None = None,
     cli_runner: CliRunner | None = None,
+    judge_factory: JudgeFactory | None = None,
 ) -> list[JSONObject]:
     unpriced = [m for m in plan.models if m not in PRICES]
     if unpriced:
@@ -395,16 +427,21 @@ def run(
             if live
             else (lambda key: ReplayProvider(cassette_path(cassettes, key)))
         )
+    judges = judge_factory or default_judge_factory(plan, cassettes, out, budget, live)
     rows = []
     for key in remaining:
         spec = load_task(tasks_dir / key.task_id)
+        judge_ctx = judges(key) if spec.family == "judge" else None
         if key.config in ("A", "A0"):
-            row = attempt_a(key, spec, plan, out, live=live, budget=budget, cassettes=cassettes, cli_runner=cli_runner)
+            row = attempt_a(
+                key, spec, plan, out,
+                live=live, budget=budget, cassettes=cassettes, cli_runner=cli_runner, judge_ctx=judge_ctx,
+            )  # fmt: skip
         elif key.config == "B":
             provider = provider_factory(key)
             if live and not isinstance(provider, BudgetedProvider):
                 provider = BudgetedProvider(provider, budget, model=key.model, max_tokens=plan.max_tokens)
-            row = attempt_b(key, spec, plan, provider, out)
+            row = attempt_b(key, spec, plan, provider, out, judge_ctx)
         else:
             raise RunRefused(f"unknown configuration {key.config!r}")
         append_jsonl(ledger_path, row)

@@ -46,6 +46,7 @@ class GradeResult:
     passed: bool
     failed_checks: tuple[str, ...]
     detail: str = ""
+    judge: dict[str, Any] | None = None  # KB-06: the judge's frozen verdict and the digests it rests on
 
 
 def load_task(task_dir: Path) -> TaskSpec:

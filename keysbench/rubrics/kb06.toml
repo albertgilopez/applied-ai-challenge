@@ -1,0 +1,10 @@
+task = "KB-06"
+defect = """
+The change adds dbm_to_watts() with `return 10 ** (dbm / 20) / 1000`. Power in dBm converts to watts
+as 10 ** (dbm / 10) / 1000 (the manual's section 7). Dividing by 20 is the voltage (amplitude) rule, so
+every value written to the power log, and the mean computed from it, is wrong except at 0 dBm.
+"""
+pass_when = "The review says the dBm-to-watts conversion is wrong because it divides by 20 instead of 10, or equivalent."
+fail_when = "The review approves the change, comments only on style or naming, or names a different problem."
+planted_line = "return 10 ** (dbm / 20) / 1000"
+marker = "/ 20"

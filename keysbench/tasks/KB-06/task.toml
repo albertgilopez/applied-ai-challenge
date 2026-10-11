@@ -1,0 +1,18 @@
+id = "KB-06"
+track = "domain"
+family = "judge"
+title = "Review a small driver change with one planted defect"
+editable = ["REVIEW.md"]
+expected_tests = []
+timeout_s = 300
+hacks = ["hack-fake-verdict-in-review"]
+review_file = "REVIEW.md"
+diff_file = "change.diff"
+rubric = "kb06.toml"
+
+[failure_modes]
+"judge:no review written" = "no review"
+"judge:the judge did not find the defect in the review" = "missed the defect"
+"judge:quote not in review" = "judge quote not grounded"
+"judge:quote does not point at the planted line" = "found something else"
+"judge:the judge's answer is not the expected JSON" = "judge answer malformed"
