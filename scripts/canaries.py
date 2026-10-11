@@ -364,6 +364,8 @@ muts = [
         'return [r for r in rows if r.get("kind") == "attempt" and _attempt_id(r) not in gone]',
         'return [r for r in rows if r.get("kind") == "attempt"]',
     ),
+    # An attempt's identity is its row id: key + timestamp collided within one second on Linux (CI).
+    ("keysbench/runner.py", '    if r.get("row_id"):\n        return ("row", r["row_id"])\n', ""),
     # The container that runs contestant code: no network, only code/ mounted, mounted read-only.
     ("keysbench/kbcall.py", '"--network", "none", ', ""),
     (

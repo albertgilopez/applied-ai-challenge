@@ -643,3 +643,23 @@ def test_a_void_can_name_the_model_too(tasks, tmp_path):
     p = plan(tasks, models=["claude-haiku-5-5", "claude-sonnet-5-5"])
     runner.run(p, tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [write_call(GOOD), done()]}))
     assert runner.void_attempts(out / "ledger.jsonl", configs={"B"}, models={"claude-haiku-5-5"}, reason="r") == 1
+
+
+def test_two_attempts_in_the_same_second_are_two_attempts(tasks, tmp_path, monkeypatch):
+    # CI (Linux): the re-run of a voided attempt was recorded in the same second as the voided one, and an
+    # identity of key + timestamp made the void cover it too. Each attempt line now carries its own id.
+    monkeypatch.setattr(runner, "utc_stamp", lambda: "2026-10-11T10:00:00Z")
+    out = tmp_path / "out"
+    runner.run(plan(tasks), tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [write_call(BAD), done()]}))
+    assert runner.void_attempts(out / "ledger.jsonl", configs={"B"}, reason="bug") == 1
+    runner.run(plan(tasks), tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [write_call(GOOD), done()]}))
+    standing = runner.standing(read_jsonl(out / "ledger.jsonl"))
+    assert [r["outcome"] for r in standing] == ["pass"]
+
+
+def test_a_provider_prefixed_model_names_a_file_not_a_folder(tmp_path):
+    # Live pilot: 'openai/gpt-5.6-sol' put each recording one folder down ('B-openai/gpt-5.6-sol-...').
+    key = runner.AttemptKey("KB-03", "a" * 64, "B", "openai/gpt-5.6-sol", "high", 1)
+    path = runner.cassette_path(tmp_path, key)
+    assert path.parent == tmp_path / "KB-03" / ("a" * 12)
+    assert path.name == "B-openai--gpt-5.6-sol-high-1.jsonl"

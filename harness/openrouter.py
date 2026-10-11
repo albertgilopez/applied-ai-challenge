@@ -125,11 +125,17 @@ def from_chat(body: JSONObject) -> JSONObject:
         content.append({"type": "tool_use", "id": call.get("id"), "name": fn.get("name"), "input": args})
     u = body.get("usage") or {}
     prompt = int(u.get("prompt_tokens") or 0)
-    cached = int((u.get("prompt_tokens_details") or {}).get("cached_tokens") or 0)
+    details = u.get("prompt_tokens_details") or {}
+    cached = int(details.get("cached_tokens") or 0)
+    # A prompt the provider caches is billed as a cache write, above the input price (GPT-5.6 Sol: 2.5
+    # against 2.0 per MTok). Without this field our cost was 11 % under what was charged (live, 2026-10-11).
+    written = int(details.get("cache_write_tokens") or 0)
     usage: JSONObject = {
-        "input_tokens": prompt - cached,
+        "input_tokens": prompt - cached - written,
         "cache_read_input_tokens": cached,
-        "cache_creation_input_tokens": 0,
+        "cache_creation_input_tokens": written,
+        # One TTL tier per write, priced at the table's cache write; the split is what `call_cost` checks.
+        "cache_creation": {"ephemeral_5m_input_tokens": written, "ephemeral_1h_input_tokens": 0},
         "output_tokens": int(u.get("completion_tokens") or 0),
         "output_tokens_details": {
             "thinking_tokens": int((u.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)

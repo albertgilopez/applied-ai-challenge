@@ -21,7 +21,8 @@ import json
 import os
 import tempfile
 import time
-from collections.abc import Callable, Iterator
+import uuid
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -108,7 +109,8 @@ class AttemptKey:
     attempt: int
 
     def slug(self) -> str:
-        return f"{self.config}-{self.model}-{self.effort}-{self.attempt}"
+        # A provider-prefixed model ('openai/gpt-5.6-sol') must name a file, not a folder.
+        return f"{self.config}-{self.model.replace('/', '--')}-{self.effort}-{self.attempt}"
 
 
 def task_digest(task_dir: Path) -> str:
@@ -515,19 +517,24 @@ def plan_keys(plan: Plan, tasks_dir: Path, *, step: int | None = None) -> list[A
 
 
 def _attempt_id(r: JSONObject) -> tuple[Any, ...]:
-    """One recorded attempt: its key plus when it was recorded (a re-run of the same key is another row)."""
+    """One recorded attempt. Its `row_id` when it has one; rows written before row ids (the first pilot)
+    fall back to key + timestamp. Key + timestamp alone is not unique: the timestamp has one-second
+    resolution, and on Linux a voided attempt and its re-run fell in the same second (CI)."""
+    if r.get("row_id"):
+        return ("row", r["row_id"])
     c = r.get("contestant") or {}
     return (r.get("task_sha256"), r.get("config"), c.get("model", r.get("model")), c.get("effort", r.get("effort")),
             r.get("attempt"), r.get("at"))  # fmt: skip
 
 
-def voided_ids(rows: list[JSONObject]) -> set[tuple[Any, ...]]:
+def voided_ids(rows: Iterable[JSONObject]) -> set[tuple[Any, ...]]:
     return {_attempt_id(a) for r in rows if r.get("kind") == "void" for a in r.get("attempts") or []}
 
 
-def standing(rows: list[JSONObject]) -> list[JSONObject]:
+def standing(rows: Iterable[JSONObject]) -> list[JSONObject]:
     """Attempts not voided. The ledger is history: an attempt an instrument bug produced is never edited
     or removed, it is voided by an appended line, and a resume runs it again."""
+    rows = list(rows)  # read twice below; `read_jsonl` gives an iterator
     gone = voided_ids(rows)
     return [r for r in rows if r.get("kind") == "attempt" and _attempt_id(r) not in gone]
 
@@ -550,6 +557,7 @@ def void_attempts(ledger_path: Path, *, configs: set[str], reason: str, models: 
                 "effort": r["contestant"]["effort"],
                 "attempt": r["attempt"],
                 "at": r.get("at"),
+                **({"row_id": r["row_id"]} if r.get("row_id") else {}),
             }  # fmt: skip
             for r in targets
         ]
@@ -672,6 +680,7 @@ def _run(
             # A cheaper attempt that would still fit is not made: it would give some contestants more
             # attempts than others in the same round (review lens 1B F5). A resume with more budget runs them.
             row = not_started(key, plan)
+            row["row_id"] = uuid.uuid4().hex
             append_jsonl(ledger_path, row)
             rows.append(row)
             continue
@@ -689,6 +698,7 @@ def _run(
             row = attempt_b(key, spec, plan, provider, out, judge_ctx)
         else:
             raise RunRefused(f"unknown configuration {key.config!r}")
+        row["row_id"] = uuid.uuid4().hex
         append_jsonl(ledger_path, row)
         rows.append(row)
         stopped = live and row.get("outcome") == "budget_stopped"

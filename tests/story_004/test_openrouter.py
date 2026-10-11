@@ -141,3 +141,16 @@ def test_a_400_is_not_retried():
         RetryingProvider(OpenRouterProvider(api_key="k", post=post), retries=2, sleep=lambda s: None).create(
             **request([{"role": "user", "content": "go"}])
         )
+
+
+def test_cache_writes_are_priced_as_cache_writes_to_the_cent():
+    # Live, 2026-10-11: GPT-5.6 Sol charged 11 % more than our table said, because a prompt it caches is
+    # billed as a cache write (2.5 per MTok, not 2.0) and the adapter did not read that field. These are the
+    # usage numbers of one real call and the cost OpenRouter charged for it.
+    body = {"id": "g", "choices": [{"finish_reason": "stop", "message": {"content": "OK"}}], "usage": {
+        "prompt_tokens": 2893, "completion_tokens": 6, "cost": 0.007291,
+        "prompt_tokens_details": {"cached_tokens": 0, "cache_write_tokens": 2890},
+        "completion_tokens_details": {"reasoning_tokens": 0}}}  # fmt: skip
+    usage = from_chat(body)["usage"]
+    assert (usage["input_tokens"], usage["cache_creation_input_tokens"]) == (3, 2890)
+    assert call_cost(usage, "openai/gpt-5.6-sol") == pytest.approx(0.007291, abs=1e-9)
