@@ -335,6 +335,21 @@ def test_a_stored_attempt_carries_no_key_in_its_transcript_or_files(tmp_path):
     assert stored.count("<redacted>") == 3
 
 
+def test_a_stored_transcript_does_not_name_the_machine_user(tmp_path, monkeypatch):
+    # The live run's A transcripts held the account name in `ls -l` output and in a Python path; the
+    # repository is public. The name is replaced by `<user>` on the way in, only as a whole word.
+    monkeypatch.setattr(arm_a.getpass, "getuser", lambda: "jdoe")
+    w = tmp_path / "w"
+    w.mkdir()
+    out = "-rw-r--r-- 1 jdoe 197121 694 driver.py\nC:\\\\Users\\\\jdoe\\\\AppData\\\\python.exe: error; jdoes stays"
+    line = json.dumps({"type": "user", "message": {"content": [{"type": "tool_result", "content": out}]}})
+    store = tmp_path / "store"
+    arm_a.store_attempt(store, [line], w, ())
+    stored = (store / "transcript.jsonl").read_text("utf-8")
+    assert " jdoe " not in stored and "\\\\jdoe\\\\" not in stored
+    assert stored.count("<user>") == 2 and "jdoes stays" in stored
+
+
 @pytest.mark.parametrize(
     ("tool", "inp", "invalid"),
     [

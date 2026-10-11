@@ -24,6 +24,7 @@ machine, so it is confined and audited, and the report says this is detection, n
 from __future__ import annotations
 
 import ast
+import getpass
 import io
 import json
 import os
@@ -481,6 +482,15 @@ def redact(text: str, secrets: tuple[str, ...] = ()) -> str:
     return _KEY_PATTERNS.sub("<redacted>", text)
 
 
+def unname(text: str, user: str | None = None) -> str:
+    """The machine's account name replaced by `<user>`, as a whole word only. The live run's A transcripts
+    held it in `ls -l` output and in a Python path, and the recordings are committed to a public repo."""
+    user = getpass.getuser() if user is None else user
+    if len(user) < 3:  # too short to replace without touching ordinary words
+        return text
+    return re.sub(rf"(?<![A-Za-z0-9_]){re.escape(user)}(?![A-Za-z0-9_])", "<user>", text)
+
+
 def store_attempt(
     store: Path, lines: list[str], workspace: Path, editable: tuple[str, ...], *, secrets: tuple[str, ...] = ()
 ) -> None:
@@ -491,7 +501,7 @@ def store_attempt(
         shutil.rmtree(store)
     (store / "files").mkdir(parents=True)
     root = workspace.resolve()
-    lines = [redact(ln, secrets) for ln in to_placeholder(to_placeholder(lines, str(root)), str(workspace))]
+    lines = [unname(redact(ln, secrets)) for ln in to_placeholder(to_placeholder(lines, str(root)), str(workspace))]
     (store / "transcript.jsonl").write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
     kept = []
     for rel in editable:

@@ -472,6 +472,12 @@ muts = [
     ),
     ("keysbench/arm_a.py", "whole = [value for value, part in fresh if not part]", "whole = [v for v, _ in fresh]"),
     ("keysbench/arm_a.py", "    for text in whole + parts:", "    for text in whole:"),
+    # A stored transcript does not name the machine's account (the recordings are public).
+    (
+        "keysbench/arm_a.py",
+        "    lines = [unname(redact(ln, secrets)) for ln",
+        "    lines = [redact(ln, secrets) for ln",
+    ),
     # The memo's answer counts only the contestants that passed every attempt of every task.
     (
         "keysbench/report.py",
