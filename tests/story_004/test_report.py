@@ -1,0 +1,147 @@
+"""STORY-004 T10: `score` and the report (S4-08, S4-14 not_run, S4-15, S4-16, S4-19 in the report).
+
+`score` reads the ledger and the recordings it names, and writes results.json (raw) and results.md
+(the decision memo first, contestant text escaped). It makes no model call and opens no socket.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import socket
+from pathlib import Path
+
+import pytest
+import yaml
+
+from keysbench import report
+from keysbench.runner import Plan
+
+ROOT = Path(__file__).resolve().parents[2]
+CASES = {c["id"]: c for c in yaml.safe_load((ROOT / "stories" / "STORY-004.cases.yaml").read_text("utf-8"))}
+
+
+def plan() -> Plan:
+    return Plan(
+        label="keysbench-test",
+        cap_usd=60.0,
+        k=3,
+        effort="high",
+        models=["m1", "m2"],
+        configs=["B"],
+        tasks=["KB-03", "KB-04"],
+        max_tokens=32000,
+        max_steps=12,
+        not_run=[
+            {
+                "contestant": "codex-cli",
+                "reason": "no metered usage per call without its own API account; protocol written",
+            },
+            {"contestant": "cursor-agent", "reason": "no headless usage report to price from; protocol written"},
+        ],
+    )
+
+
+def row(task, sha, model, outcome, attempt, cost=0.01, failed=None, at="2026-10-11T08:00:00Z"):
+    return {
+        "kind": "attempt", "task_id": task, "task_sha256": sha, "config": "B",
+        "contestant": {"model": model, "effort": "high", "harness": "repo-harness", "harness_version": "1"},
+        "attempt": attempt, "outcome": outcome, "cost_usd": cost, "latency_s": 1.0, "at": at,
+        "grader": {"name": "pytest", "failed_checks": failed or []}, "judge": None,
+    }  # fmt: skip
+
+
+def ledger(tmp_path: Path, rows: list[dict]) -> Path:
+    path = tmp_path / "ledger.jsonl"
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    return path
+
+
+def sample_rows() -> list[dict]:
+    rows = []
+    for task, sha in (("KB-03", "a" * 64), ("KB-04", "b" * 64)):
+        for model, outcomes in (("m1", ["pass", "pass", "fail"]), ("m2", ["pass", "fail", "fail"])):
+            rows += [row(task, sha, model, o, i + 1) for i, o in enumerate(outcomes)]
+    return rows
+
+
+@pytest.fixture
+def no_network(monkeypatch):
+    def refuse(*a, **k):
+        raise AssertionError("score opened a network connection")
+
+    monkeypatch.setattr(socket, "create_connection", refuse)
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+
+
+def test_s4_08_scoring_twice_gives_the_same_bytes_without_network(tmp_path, no_network):
+    path = ledger(tmp_path, sample_rows())
+    report.score_files(path, tmp_path / "r1", plan(), cassettes=tmp_path / "c")
+    report.score_files(path, tmp_path / "r2", plan(), cassettes=tmp_path / "c")
+    for name in ("results.json", "results.md"):
+        assert (tmp_path / "r1" / name).read_bytes() == (tmp_path / "r2" / name).read_bytes()
+
+
+def test_s4_15_results_record_the_digests_they_were_scored_from(tmp_path):
+    rows = sample_rows()
+    path = ledger(tmp_path, rows)
+    cassettes = tmp_path / "c"
+    rec = cassettes / "KB-03" / ("a" * 12) / "B-m1-high-1.jsonl"
+    rec.parent.mkdir(parents=True)
+    rec.write_text('{"key": "x", "response": {}}\n', encoding="utf-8")
+    data = report.results(rows, plan(), ledger_bytes=path.read_bytes(), cassettes=cassettes)
+    assert data["inputs"]["ledger_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert data["inputs"]["recordings_sha256"] == {
+        "KB-03/aaaaaaaaaaaa/B-m1-high-1.jsonl": hashlib.sha256(rec.read_bytes()).hexdigest()
+    }
+
+
+def test_s4_15_two_digests_of_one_task_are_two_cells(tmp_path):
+    case = CASES["S4-15"]
+    rows = [
+        row(r["task"], r["task_sha256"], r["model"], o, i + 1)
+        for r in case["ledger"]
+        for i, o in enumerate(r["outcomes"])
+    ]
+    data = report.results(rows, plan(), ledger_bytes=b"", cassettes=tmp_path)
+    assert (
+        len([c for c in data["cells"] if c["task_id"] == "KB-03" and c["model"] == "m1"])
+        == case["expected"]["cells_for_KB-03_m1"]
+    )
+
+
+def test_s4_14_not_run_contestants_are_listed_with_their_reason(tmp_path):
+    data = report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path)
+    assert [n["contestant"] for n in data["not_run"]] == CASES["S4-14"]["expected"]["not_run_contestants"]
+    assert all(len(n["reason"].split()) >= 4 for n in data["not_run"])
+    md = report.to_markdown(data)
+    assert "codex-cli" in md and "cursor-agent" in md
+
+
+def test_s4_16_contestant_text_is_escaped_in_markdown_and_raw_in_json(tmp_path):
+    text = CASES["S4-16"]["contestant_text"]
+    rows = sample_rows()
+    rows.append(row("KB-03", "a" * 64, "m1", "fail", 4, failed=[text]))
+    data = report.results(rows, plan(), ledger_bytes=b"", cassettes=tmp_path)
+    assert any(f["mode"] == text for f in data["memo"]["failure_modes"])  # raw in the JSON
+    md = report.to_markdown(data)
+    assert not any(ord(ch) < 32 and ch not in "\n" for ch in md)
+    assert "https://evil.example" not in md
+    assert not re.search(r"(?<!\\)\[[^\]]*(?<!\\)\]\(", md), "an unescaped Markdown link"
+    mode_lines = [ln for ln in md.splitlines() if "ok" in ln and "x" in ln and "new row" in ln]
+    assert len(mode_lines) == 1 and mode_lines[0].startswith("|")
+
+
+def test_s4_19_the_report_opens_with_the_decision_memo(tmp_path):
+    md = report.to_markdown(report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path))
+    headings = [ln for ln in md.splitlines() if ln.startswith("## ")]
+    assert headings[0] == "## Decision memo"
+    assert md.index("Ranking:") < md.index("## Decision memo")
+    assert "none: n \\<= 8 tasks" in md  # `<` escaped for Markdown
+
+
+def test_contestants_are_ordered_by_name(tmp_path):
+    md = report.to_markdown(report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path))
+    section = md.split("## By contestant")[1].split("## ")[0]
+    assert section.index("m1") < section.index("m2")

@@ -83,11 +83,11 @@ def test_s4_17_a0_has_no_bash(tmp_path):
 
 def test_the_environment_holds_the_key_scrub_and_no_user_credentials(monkeypatch):
     monkeypatch.setenv("CREDENTIALS_FILE", "C:/secrets/.env")
-    monkeypatch.setenv("WORKSPACE_ROOT", "C:/somewhere")
+    monkeypatch.setenv("PROJECTS_ROOT", "C:/somewhere")
     env = arm_a.cli_env(api_key="sk-ant-test")
     assert env["ANTHROPIC_API_KEY"] == "sk-ant-test"
     assert env["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"] == "1"
-    assert "CREDENTIALS_FILE" not in env and "WORKSPACE_ROOT" not in env
+    assert "CREDENTIALS_FILE" not in env and "PROJECTS_ROOT" not in env
 
 
 # ── S4-17 and S4-04: the audit ───────────────────────────────────────────────────────────────────────
