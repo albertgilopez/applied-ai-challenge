@@ -22,6 +22,8 @@ verdict and what it changed here.
 | Top-level `cache_control` | accepted by `messages.create`; marks the last cacheable block | `types/message_create_params.py` |
 | Claude Code headless | `--bare -p --model --effort --output-format json --max-budget-usd` returns `usage` (same split), `iterations` per call, its own cost estimate, `ttft_ms`; `--restricted` ignores user/project/local settings, confines file tools to the working directories and drops command tools unless `--tools` names them; `--settings`, `--tools`, `--no-session-persistence` exist (2.1.285) | one run on a one-file task; `claude --help`; the CLI and permissions documentation |
 | `--bare` alone | does **not** skip settings files: the user `env` block and `permissions.allow` would still apply | the CLI help and permissions documentation (inferred, confirmed in the pilot) |
+| Arm A on Windows, CLI 2.1.285 (2026-10-11) | `claude-haiku-5-5` is `unrecognized_model`: the CLI priced a run at 0.0354 USD whose usage costs 0.0009 USD, so its `--max-budget-usd` would stop runs early; the API key in the CLI's environment **is visible to the contestant's Python**; user-settings `env` names do not leak | one restricted, bare run on a one-file task with a decoy variable and an env dump from Python |
+| Arm A on Windows, CLI 2.1.296 (2026-10-11) | the model is recognised and the CLI's cost equals ours (0.00091 USD, `costBasis: list`); `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` removes the key from subprocesses (and forces permission mode `default`); `Read` and `cat` outside the workspace are denied; read-only commands such as `whoami` are **auto-allowed** despite a `Bash(python *)`-only allow list, but confined to the working directory; without stdin the CLI waits 3 s | the same run with the pinned CLI in its own prefix, the scrub on, and a `cat` outside the workspace |
 | Prices | per million tokens, input / 5-min write / 1-h write / read / output: Fable 5.1 10 / 12.50 / 20 / 0.25 / 50 · Opus 5.5 4 / 5 / 8 / 0.20 / 20 · Sonnet 5.5 2 / 2.50 / 4 / 0.10 / 10 · Haiku 5.5 (prompt ≤ 100k) 0.10 / 0.125 / 0.20 / 0.01 / 0.50; region `global` | the provider's pricing page |
 
 ## Modules
@@ -162,6 +164,16 @@ sequenceDiagram
   what the CLI needs to start (measured in the pilot) and the API key. `--restricted` is the reason user
   settings (an `env` block naming credential files, a broad `allow`) do not reach the session; `--bare`
   alone would not stop them.
+- **Measured on Windows (T0), and what it changes:**
+  - **The CLI is pinned and installed in its own prefix.** The version is recorded on every row.
+    Version 2.1.285 did not know the 5.5 models and mispriced them; 2.1.296 does.
+  - **`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` is set on every run**, so the API key never reaches the
+    contestant's processes. Its side effect, permission mode `default`, is what a non-interactive run
+    needs anyway: an unapproved action is denied, never asked.
+  - **Arm A is "Python plus the CLI's read-only commands, confined to the workspace", not "Python
+    only".** The CLI auto-allows read-only commands, but refuses their paths outside the working
+    directory. The audit still marks any absolute path outside W as `invalid`.
+  - **`stdin` is closed** (`DEVNULL`).
 - **Audit, then grade (DR-14).** The stream-json transcript is kept. Every tool input is checked: a
   file path that resolves outside W, or any absolute path in a command, makes the attempt `invalid`.
   This is detection: Python can build a path at runtime, and the report says so.
