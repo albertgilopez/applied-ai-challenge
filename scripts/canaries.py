@@ -472,6 +472,12 @@ muts = [
     ),
     ("keysbench/arm_a.py", "whole = [value for value, part in fresh if not part]", "whole = [v for v, _ in fresh]"),
     ("keysbench/arm_a.py", "    for text in whole + parts:", "    for text in whole:"),
+    # The memo's answer counts only the contestants that passed every attempt of every task.
+    (
+        "keysbench/report.py",
+        '        full = [m for m in who if all(c["passes"] == c["attempts"] for c in by_who[(config, m)])]',
+        "        full = list(who)",
+    ),
     # The CLI's turn cap is graded like B's step cap, not recorded as an error and retried.
     (
         "keysbench/arm_a.py",

@@ -129,7 +129,11 @@ def results(rows: list[JSONObject], plan: Plan, *, ledger_bytes: bytes, cassette
         "not_run": list(plan.not_run),
         "voided": [{"count": n, "reason": reason} for reason, n in sorted(voids.items())],
         "limits": list(LIMITS),
-        "legend": {"tasks": task_legend(sorted({c["task_id"] for c in data["cells"]})), "configs": CONFIGS},
+        # Only the configurations the plan ran: one it did not run is in `not_run` with its reason.
+        "legend": {
+            "tasks": task_legend(sorted({c["task_id"] for c in data["cells"]})),
+            "configs": {k: v for k, v in CONFIGS.items() if k in plan.configs},
+        },
     }
 
 
@@ -169,13 +173,18 @@ def _answer(data: JSONObject) -> list[str]:
     rule = "the scorer defines none for 8 tasks or fewer" if n_tasks <= 8 else "no ranking rule is defined"
     out = [f"- **{n_tasks} tasks** ({track_text}). No ranking: {rule}."]
     cells = data["cells"]
+    out += _saturation(data)
     unsolved = sorted({c["task_id"] for c in cells} - {c["task_id"] for c in cells if c["passes"]})
     if unsolved:
         out.append(f"- **Solved by no contestant:** {', '.join(md_cell(t) for t in unsolved)}.")
+    # One line per configuration (live run: one line per task made nine lines of the same sentence).
+    commodity: dict[str, list[str]] = {}
     for c in data["memo"]["commodity"]:
+        commodity.setdefault(c["config"], []).append(c["task_id"])
+    for config, tasks in commodity.items():
         out.append(
-            f"- **Solved by every {md_cell(c['config'])} contestant:** {md_cell(c['task_id'])}; the cheapest that "
-            f"did is {md_cell(c['cheapest_passing_model'])} at {_n(c['cost_per_pass'])} USD per pass."
+            f"- **Solved by every {md_cell(config)} contestant:** {', '.join(md_cell(t) for t in sorted(tasks))}; "
+            "the cheapest that did each is in the Commodity table."
         )
     for d in data["deltas"]:
         if d["kind"] != "A-B":
@@ -213,6 +222,39 @@ def _answer(data: JSONObject) -> list[str]:
     return out
 
 
+def _saturation(data: JSONObject) -> list[str]:
+    """Per configuration: how many contestants passed every attempt of every task, the spread of cost per pass
+    among them, and where the others missed. When most contestants pass everything, this is the finding: the
+    tasks separate the contestants on cost, not on whether they can do the work (live run, 2026-10-11)."""
+    out = []
+    by_who: dict[tuple[str, str], list[JSONObject]] = {}
+    for c in data["cells"]:
+        by_who.setdefault((c["config"], c["model"]), []).append(c)
+    cost = {(b["config"], b["model"]): b["cost_per_pass"] for b in data["by_contestant"]}
+    for config in sorted({k[0] for k in by_who}):
+        who = sorted(m for cfg, m in by_who if cfg == config)
+        full = [m for m in who if all(c["passes"] == c["attempts"] for c in by_who[(config, m)])]
+        line = f"- **{md_cell(config)}: {len(full)} of {len(who)} contestants passed every attempt of every task.**"
+        priced = sorted((cost[(config, m)], m) for m in full if cost.get((config, m)))
+        if len(priced) >= 2:
+            (lo, lo_m), (hi, hi_m) = priced[0], priced[-1]
+            line += (
+                f" Among them, cost per pass runs from {_n(lo)} USD ({md_cell(lo_m)}) to {_n(hi)} USD "
+                f"({md_cell(hi_m)}), {hi / lo:.0f} times as much for the same result."
+            )
+        misses = [
+            f"{md_cell(m)} passed {md_cell(c['task_id'])} {c['passes']} of {c['attempts']} times"
+            for m in who
+            if m not in full
+            for c in sorted(by_who[(config, m)], key=lambda c: c["task_id"])
+            if c["passes"] < c["attempts"]
+        ]
+        if misses:
+            line += f" Misses: {'; '.join(misses)}."
+        out.append(line)
+    return out
+
+
 def _glance(data: JSONObject) -> list[str]:
     cells = data["cells"]
     who = sorted({(c["config"], c["model"]) for c in cells})
@@ -232,7 +274,7 @@ def _legend(data: JSONObject) -> list[str]:
             [[md_cell(t), md_cell(v["track"]), md_cell(v["title"])] for t, v in legend.get("tasks", {}).items()],
         ),
         "",
-        "Configurations (the same models in each):",
+        "Configurations (B has every model; the CLI configurations, Anthropic's, have Anthropic's models):",
         "",
         *[f"- {md_cell(k)}: {md_cell(v)}" for k, v in legend.get("configs", {}).items()],
         "",
@@ -410,6 +452,12 @@ def to_markdown(data: JSONObject) -> str:
             ]
             or [["—", "—", "—", "—", "—", "—"]],
         ),  # fmt: skip
+        "",
+        *[
+            f"{label}: not measured this month (a configuration it needs did not run; see Not run)."
+            for kind, label in (("A0-B", "A0 − B"), ("A-A0", "A − A0"))
+            if not any(d["kind"] == kind for d in data["deltas"])
+        ],
         "",
         "## Attempts per contestant",
         "",

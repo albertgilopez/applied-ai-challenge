@@ -183,8 +183,33 @@ def test_the_report_says_what_each_task_and_configuration_is(tmp_path):
     md = report.to_markdown(report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path))
     assert "Write the KX-100 driver" in md and "Uncertainty budget" in md  # the task titles
     assert "| task | track |" in md
-    for gloss in ("B:", "A0:", "A:", "pass^k", "task-clustered"):
+    for gloss in ("B:", "pass^k", "task-clustered"):
         assert gloss in md, gloss
+    # Only the configurations the plan ran are glossed; one that did not run is under "Not run" (live run,
+    # 2026-10-11: the memo described configuration A after it was voided).
+    assert "- A0:" not in md and "- A:" not in md
+
+
+def test_the_answer_opens_with_who_passed_everything_and_what_it_cost(tmp_path):
+    # Live run: 9 of 11 contestants passed every attempt, and the memo's answer was nine "solved by every"
+    # lines that never said so. The finding was the spread of cost among those who all passed.
+    rows = []
+    for task, sha in (("KB-03", "a" * 64), ("KB-04", "b" * 64)):
+        rows += [row(task, sha, "cheap", "pass", i + 1, cost=0.001) for i in range(3)]
+        rows += [row(task, sha, "dear", "pass", i + 1, cost=0.05) for i in range(3)]
+        rows += [row(task, sha, "miss", o, i + 1) for i, o in enumerate(["pass", "fail", "pass"])]
+    md = report.to_markdown(report.results(rows, plan(), ledger_bytes=b"", cassettes=tmp_path))
+    answer = md[md.index("### Answer") : md.index("### At a glance")]
+    assert "2 of 3" in answer and "B" in answer
+    assert "cheap" in answer and "dear" in answer and "50" in answer  # 0.05 / 0.001 per pass
+    assert "miss" in answer and "KB-03" in answer and "KB-04" in answer  # who missed, where
+    assert answer.count("Solved by every") <= 1  # one line per configuration, not one per task
+
+
+def test_a_difference_not_measured_says_so(tmp_path):
+    md = report.to_markdown(report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path))
+    section = md[md.index("## What the scaffold adds") : md.index("## Attempts per contestant")]
+    assert "A − A0: not measured" in section and "A0 − B: not measured" in section
 
 
 def test_the_report_has_a_task_by_contestant_table(tmp_path):
