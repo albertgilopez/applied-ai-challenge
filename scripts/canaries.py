@@ -438,8 +438,8 @@ muts = [
     ("keysbench/arm_a.py", 'env["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"] = "1"', "pass"),
     (
         "keysbench/arm_a.py",
-        'if not rel or p.is_absolute() or PureWindowsPath(rel).drive or ".." in p.parts:',
-        "if not rel:",
+        "    p = relative_path(rel)",
+        "    p = PurePosixPath(rel)",
     ),
     # STORY-004 T7: the judge's evidence is checked by code, and the judge is never the contestant.
     ("keysbench/judge.py", "    if not quote_in_review:\n", "    if False:\n"),
