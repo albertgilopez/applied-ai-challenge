@@ -1,18 +1,18 @@
 {
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
   "as_of": "2026-10-11",
-  "at_commit": "67d90e5",
-  "where_we_are": "Challenges A and B are done (STORY-001..003, STORY-B01; the B design doc is four pages). KeysBench (STORY-004, optional) is built: six tasks, three configurations (B, A0, A), the KB-06 judge, runner, scorer and report, with every grader seen failing against its hacks and contestant code graded in a container. The design and the code were reviewed adversarially (docs/design/STORY-004-challenge.md, STORY-004-code-challenge.md); every confirmed finding is fixed with a test and a canary. It has not been run live: no results yet.",
+  "at_commit": "420f469",
+  "where_we_are": "Challenges A and B are done and delivered (repository public, email to the panel sent). KeysBench (STORY-004, optional) ran live in October 2026: 198 attempts stand, 17.81 USD with voided attempts included, results in keysbench/results/2026-10/results.md. Finding: on these six tasks the models separate on cost, not on whether they can do the work (B: 5 of 7 contestants passed every attempt, cost per pass 51 times apart; A0: 3 of 4, 77 times). Five of six tasks are saturated. Configuration A (the CLI with Python) was run and voided: the restricted CLI denied most of the Python its rule allowed (56 denials in 13 attempts). Decided by the repository owner on 2026-10-11: A is not run this month.",
   "next": [
-    "Pilot (pilot-a: every contestant on KB-03; pilot-b: Haiku 5.5 on B across every task) into keysbench/results/2026-10, then `keysbench project` to see the grid's cost at each reduction step",
-    "Grid live, before the repository is made public, then score and read the memo as its reader would",
-    "Closing review: fresh clone, security pass on keysbench/, README results section",
-    "Make the repository public, then the email to the panel, one at a time"
+    "Configuration A in a container with network only to the API, so Python can be granted without a wider allow list on the host",
+    "Harder tasks: five of six are saturated, so the next month needs tasks that separate the models, not more attempts",
+    "Audit: flag, then judge each flag on its quoted evidence with the verdict frozen in the ledger, instead of auto-invalid"
   ],
   "blocked": [],
+  "decided": [
+    "2026-10-11: configuration A not run this month (reason in the plan's not_run and the memo); confirmed by the repository owner"
+  ],
   "waiting_on_albert": [
-    "Top up the personal API organisation (30-40 USD) before the pilot",
-    "Only if step 3 of the reduction does not fit the balance: decide step 4 (Fable 5.1 out of A0 and A), recorded as decided: false in the plan",
-    "OK for each delivery step: the repository public, then the email"
+    "Whether to tell the panel the results are up, as a short reply in the same thread (draft shown before sending)"
   ]
 }
