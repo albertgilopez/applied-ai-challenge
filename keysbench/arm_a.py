@@ -25,7 +25,9 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
+import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
@@ -52,6 +54,10 @@ _DOTDOT = re.compile(r"[^\s'\"`;|&<>()]*\.\.(?:[\\/][^\s'\"`;|&<>()]*)?")
 def command(
     config: str, *, model: str, effort: str, instruction: str, remaining_usd: float, cli: str, settings: Path
 ) -> list[str]:
+    if cli.lower().endswith((".cmd", ".bat")) and "\n" in instruction:
+        # cmd.exe ends a command line at the first newline: every flag after the prompt (model, budget,
+        # tools, settings) would silently never reach the CLI (review finding 3B F1, reproduced).
+        raise ValueError(f"a multi-line prompt cannot go through {cli}: a newline ends cmd.exe's command line")
     return [
         cli, "--restricted", "--bare", "-p", instruction,
         "--model", model, "--effort", effort,
@@ -173,16 +179,85 @@ def close_partial(lines: list[str], *, reason: str) -> list[str]:
     return [*lines, json.dumps(end)]
 
 
+def _kill_tree(proc: subprocess.Popen[bytes]) -> None:
+    """Kill the CLI and everything it started. Killing only the CLI leaves its children holding the output
+    pipe, and the wait for that pipe has no limit (verifier finding: a 2 s timeout took 12 s)."""
+    if sys.platform == "win32":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True, check=False)
+    else:
+        os.killpg(proc.pid, signal.SIGKILL)
+
+
 def run_cli(cmd: list[str], workspace: Path, env: dict[str, str], timeout_s: int) -> list[str]:
+    proc = subprocess.Popen(
+        cmd,
+        cwd=workspace,
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=os.name != "nt",
+        creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0),
+    )
     try:
-        proc = subprocess.run(
-            cmd, cwd=workspace, env=env, stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout_s, check=False
-        )
-    except subprocess.TimeoutExpired as exc:
+        out, _ = proc.communicate(timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        _kill_tree(proc)
+        out, _ = proc.communicate()
         # The run spent money until it was killed: keep what it wrote, so that spend is counted.
-        partial = exc.stdout.decode("utf-8", errors="replace") if isinstance(exc.stdout, bytes) else ""
-        return close_partial(partial.splitlines(), reason="timeout")
-    return proc.stdout.decode("utf-8", errors="replace").splitlines()
+        return close_partial(out.decode("utf-8", errors="replace").splitlines(), reason="timeout")
+    return out.decode("utf-8", errors="replace").splitlines()
+
+
+# ── workspace-independent transcripts ────────────────────────────────────────────────────────────────
+
+PLACEHOLDER = "<W>"
+_AFTER_PLACEHOLDER = re.compile(r"<W>[^\s'\"`;|&<>()]*")
+
+
+def _map_strings(value: Any, fn: Any) -> Any:
+    if isinstance(value, str):
+        return fn(value)
+    if isinstance(value, list):
+        return [_map_strings(v, fn) for v in value]
+    if isinstance(value, dict):
+        return {k: _map_strings(v, fn) for k, v in value.items()}
+    return value
+
+
+def to_placeholder(lines: list[str], root: str) -> list[str]:
+    """Replace the live workspace's path with `<W>` (and `\\` after it with `/`) in every string of the
+    transcript. The real CLI uses absolute paths, so without this a stored attempt audits as `invalid` in any
+    other workspace, and a Windows recording can never be read on Linux (review finding 3B F2)."""
+    forms = sorted({root, root.replace("\\", "/")}, key=len, reverse=True)
+    pattern = re.compile("|".join(re.escape(f) for f in forms), re.IGNORECASE if os.name == "nt" or ":" in root else 0)
+
+    def fix(s: str) -> str:
+        s = pattern.sub(PLACEHOLDER, s)
+        return _AFTER_PLACEHOLDER.sub(lambda m: m.group(0).replace("\\", "/"), s)
+
+    out = []
+    for raw in lines:
+        try:
+            obj = json.loads(raw)
+        except json.JSONDecodeError:
+            out.append(fix(raw))
+            continue
+        out.append(json.dumps(_map_strings(obj, fix), ensure_ascii=False))
+    return out
+
+
+def from_placeholder(lines: list[str], root: str) -> list[str]:
+    target = root.replace("\\", "/")
+    out = []
+    for raw in lines:
+        try:
+            obj = json.loads(raw)
+        except json.JSONDecodeError:
+            out.append(raw.replace(PLACEHOLDER, target))
+            continue
+        out.append(json.dumps(_map_strings(obj, lambda s: s.replace(PLACEHOLDER, target)), ensure_ascii=False))
+    return out
 
 
 # ── what a live attempt leaves for offline replay ────────────────────────────────────────────────────
@@ -199,6 +274,8 @@ def store_attempt(store: Path, lines: list[str], workspace: Path, editable: tupl
     if store.exists():
         shutil.rmtree(store)
     (store / "files").mkdir(parents=True)
+    root = workspace.resolve()
+    lines = to_placeholder(to_placeholder(lines, str(root)), str(workspace))
     (store / "transcript.jsonl").write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
     kept = []
     for rel in editable:
@@ -218,4 +295,5 @@ def restore_attempt(store: Path, workspace: Path) -> list[str]:
         target = workspace / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes((store / "files" / rel).read_bytes())
-    return (store / "transcript.jsonl").read_text("utf-8").splitlines()
+    lines = (store / "transcript.jsonl").read_text("utf-8").splitlines()
+    return from_placeholder(lines, workspace.resolve().as_posix())

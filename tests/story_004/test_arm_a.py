@@ -110,12 +110,14 @@ def w(tmp_path):
         ("Bash", {"command": "python -c \"open('C:\\\\Windows\\\\win.ini').read()\""}, True),
         ("Read", {"file_path": "../KB-01/solution/core/license_expr.py"}, True),  # S4-04 row 3
         ("Bash", {"command": "cat ../secret.txt"}, True),
-        ("Edit", {"file_path": "driver.py", "old_string": "1", "new_string": "2"}, False),
+        ("Edit", {"file_path": "<W>/driver.py", "old_string": "1", "new_string": "2"}, False),
         ("Bash", {"command": "python -m pytest -q"}, False),
         ("Glob", {"pattern": "**/*.py"}, False),
     ],
 )
 def test_s4_17_the_audit_marks_any_access_outside_the_workspace(w, tool, inp, invalid):
+    root = str(w.resolve())
+    inp = {k: v.replace("<W>", root) if isinstance(v, str) else v for k, v in inp.items()}
     findings = arm_a.audit(transcript(assistant("m1", [tool_use(tool, inp)]), result()), w)
     assert bool(findings) is invalid, findings
 
@@ -193,3 +195,110 @@ def test_settings_files_allow_python_for_a_and_nothing_for_a0():
     a0 = json.loads(Path(arm_a.SETTINGS["A0"]).read_text("utf-8"))
     assert a["permissions"]["allow"] == ["Bash(python *)"] and a["env"] == {}
     assert a0["permissions"]["allow"] == [] and a0["env"] == {}
+
+
+# ── review findings 3B F1, F2 and the verifier's timeout finding ─────────────────────────────────────
+
+
+def test_on_windows_the_cli_is_the_executable_never_a_cmd_shim(monkeypatch):
+    from keysbench import runner
+
+    monkeypatch.delenv("KEYSBENCH_CLAUDE", raising=False)
+    plan = runner.Plan(
+        label="x", cap_usd=1.0, k=1, effort="high", models=[], configs=[], tasks=[],
+        max_tokens=1, max_steps=1, cli={"version": "2.1.296"},
+    )  # fmt: skip
+    monkeypatch.setattr(runner.os, "name", "nt")
+    path = runner.default_cli(plan)
+    assert path.endswith("claude.exe") and not path.lower().endswith((".cmd", ".bat"))
+
+
+def test_a_multi_line_argument_through_a_cmd_shim_is_refused(tmp_path):
+    # cmd.exe cuts a command line at the first newline: every flag after the prompt would be lost.
+    with pytest.raises(ValueError, match="newline"):
+        arm_a.command(
+            "A", model="m", effort="high", instruction="line one\nline two", remaining_usd=1.0,
+            cli="C:/x/claude.cmd", settings=tmp_path / "s.json",
+        )  # fmt: skip
+
+
+def test_a_multi_line_instruction_reaches_an_executable_intact(tmp_path):
+    import os
+    import sys
+
+    echo = tmp_path / "echo.py"
+    echo.write_text("import json, sys\nprint(json.dumps(sys.argv[1:]))\n", encoding="utf-8")
+    cmd = arm_a.command(
+        "A0", model="m", effort="high", instruction="line one\nline two", remaining_usd=1.0,
+        cli=sys.executable, settings=tmp_path / "s.json",
+    )  # fmt: skip
+    lines = arm_a.run_cli([cmd[0], str(echo), *cmd[1:]], tmp_path, dict(os.environ), 30)
+    argv = json.loads(lines[0])
+    assert argv[argv.index("-p") + 1] == "line one\nline two"
+    assert argv[-2:] == ["--tools", "Read,Edit,Write,Glob,Grep"]
+
+
+def test_a_timeout_kills_the_whole_process_tree(tmp_path):
+    import os
+    import sys
+    import time
+
+    # The child starts a grandchild that inherits stdout and sleeps; killing only the child would leave
+    # the pipe open and the wait unbounded (verifier finding: 12 s for a 2 s limit).
+    script = tmp_path / "tree.py"
+    script.write_text(
+        "import subprocess, sys, time\n"
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+        'print(\'{"type": "system", "subtype": "init"}\', flush=True)\n'
+        "time.sleep(60)\n",
+        encoding="utf-8",
+    )
+    started = time.monotonic()
+    lines = arm_a.run_cli([sys.executable, str(script)], tmp_path, dict(os.environ), 3)
+    assert time.monotonic() - started < 20
+    assert json.loads(lines[-1])["subtype"] == "error_timeout"
+    assert arm_a.summarise(lines, model="claude-haiku-5-5")["outcome"] == "error"
+
+
+def test_s4_17_an_absolute_path_inside_the_live_workspace_replays_as_not_invalid(tmp_path):
+    live = tmp_path / "live" / "w"
+    live.mkdir(parents=True)
+    (live / "driver.py").write_text("x = 1\n", encoding="utf-8")
+    abs_path = str((live / "driver.py").resolve())
+    lines = transcript(
+        assistant(
+            "m1",
+            [
+                tool_use("Edit", {"file_path": abs_path, "old_string": "1", "new_string": "2"}),
+                tool_use("Bash", {"command": f"python {abs_path}"}, 2),
+            ],
+        ),
+        {**result(), "cwd": str(live.resolve())},
+    )
+    assert arm_a.audit(lines, live) == []
+    store = tmp_path / "store"
+    arm_a.store_attempt(store, lines, live, editable=("driver.py",))
+    stored = (store / "transcript.jsonl").read_text("utf-8")
+    assert str(live.resolve()) not in stored and json.dumps(str(live.resolve()))[1:-1] not in stored
+    fresh = tmp_path / "replay" / "w"
+    fresh.mkdir(parents=True)
+    assert arm_a.audit(arm_a.restore_attempt(store, fresh), fresh) == []
+
+
+WINDOWS_ROOT = r"C:\Users\u\AppData\Local\Temp\kb-attempt-abc\w"
+
+
+def test_s4_12_a_windows_recording_audits_inside_a_posix_workspace():
+    edit = tool_use("Edit", {"file_path": WINDOWS_ROOT + r"\driver.py"})
+    lines = [json.dumps({"type": "assistant", "message": {"id": "m1", "content": [edit]}})]
+    rebased = arm_a.to_placeholder(lines, WINDOWS_ROOT)
+    assert "<W>/driver.py" in rebased[0]
+    restored = arm_a.from_placeholder(rebased, "/tmp/kb-attempt-xyz/w")
+    assert "/tmp/kb-attempt-xyz/w/driver.py" in restored[0]
+
+
+def test_settings_block_reads_outside_the_working_directory():
+    for config in ("A", "A0"):
+        data = json.loads(Path(arm_a.SETTINGS[config]).read_text("utf-8"))
+        # The key path is the CLI's own: "permissions.blockReadsOutsideWorkingDirectories" (2.1.296 binary).
+        assert data["permissions"].get("blockReadsOutsideWorkingDirectories") is True

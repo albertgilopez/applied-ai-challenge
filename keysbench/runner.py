@@ -261,8 +261,11 @@ def default_cli(plan: Plan) -> str:
     if explicit:
         return explicit
     base = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local")) / "keysbench-cli" / version
-    name = "claude.cmd" if os.name == "nt" else "claude"
-    return str(base / "node_modules" / ".bin" / name)
+    if os.name == "nt":
+        # The executable itself, never the .cmd shim: cmd.exe would cut the multi-line prompt and every
+        # flag after it (review finding 3B F1).
+        return str(base / "node_modules" / "@anthropic-ai" / "claude-code" / "bin" / "claude.exe")
+    return str(base / "node_modules" / ".bin" / "claude")
 
 
 def attempt_a(

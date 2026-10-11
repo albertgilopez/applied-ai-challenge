@@ -174,6 +174,19 @@ sequenceDiagram
     only".** The CLI auto-allows read-only commands, but refuses their paths outside the working
     directory. The audit still marks any absolute path outside W as `invalid`.
   - **`stdin` is closed** (`DEVNULL`).
+- **After the code review (2026-10-11), each reproduced:**
+  - **The CLI is called as its executable** (`bin/claude.exe` on Windows), never through the `.cmd` shim:
+    cmd.exe ends a command line at the first newline, so a multi-line prompt dropped every flag after it
+    (model, budget, tools, settings). `command()` refuses a `.cmd`/`.bat` with a multi-line prompt.
+  - **A timeout kills the whole process tree.** Killing only the CLI left its children holding the output
+    pipe, and a 2 s limit took 12 s.
+  - **Stored transcripts are workspace-independent.** The CLI writes absolute paths; storing replaces the
+    live workspace with `<W>` (with `/` separators) and restoring maps it to the replay workspace, so an
+    attempt audits the same way on replay, on any OS.
+  - **`permissions.blockReadsOutsideWorkingDirectories: true`** in both settings files (the key path is the
+    CLI's own). With it the CLI also refuses commands whose paths are computed at run time.
+  - **No `--permission-mode dontAsk`**: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` forces mode `default`, where a
+    non-interactive run denies anything it would have asked about.
 - **Audit, then grade (DR-14).** The stream-json transcript is kept. Every tool input is checked: a
   file path that resolves outside W, or any absolute path in a command, makes the attempt `invalid`.
   This is detection: Python can build a path at runtime, and the report says so.

@@ -136,7 +136,9 @@
   rows:
     - { transcript_tool_input: { tool: Read, file_path: "C:/elsewhere/solution.py" }, expected: { outcome: invalid } }
     - { transcript_tool_input: { tool: Bash, command: "python -c \"open('/etc/hosts').read()\"" }, expected: { outcome: invalid } }
-    - { transcript_tool_input: { tool: Edit, file_path: "driver.py" }, expected: { outcome: not invalid } }
+    # The real CLI writes absolute paths (its tool schema requires them): <W> is the live workspace.
+    # (Corrected 2026-10-11: the first version used a relative path the CLI never produces.)
+    - { transcript_tool_input: { tool: Edit, file_path: "<W>/driver.py" }, expected: { outcome: not invalid } }
     - { cli_command: built_for_config_A, expected: { contains: ["--restricted", "--bare", "--tools", "--settings", "--no-session-persistence"] } }
     - { cli_command: built_for_config_A0, expected: { tools_exclude: [Bash] } }
 - id: S4-18

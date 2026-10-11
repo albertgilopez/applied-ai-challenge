@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": ["Bash(python *)"],
-    "deny": []
+    "deny": [],
+    "blockReadsOutsideWorkingDirectories": true
   },
   "env": {}
 }

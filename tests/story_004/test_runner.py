@@ -432,20 +432,6 @@ def test_a_cli_timeout_is_an_error_row_with_the_spend_seen_so_far(tasks, tmp_pat
     assert row["cost_usd"] == pytest.approx((100 * 2 + 50 * 10) / 1e6)
 
 
-def test_run_cli_turns_a_timeout_into_a_closed_partial_transcript(monkeypatch, tmp_path):
-    import subprocess as sp
-
-    from keysbench import arm_a
-
-    def boom(*a, **k):
-        raise sp.TimeoutExpired(cmd="claude", timeout=1, output=b'{"type": "system", "subtype": "init"}\n')
-
-    monkeypatch.setattr(arm_a.subprocess, "run", boom)
-    lines = arm_a.run_cli(["claude"], tmp_path, {}, 1)
-    assert json.loads(lines[-1])["subtype"] == "error_timeout"
-    assert arm_a.summarise(lines, model="claude-haiku-5-5")["outcome"] == "error"
-
-
 def test_a_tool_error_names_only_the_relative_path_so_the_attempt_replays(tasks, tmp_path):
     # Writing under a file fails with an OS error whose text carries the temporary directory (and, on a
     # Spanish Windows, Spanish words). That text goes back to the model and into the next request, so
