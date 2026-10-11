@@ -344,13 +344,13 @@ def cli_budget(plan: Plan, model: str, remaining: float) -> float:
 MIN_CLI_BUDGET_USD = 0.05  # below this a CLI attempt is not started: it could not finish one call
 
 
-def default_cli(plan: Plan) -> str:
+def default_cli(plan: Plan, *, windows: bool | None = None) -> str:
     version = str(plan.cli.get("version", ""))
     explicit = os.environ.get("KEYSBENCH_CLAUDE")
     if explicit:
         return explicit
     base = Path(os.environ.get("LOCALAPPDATA", Path.home() / ".local")) / "keysbench-cli" / version
-    if os.name == "nt":
+    if (os.name == "nt") if windows is None else windows:
         # The executable itself, never the .cmd shim: cmd.exe would cut the multi-line prompt and every
         # flag after it (review finding 3B F1).
         return str(base / "node_modules" / "@anthropic-ai" / "claude-code" / "bin" / "claude.exe")

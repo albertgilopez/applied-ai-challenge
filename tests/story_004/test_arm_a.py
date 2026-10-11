@@ -208,8 +208,8 @@ def test_on_windows_the_cli_is_the_executable_never_a_cmd_shim(monkeypatch):
         label="x", cap_usd=1.0, k=1, effort="high", models=[], configs=[], tasks=[],
         max_tokens=1, max_steps=1, cli={"version": "2.1.296"},
     )  # fmt: skip
-    monkeypatch.setattr(runner.os, "name", "nt")
-    path = runner.default_cli(plan)
+    # The platform is a parameter: faking os.name breaks pathlib for the whole process on Linux (CI).
+    path = runner.default_cli(plan, windows=True)
     assert path.endswith("claude.exe") and not path.lower().endswith((".cmd", ".bat"))
 
 
