@@ -321,6 +321,59 @@ muts = [
     ),
     ("keysbench/instrument/sim.py", "self._errors.pop(0) if self._errors", "self._errors.pop() if self._errors"),
     ("keysbench/instrument/sim.py", "        self._buffer = RESET_READING_DBM\n", ""),
+    # STORY-004 T8: the runner (rounds, resume, budget, named outcomes, one recording per attempt).
+    (
+        "keysbench/runner.py",
+        "by_price = sorted(plan.models, key=lambda m: (PRICES[m].output, m))",
+        "by_price = list(plan.models)",
+    ),
+    (
+        "keysbench/runner.py",
+        'if r.get("kind") == "attempt" and r.get("outcome") != "budget_stopped"',
+        'if r.get("kind") == "attempt" and False',
+    ),
+    ("keysbench/runner.py", "if self.budget.spent_usd + worst > self.budget.cap_usd:", "if False:"),
+    ("keysbench/runner.py", "if projected is not None and budget.spent_usd + projected > cap:", "if False:"),
+    ("keysbench/runner.py", 'row["cost_usd"] = round(provider.attempt_spent, 6)', 'row["cost_usd"] = 0.0'),
+    ("keysbench/runner.py", 'if run.stop_reason == "refusal":', "if False:"),
+    ("keysbench/runner.py", 'elif run.stop_reason == "max_tokens":', "elif False:"),
+    (
+        "keysbench/runner.py",
+        'return root / key.task_id / key.task_sha256[:12] / f"{key.slug()}.jsonl"',
+        'return root / key.task_id / key.task_sha256[:12] / "attempt.jsonl"',
+    ),
+    ("keysbench/runner.py", "    if unpriced:\n", "    if False:\n"),
+    # STORY-004 T9: configurations A and A0 (the audit, the key scrub, safe restore).
+    (
+        "keysbench/arm_a.py",
+        "if isinstance(value, str) and value and not _inside(value, workspace):",
+        "if False:",
+    ),
+    ("keysbench/arm_a.py", "                if not _inside(p, workspace):\n", "                if False:\n"),
+    ("keysbench/arm_a.py", 'env["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"] = "1"', "pass"),
+    (
+        "keysbench/arm_a.py",
+        'if not rel or p.is_absolute() or PureWindowsPath(rel).drive or ".." in p.parts:',
+        "if not rel:",
+    ),
+    # STORY-004 T7: the judge's evidence is checked by code, and the judge is never the contestant.
+    ("keysbench/judge.py", "    if not quote_in_review:\n", "    if False:\n"),
+    ("keysbench/judge.py", "    if not points:\n", "    if False:\n"),
+    ("keysbench/judge.py", 'if verdict != "pass" or not found:', "if False:"),
+    (
+        "keysbench/judge.py",
+        'return cfg.get("instead", "claude-sonnet-5-5") if contestant_model == default else default',
+        "return default",
+    ),
+    ("keysbench/judge.py", 'return _MODEL_NAMES.sub("<contestant>", text)', "return text"),
+    # STORY-004 T10 and task graders: escaped report, KB-05 relevance.
+    ("keysbench/report.py", '[md_cell(f["mode"]), md_cell(f["task_id"])', '[f["mode"], md_cell(f["task_id"])'),
+    (
+        "keysbench/tasks/KB-05/tests/test_kb05.py",
+        "    assert any(line in normalise(quote) for line in RELEVANT_LIMIT_LINES), quote\n",
+        "    assert True\n",
+    ),
+    ("pyproject.toml", 'testpaths = ["tests"]', 'testpaths = ["tests", "keysbench"]'),
 ]
 # Every anchor is checked before anything is mutated: a reformat that splits a
 # line should report all the stale anchors at once, not stop at the first.

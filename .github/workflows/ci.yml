@@ -15,7 +15,7 @@ concurrency:
 jobs:
   gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       # Actions are pinned by commit, not by tag: a moved tag cannot change what runs here.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,6 +31,8 @@ jobs:
         run: scripts/ci.sh types
       - name: test
         run: scripts/ci.sh test
+      - name: graders
+        run: scripts/ci.sh graders
       - name: canaries
         run: scripts/ci.sh canaries
       - name: audit

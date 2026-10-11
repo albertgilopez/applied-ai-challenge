@@ -8,7 +8,7 @@ pipeline {
     }
   }
   options {
-    timeout(time: 20, unit: 'MINUTES')
+    timeout(time: 45, unit: 'MINUTES')
     disableConcurrentBuilds(abortPrevious: true)
   }
   environment {
@@ -21,6 +21,7 @@ pipeline {
     stage('lint')     { steps { sh 'scripts/ci.sh lint' } }
     stage('types')    { steps { sh 'scripts/ci.sh types' } }
     stage('test')     { steps { sh 'scripts/ci.sh test' } }
+    stage('graders')  { steps { sh 'scripts/ci.sh graders' } }
     stage('canaries') { steps { sh 'scripts/ci.sh canaries' } }
     stage('audit')    { steps { sh 'scripts/ci.sh audit' } }
   }
