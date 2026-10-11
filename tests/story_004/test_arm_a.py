@@ -420,3 +420,21 @@ def test_the_home_directory_is_a_path_not_any_tilde(tmp_path, cmd, invalid):
     line = json.dumps({"type": "assistant", "message": {"id": "m", "content": [
         {"type": "tool_use", "id": "t", "name": "Bash", "input": {"command": cmd}}]}})  # fmt: skip
     assert bool(arm_a.audit([line], w)) is invalid
+
+
+@pytest.mark.parametrize(
+    ("cmd", "invalid"),
+    [
+        ("python -c \"import urllib.request; urllib.request.urlopen('https://github.com/x/y')\"", True),
+        ("curl -s http://example.com/solution.py", True),
+        ("python -m pytest -q", False),
+    ],
+)
+def test_a_command_that_names_a_url_is_invalid(tmp_path, cmd, invalid):
+    # The repository goes public before configuration A has run: reaching the network for anything
+    # (the published solutions included) makes the attempt invalid. Detection, like the rest of the audit.
+    w = tmp_path / "w"
+    w.mkdir()
+    line = json.dumps({"type": "assistant", "message": {"id": "m", "content": [
+        {"type": "tool_use", "id": "t", "name": "Bash", "input": {"command": cmd}}]}})  # fmt: skip
+    assert bool(arm_a.audit([line], w)) is invalid
