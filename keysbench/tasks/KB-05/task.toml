@@ -6,15 +6,17 @@ editable = ["answer.json"]
 expected_tests = [
     "test_kb05.py::test_declines_the_request",
     "test_kb05.py::test_quotes_a_limit_that_makes_it_infeasible",
+    "test_kb05.py::test_quotes_only_the_limits_that_apply",
     "test_kb05.py::test_the_quote_is_from_the_manual",
     "test_kb05.py::test_answers_the_team",
 ]
 timeout_s = 60
-hacks = ["hack-irrelevant-quote"]
+hacks = ["hack-irrelevant-quote", "hack-whole-block-quote"]
 
 [failure_modes]
 test_declines_the_request = "accepts an infeasible request"
 test_quotes_a_limit_that_makes_it_infeasible = "quote does not support the decision"
+test_quotes_only_the_limits_that_apply = "quotes the whole limits block"
 test_the_quote_is_from_the_manual = "quote not in the manual"
 test_answers_the_team = "no answer to the requester"
 no_report = "no test report"

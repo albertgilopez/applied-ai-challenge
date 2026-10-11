@@ -325,3 +325,11 @@ def test_a_retry_waits_at_least_what_the_server_asks_for():
     Response.headers = {"retry-after": "9999"}
     RetryingProvider(Once(), retries=2, backoff_s=2.0, sleep=waits.append, max_wait_s=120.0).create(model="m")
     assert waits == [120.0]
+
+
+@pytest.mark.parametrize("name", ["NUL", "con", "COM1.txt", "sub/LPT9", "aux.py"])
+def test_the_gate_refuses_windows_device_names(tmp_path, name):
+    # Review lens 2A F6: on Windows these name a device, not a file, in any directory.
+    from harness.gate import Gate
+
+    assert Gate([tmp_path], [tmp_path], base=tmp_path).resolve(name) is None

@@ -492,8 +492,20 @@ def test_an_error_attempt_keeps_what_it_spent_and_is_retried_up_to_a_limit(tasks
 
 def test_an_error_is_not_used_to_project_the_cost_of_the_rest(tasks, tmp_path):
     ledger = [
-        {"config": "B", "contestant": {"model": "claude-sonnet-5-5"}, "outcome": "error", "cost_usd": 0.01},
-        {"config": "B", "contestant": {"model": "claude-sonnet-5-5"}, "outcome": "pass", "cost_usd": 1.0},
+        {
+            "task_id": "KB-T",
+            "config": "B",
+            "contestant": {"model": "claude-sonnet-5-5"},
+            "outcome": "error",
+            "cost_usd": 0.01,
+        },
+        {
+            "task_id": "KB-T",
+            "config": "B",
+            "contestant": {"model": "claude-sonnet-5-5"},
+            "outcome": "pass",
+            "cost_usd": 1.0,
+        },
     ]
     key = runner.AttemptKey("KB-T", "x", "B", "claude-sonnet-5-5", "high", 2)
     assert runner.project(plan(tasks), ledger, [key]) == pytest.approx(1.0)
@@ -528,3 +540,27 @@ def test_a_cli_attempt_is_bounded_like_configuration_b(tasks, tmp_path, monkeypa
     assert cmd[cmd.index("--max-turns") + 1] == "6"
     per_attempt = 6 * 32000 * 10 / 1e6  # max_steps x max_tokens x Sonnet 5.5's output price
     assert float(cmd[cmd.index("--max-budget-usd") + 1]) == pytest.approx(per_attempt, abs=1e-3)
+
+
+def test_after_a_budget_stop_the_rest_of_the_run_is_stopped_not_attempted(tasks, tmp_path):
+    # DR-11 and review lens 1B F5: once one attempt is stopped by the budget, the attempts after it are
+    # recorded as stopped without a call, even if a cheaper one would still fit. Letting them run would
+    # give some contestants more attempts than others on the same round.
+    calls: list = []
+
+    def factory(key):
+        p = Scripted([write_call(GOOD), done()])
+        calls.append(key)
+        if key.model == "claude-sonnet-5-5":
+            heavy = write_call(GOOD)
+            heavy["usage"] = {"input_tokens": 0, "output_tokens": 50_000, "inference_geo": "global"}  # 0.50 USD
+            p = Scripted([heavy, done()])
+        return p
+
+    p = plan(tasks, k=2, models=["claude-haiku-5-5", "claude-sonnet-5-5"], cap_usd=0.60)
+    rows = runner.run(p, tasks_dir=tasks, out=tmp_path / "o", provider_factory=factory, live=True)
+    outcomes = [(r["attempt"], r["contestant"]["model"], r["outcome"]) for r in rows]
+    stopped_at = next(i for i, o in enumerate(outcomes) if o[2] == "budget_stopped")
+    assert all(o[2] == "budget_stopped" for o in outcomes[stopped_at:]), outcomes
+    assert all(r["cost_usd"] == 0.0 for r in rows[stopped_at + 1 :])
+    assert len(rows) == 4  # every planned attempt has its line

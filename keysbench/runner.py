@@ -66,15 +66,31 @@ class Plan:
     not_run: list[dict[str, str]] = field(default_factory=list)
     judge: dict[str, Any] = field(default_factory=dict)
     cli: dict[str, Any] = field(default_factory=dict)
-    k_by_model: dict[str, int] = field(default_factory=dict)  # the reduction order, if the budget needs it
+    # The reduction order, decided before the run: ordered, cumulative steps, each with its reason and
+    # its limits ({model?, config?, k}). `applied_step` says how many apply; a step nobody has decided
+    # (`decided: false`) cannot be applied, only projected.
+    reduction: list[dict[str, Any]] = field(default_factory=list)
+    applied_step: int = 0
 
     @classmethod
     def load(cls, path: Path) -> Plan:
         data = yaml.safe_load(path.read_text("utf-8"))
         return cls(**data)
 
-    def k_for(self, model: str) -> int:
-        return int(self.k_by_model.get(model, self.k))
+    def k_at(self, model: str, config: str, step: int) -> int:
+        """Attempts per task for a contestant with the first `step` reduction steps applied."""
+        k = self.k
+        for s in self.reduction[:step]:
+            for limit in s.get("limits", []):
+                if limit.get("model", model) == model and limit.get("config", config) == config:
+                    k = min(k, int(limit["k"]))
+        return k
+
+    def k_for(self, model: str, config: str) -> int:
+        undecided = [i + 1 for i, s in enumerate(self.reduction[: self.applied_step]) if not s.get("decided")]
+        if undecided:
+            raise RunRefused(f"reduction step {undecided[0]} is not decided; it can be projected, not applied")
+        return self.k_at(model, config, self.applied_step)
 
 
 @dataclass(frozen=True)
@@ -166,17 +182,74 @@ class BudgetedProvider:
         return response
 
 
+def _mean(xs: list[float]) -> float:
+    return sum(xs) / len(xs)
+
+
 def project(plan: Plan, ledger: list[JSONObject], remaining: list[AttemptKey]) -> float | None:
-    """Projected cost of the attempts left, from this ledger's mean cost per attempt per contestant.
-    Contestants with nothing measured are left out (the pilot runs on the per-call reservation)."""
-    means: dict[tuple[str, str], list[float]] = {}
+    """Projected cost of the attempts left, from what this ledger measured.
+
+    A (task, contestant) already measured is projected at its own mean. Otherwise the contestant's mean
+    is scaled by task size: the size of a task is what it cost the reference contestant (the one measured
+    on the most tasks; in the pilot, Haiku on B across every task), and a task nobody measured is priced
+    like the largest one known. The scaling assumes a task that is bigger for one model is bigger for all
+    in the same proportion: an assumption, stated in the report. A one-task pilot priced every task like
+    the smallest one (review lens 1A F4). Contestants with nothing measured are left out.
+    Stopped and errored attempts are not used: they did not run to the end."""
+    seen: dict[tuple[str, str, str], list[float]] = {}
     for r in ledger:
         if r.get("cost_usd") is not None and r.get("outcome") not in ("budget_stopped", "error"):
-            means.setdefault((r["config"], r["contestant"]["model"]), []).append(float(r["cost_usd"]))
-    known = [k for k in remaining if (k.config, k.model) in means]
-    if not known:
+            seen.setdefault((r["task_id"], r["config"], r["contestant"]["model"]), []).append(float(r["cost_usd"]))
+    if not seen:
         return None
-    return sum(sum(means[(k.config, k.model)]) / len(means[(k.config, k.model)]) for k in known)
+    by_contestant: dict[tuple[str, str], dict[str, float]] = {}
+    for (task, config, model), costs in seen.items():
+        by_contestant.setdefault((config, model), {})[task] = _mean(costs)
+    reference = max(by_contestant.values(), key=len)
+    largest = max(reference.values())
+
+    def size(task: str) -> float:
+        return reference.get(task, largest)
+
+    total, known = 0.0, 0
+    for k in remaining:
+        measured = by_contestant.get((k.config, k.model))
+        if measured is None:
+            continue
+        known += 1
+        if k.task_id in measured:
+            total += measured[k.task_id]
+        else:
+            per_size = _mean(
+                [c / size(t) for t, c in measured.items() if size(t) > 0] or [_mean(list(measured.values()))]
+            )
+            total += per_size * size(k.task_id)
+    return total if known else None
+
+
+def projection_table(plan: Plan, ledger: list[JSONObject], tasks_dir: Path) -> list[JSONObject]:
+    """The cost of the run at every reduction step, from what the ledger measured: the number that is
+    looked at before the grid, derived rather than estimated in prose."""
+    done = _recorded(ledger)
+    already = spent(ledger)
+    out = []
+    for step in range(len(plan.reduction) + 1):
+        keys = plan_keys(plan, tasks_dir, step=step)
+        left = [k for k in keys if (k.task_sha256, k.config, k.model, k.effort, k.attempt) not in done]
+        measured = {(r["config"], r["contestant"]["model"]) for r in ledger if r.get("cost_usd") is not None}
+        projected = project(plan, ledger, left)
+        out.append(
+            {
+                "step": step,
+                "why": "" if step == 0 else plan.reduction[step - 1].get("why", ""),
+                "decided": step == 0 or bool(plan.reduction[step - 1].get("decided")),
+                "attempts": len(keys),
+                "left": len(left),
+                "unmeasured": sum((k.config, k.model) not in measured for k in left),
+                "total_usd": None if projected is None else round(already + projected, 2),
+            }
+        )
+    return out
 
 
 # ── one attempt ──────────────────────────────────────────────────────────────────────────────────────
@@ -332,8 +405,9 @@ def attempt_a(
                 settings=arm_a.SETTINGS[key.config],
             )
             runner_fn = cli_runner or (lambda c, w, e: arm_a.run_cli(c, w, e, int(plan.cli.get("timeout_s", 1800))))
-            lines = runner_fn(cmd, workspace, arm_a.cli_env(os.environ.get("ANTHROPIC_API_KEY", "")))
-            arm_a.store_attempt(store, lines, workspace, spec.editable)
+            key_value = os.environ.get("ANTHROPIC_API_KEY", "")
+            lines = runner_fn(cmd, workspace, arm_a.cli_env(key_value))
+            arm_a.store_attempt(store, lines, workspace, spec.editable, secrets=(key_value,))
         else:
             if not (store / "manifest.json").is_file():
                 raise CassetteMiss(f"no stored CLI attempt at {store}")
@@ -401,15 +475,22 @@ def default_judge_factory(plan: Plan, cassettes: Path, out: Path, budget: Budget
 ProviderFactory = Callable[[AttemptKey], Provider]
 
 
-def plan_keys(plan: Plan, tasks_dir: Path) -> list[AttemptKey]:
+def plan_keys(plan: Plan, tasks_dir: Path, *, step: int | None = None) -> list[AttemptKey]:
+    """The attempts of a plan, in rounds (attempt 1 of everything, then attempt 2...), cheapest model first.
+    `step` projects another reduction step without applying it."""
     digests = {t: task_digest(tasks_dir / t) for t in plan.tasks}
     by_price = sorted(plan.models, key=lambda m: (PRICES[m].output, m))
+
+    def k(model: str, config: str) -> int:
+        return plan.k_for(model, config) if step is None else plan.k_at(model, config, step)
+
+    rounds = max((k(m, c) for m in plan.models for c in plan.configs), default=0)
     keys = []
-    for attempt in range(1, max(plan.k_for(m) for m in plan.models) + 1):
+    for attempt in range(1, rounds + 1):
         for task in plan.tasks:
             for config in plan.configs:
                 for model in by_price:
-                    if attempt <= plan.k_for(model):
+                    if attempt <= k(model, config):
                         keys.append(AttemptKey(task, digests[task], config, model, plan.effort, attempt))
     return keys
 
@@ -517,7 +598,16 @@ def _run(
         )
     judges = judge_factory or default_judge_factory(plan, cassettes, out, budget, live)
     rows = []
+    stopped = False
     for key in remaining:
+        if stopped:
+            # DR-11: once the budget stops one attempt, the rest are recorded as stopped without a call.
+            # A cheaper attempt that would still fit is not made: it would give some contestants more
+            # attempts than others in the same round (review lens 1B F5). A resume with more budget runs them.
+            row = not_started(key, plan)
+            append_jsonl(ledger_path, row)
+            rows.append(row)
+            continue
         spec = load_task(tasks_dir / key.task_id)
         judge_ctx = judges(key) if spec.family == "judge" else None
         if key.config in ("A", "A0"):
@@ -534,7 +624,28 @@ def _run(
             raise RunRefused(f"unknown configuration {key.config!r}")
         append_jsonl(ledger_path, row)
         rows.append(row)
+        stopped = live and row.get("outcome") == "budget_stopped"
     return rows
+
+
+def not_started(key: AttemptKey, plan: Plan) -> JSONObject:
+    harness = contestants.HARNESS if key.config == "B" else arm_a.HARNESS.get(key.config, "")
+    version = contestants.HARNESS_VERSION if key.config == "B" else str(plan.cli.get("version", ""))
+    return {
+        "kind": "attempt",
+        "task_id": key.task_id,
+        "task_sha256": key.task_sha256,
+        "config": key.config,
+        "contestant": {"model": key.model, "effort": key.effort, "harness": harness, "harness_version": version},
+        "attempt": key.attempt,
+        "outcome": "budget_stopped",
+        "error": "not started: the budget stopped an earlier attempt of this run",
+        "cost_usd": 0.0,
+        "cost_basis": "not-started",
+        "grader": None,
+        "judge": None,
+        "at": utc_stamp(),
+    }
 
 
 def copy_cassettes(src: Path, dest: Path) -> None:  # pragma: no cover - a maintenance helper

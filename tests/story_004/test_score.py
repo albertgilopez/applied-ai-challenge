@@ -409,3 +409,37 @@ def test_score_is_deterministic_and_order_free() -> None:
         assert score(shuffled, FAILURE_NAMES, benchmark="keysbench-2026.10") == first, seed
     assert set(first) == {"benchmark", "tasks", "ranking", "memo", "cells", "by_contestant", "deltas"}
     assert first["benchmark"] == "keysbench-2026.10"
+
+
+# ── review lens 2B: what a decision would need, per pair, and the A - B row ─────────────────────────
+
+
+def test_the_deltas_include_a_minus_b_the_cli_against_the_api_loop() -> None:
+    rows: list[dict[str, Any]] = []
+    for task in ("KB-01", "KB-02"):
+        rows += attempt_rows(task, "B", "m1", ["fail"] * 3)
+        rows += attempt_rows(task, "A", "m1", ["pass"] * 3)
+    by_kind = {d["kind"]: d for d in score(rows, {}, benchmark="t")["deltas"]}
+    assert by_kind["A-B"]["tasks"] == 2 and close(by_kind["A-B"]["mean_paired_difference"], 1.0)
+
+
+def test_each_pair_has_its_own_discordance_sample_size_and_cost_closest_first() -> None:
+    rows: list[dict[str, Any]] = []
+    # Within B: m1 and m2 disagree on every task (far apart); m2 and m3 agree half the time (close).
+    for task in ("KB-01", "KB-02"):
+        rows += attempt_rows(task, "B", "m1", ["pass"] * 3, cost=0.10)
+        rows += attempt_rows(task, "B", "m2", ["fail"] * 3, cost=0.20)
+    rows += attempt_rows("KB-01", "B", "m3", ["fail"] * 3, cost=0.30)
+    rows += attempt_rows("KB-02", "B", "m3", ["pass"] * 3, cost=0.30)
+    pairs = memo(cells(rows), rows, {})["decision_grade"]["pairs"]
+    first = pairs[0]
+    # m1 - m3 and m2 - m3 both differ by 0.5 on average; m1 - m2 by 1.0, so it comes last.
+    assert {(p["x"], p["y"]) for p in pairs[:2]} == {("m1", "m3"), ("m2", "m3")}
+    assert (pairs[-1]["x"], pairs[-1]["y"]) == ("m1", "m2")
+    assert first["config"] == "B" and first["tasks"] == 2 and close(first["discordance"], 0.5)
+    assert first["tasks_needed"] == {"5": tasks_needed(0.5, 0.05), "10": tasks_needed(0.5, 0.10),
+                                     "15": tasks_needed(0.5, 0.15)}  # fmt: skip
+    # A month for that pair: tasks needed for 15 points x what one task costs the two (three attempts each).
+    per_task = {"m1": 0.30, "m2": 0.60, "m3": 0.90}
+    expected = first["tasks_needed"]["15"] * (per_task[first["x"]] + per_task[first["y"]])
+    assert close(first["est_cost_usd"], expected)

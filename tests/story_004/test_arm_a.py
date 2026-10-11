@@ -315,3 +315,46 @@ def test_usage_repeated_on_a_message_is_priced_from_its_largest_output():
     summary = arm_a.summarise([line(1), line(400), end], model="claude-sonnet-5-5")
     assert summary["calls"] == 1
     assert summary["cost_usd"] == pytest.approx((100 * 2 + 400 * 10) / 1e6)
+
+
+def test_a_stored_attempt_carries_no_key_in_its_transcript_or_files(tmp_path):
+    # The stored attempt is committed as a recording. The CLI's environment is scrubbed, but whatever the
+    # contestant printed or wrote is stored: keys are redacted on the way in (review lens 2A F5).
+    w = tmp_path / "w"
+    w.mkdir()
+    key = "sk-ant-api03-" + "x" * 40
+    (w / "driver.py").write_text(f"KEY = '{key}'\nTOKEN = 'ghp_{'y' * 36}'\n", encoding="utf-8")
+    line = json.dumps({"type": "assistant", "message": {"id": "m1", "content": [{"type": "text", "text": key}]}})
+    store = tmp_path / "store"
+    arm_a.store_attempt(store, [line], w, ("driver.py",), secrets=(key,))
+    stored = (store / "transcript.jsonl").read_text("utf-8") + (store / "files" / "driver.py").read_text("utf-8")
+    assert key not in stored and "ghp_" + "y" * 36 not in stored
+    assert stored.count("<redacted>") == 3
+
+
+@pytest.mark.parametrize(
+    ("tool", "inp", "invalid"),
+    [
+        ("Bash", {"command": "ls $HOME/dev"}, True),
+        ("Bash", {"command": "ls ${HOME}/dev"}, True),
+        ("Bash", {"command": "type %USERPROFILE%/dev/x"}, True),
+        ("Bash", {"command": "dir //server/share/x".replace("/", chr(92))}, True),  # a UNC path
+        ("Bash", {"command": "cd - && ls"}, True),
+        ("Glob", {"pattern": "../**/solution/*.py"}, True),
+        ("Glob", {"pattern": "/home/u/**"}, True),
+        ("Grep", {"pattern": "x", "glob": "../KB-01/**"}, True),
+        # the same tools used inside the workspace stay valid
+        ("Bash", {"command": "python -m pytest -q"}, False),
+        ("Grep", {"pattern": "def measure", "glob": "*.py"}, False),
+        ("Glob", {"pattern": "**/*.py"}, False),
+        ("Grep", {"pattern": "~/x|$HOME", "glob": "*.md"}, False),  # a search pattern is text, not a path
+    ],
+)
+def test_the_audit_sees_home_env_unc_and_glob_forms(tmp_path, tool, inp, invalid):
+    # Review lens 2A F3, reproduced: 7 of these 8 forms passed the audit. The audit is detection, not the
+    # barrier (the report says so), but it should not miss the obvious forms.
+    w = tmp_path / "w"
+    w.mkdir()
+    line = json.dumps({"type": "assistant", "message": {"id": "m", "content": [
+        {"type": "tool_use", "id": "t", "name": tool, "input": inp}]}})  # fmt: skip
+    assert bool(arm_a.audit([line], w)) is invalid

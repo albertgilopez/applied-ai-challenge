@@ -301,6 +301,54 @@ muts = [
         "max(self.backoff_s * (2**attempt), _retry_after(exc))",
         "self.backoff_s * (2**attempt)",
     ),
+    # Review lens 1A F4: the reduction order is applied by code, the projection scales by task size, and a
+    # step nobody decided cannot be applied.
+    (
+        "keysbench/runner.py",
+        '                if limit.get("model", model) == model and limit.get("config", config) == config:',
+        '                if limit.get("model", model) == model:',
+    ),
+    (
+        "keysbench/runner.py",
+        "        if undecided:\n            raise RunRefused(",
+        "        if False:\n            raise RunRefused(",
+    ),
+    ("keysbench/runner.py", "        return reference.get(task, largest)", "        return reference.get(task, 1.0)"),
+    (
+        "keysbench/runner.py",
+        "            total += per_size * size(k.task_id)",
+        "            total += _mean(list(measured.values()))",
+    ),
+    # Review lens 2B: the A - B row, each pair closest first, and the cost of the pair (not the grid).
+    ("core/bench_score.py", ', ("A-B", "A", "B"))', ")"),
+    (
+        "core/bench_score.py",
+        'key=lambda p: (abs(p["mean_difference"]), p["config"], p["x"], p["y"])',
+        'key=lambda p: (p["config"], p["x"], p["y"])',
+    ),
+    ("core/bench_score.py", "n15 * (cx + cy)", "n15 * cx"),
+    # Review lenses 1B F5, 2A F3/F5/F6: the rest of a run stops after a budget stop; keys are redacted from
+    # stored attempts; the audit sees home, env, UNC and glob forms; a review cannot close its data block;
+    # device names are not files; KB-05's quote is the limit that applies.
+    (
+        "keysbench/runner.py",
+        '        stopped = live and row.get("outcome") == "budget_stopped"',
+        "        stopped = False",
+    ),
+    ("keysbench/arm_a.py", '    return _KEY_PATTERNS.sub("<redacted>", text)', "    return text"),
+    ("keysbench/arm_a.py", "            for m in _ELSEWHERE.finditer(cmd):", "            for m in []:"),
+    (
+        "keysbench/arm_a.py",
+        "            if prefix and (_ELSEWHERE.search(prefix) or not _inside(prefix, workspace)):",
+        "            if False:",
+    ),
+    ("keysbench/judge.py", '    return _CLOSE.sub("</review_>", text)', "    return text"),
+    ("harness/gate.py", "        if any(_DEVICE.match(part) for part in rel.parts):", "        if False:"),
+    (
+        "keysbench/tasks/KB-05/tests/test_kb05.py",
+        "    assert not any(line in normalise(quote) for line in IRRELEVANT_LIMIT_LINES), quote",
+        "    pass",
+    ),
     # The container that runs contestant code: no network, only code/ mounted, mounted read-only.
     ("keysbench/kbcall.py", '"--network", "none", ', ""),
     (
@@ -450,7 +498,7 @@ SCOPES: list[tuple[str, list[str]]] = [
     ("keysbench/graders.py", ["tests/story_004/test_graders.py"]),
     ("keysbench/judge.py", ["tests/story_004/test_judge.py", "tests/story_004/test_check_graders.py"]),
     ("keysbench/arm_a.py", ["tests/story_004/test_arm_a.py", "tests/story_004/test_runner.py"]),
-    ("keysbench/runner.py", ["tests/story_004/test_runner.py"]),
+    ("keysbench/runner.py", ["tests/story_004/test_runner.py", "tests/story_004/test_projection.py"]),
     ("keysbench/contestants.py", ["tests/story_004/test_runner.py"]),
     ("keysbench/report.py", ["tests/story_004/test_report.py"]),
     ("keysbench/instrument/", ["tests/story_004/test_instrument.py", "tests/story_004/test_instrument_copies.py"]),
@@ -495,7 +543,7 @@ for scope in {tuple(scope_for(f)) for f, _, _ in muts}:
         print(f"BASELINE RED for {' '.join(scope)}: no mutation result on it would mean anything")
         sys.exit(3)
     timeouts[scope] = max(TIMEOUT_S, 4 * (time.monotonic() - started))
-    print(f"baseline {time.monotonic() - started:5.0f} s  {' '.join(scope)}")
+    print(f"baseline {time.monotonic() - started:5.0f} s  {' '.join(scope)}", flush=True)
 
 bad = 0
 try:
@@ -516,7 +564,7 @@ try:
             p.write_bytes(raw)
         assert p.read_bytes() == raw, f"{f} was not restored byte for byte"
         bad += status == "SURVIVED"
-        print(f"{status:9} {f}: {a[:60]}")
+        print(f"{status:9} {f}: {a[:60]}", flush=True)
 finally:
     shutil.rmtree(work, ignore_errors=True)
 print("survivors:", bad)

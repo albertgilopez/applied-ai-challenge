@@ -12,6 +12,7 @@ import pathlib
 HERE = pathlib.Path(__file__).resolve().parent
 CODE = HERE.parent / "code"  # the contestant's files, read as data
 RELEVANT_LIMIT_LINES = ("Frequency range: 10 MHz to 18 GHz", "Measurement resolution: 0.01 dB")
+IRRELEVANT_LIMIT_LINES = ("Power range: -60 dBm to +20 dBm",)
 
 
 def answer() -> dict:
@@ -32,6 +33,13 @@ def test_quotes_a_limit_that_makes_it_infeasible():
     quote = answer().get("quote")
     assert isinstance(quote, str)
     assert any(line in normalise(quote) for line in RELEVANT_LIMIT_LINES), quote
+
+
+def test_quotes_only_the_limits_that_apply():
+    # Quoting the whole limits block contains the right line by construction; it is not the evidence.
+    quote = answer().get("quote")
+    assert isinstance(quote, str)
+    assert not any(line in normalise(quote) for line in IRRELEVANT_LIMIT_LINES), quote
 
 
 def test_the_quote_is_from_the_manual():

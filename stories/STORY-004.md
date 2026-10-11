@@ -27,8 +27,9 @@
   computed from the ledger: per-task results with cost per pass and latency, the tasks every
   contestant solves (commodity) with the cheapest one that does, a failure taxonomy, and how many
   tasks a decision-grade month would need and what it would cost at this run's measured prices.
-- Codex CLI and Cursor agent are written as a protocol (same tasks, same graders, metered cost),
-  listed as not run with the concrete reason.
+- Codex CLI and Cursor agent are listed as not run with the concrete reason (what pricing them on the
+  same basis would need). *(Amended 2026-10-11: this line promised a written protocol for them; none
+  was written, so the claim was removed rather than left standing.)*
 
 **Why AI-first, and where the code decides:** the contestants are models; the judge is a model only
 where a test cannot see. Everything that can be checked by running code is checked by running code,

@@ -49,7 +49,10 @@ DELTA_POINTS = 0.15
 ALPHA = 0.05
 POWER = 0.8
 NO_RANKING_UP_TO = 8
-DELTA_KINDS = (("A-A0", "A", "A0"), ("A0-B", "A0", "B"))
+# A0 - B: what the product scaffold adds to the API loop; A - A0: what running code adds; A - B: the
+# product as shipped against the API loop, the comparison a buyer of either actually faces.
+DELTA_KINDS = (("A-A0", "A", "A0"), ("A0-B", "A0", "B"), ("A-B", "A", "B"))
+PAIR_POINTS = (0.05, 0.10, 0.15)
 
 # Two-sided 95 % critical values of Student's t (0.975 quantile), df 1..30, four decimals. The standard
 # library has no t distribution; these were checked against a numerical integration of the t density.
@@ -396,6 +399,49 @@ def discordance(cell_list: Sequence[Mapping[str, Any]]) -> tuple[float | None, i
     return (fmean(terms) if terms else None, len(terms))
 
 
+def _pairs(cell_list: Sequence[Mapping[str, Any]], rows: Sequence[Mapping[str, Any]]) -> list[JSONObject]:
+    """Every pair of contestants in a configuration, closest first (the smallest mean difference over the
+    tasks both ran): the pair a decision is hardest to make about. For each, its own discordance, the paired
+    tasks a month would need to detect a 5, 10 and 15-point difference, and what that month would cost the
+    two of them at this run's measured cost per task (all its attempts on a task). Pooling every pair
+    hides the one that matters, and pricing the whole grid overstates the cost of comparing two
+    contestants (review lens 2B F3)."""
+    rates = _rates_by_contestant(cell_list)
+    by: dict[Contestant, list[Mapping[str, Any]]] = {}
+    for row in rows:
+        key = _cell_key(row)
+        by.setdefault((key[2], key[3], key[4]), []).append(row)
+
+    def per_task(who: Contestant) -> float | None:
+        total = _cost(by.get(who, []))
+        return None if total is None or not rates.get(who) else total / len(rates[who])
+
+    out: list[JSONObject] = []
+    for config in sorted({c[0] for c in rates}):
+        for x, y in combinations(sorted(c for c in rates if c[0] == config), 2):
+            common = [t for t in rates[x] if t in rates[y]]
+            if not common:
+                continue
+            px, py = [rates[x][t] for t in common], [rates[y][t] for t in common]
+            d = fmean(a * (1 - b) + b * (1 - a) for a, b in zip(px, py, strict=True))
+            needed = {str(round(p * 100)): tasks_needed(d, p) for p in PAIR_POINTS}
+            cx, cy, n15 = per_task(x), per_task(y), needed["15"]
+            out.append(
+                {
+                    "config": config,
+                    "x": x[1],
+                    "y": y[1],
+                    "effort": x[2] if x[2] == y[2] else f"{x[2]}/{y[2]}",
+                    "tasks": len(common),
+                    "mean_difference": fmean(a - b for a, b in zip(px, py, strict=True)),
+                    "discordance": d,
+                    "tasks_needed": needed,
+                    "est_cost_usd": None if n15 is None or cx is None or cy is None else n15 * (cx + cy),
+                }
+            )
+    return sorted(out, key=lambda p: (abs(p["mean_difference"]), p["config"], p["x"], p["y"]))
+
+
 def _decision_grade(cell_list: Sequence[Mapping[str, Any]], rows: Sequence[Mapping[str, Any]]) -> JSONObject:
     d, pairs = discordance(cell_list)
     n = None if d is None else tasks_needed(d)
@@ -414,7 +460,13 @@ def _decision_grade(cell_list: Sequence[Mapping[str, Any]], rows: Sequence[Mappi
     else:
         cost = "unpriced" if per_task is None else f"{per_task:.4f} USD per task measured over {n_tasks} tasks"
         note = f"discordance over {pairs} contestant-task pairs within a configuration; {test}; cost at {cost}"
-    return {"discordance_rate": d, "tasks_needed_for_15_points": n, "est_cost_usd": est, "note": note}
+    return {
+        "discordance_rate": d,
+        "tasks_needed_for_15_points": n,
+        "est_cost_usd": est,
+        "note": note,
+        "pairs": _pairs(cell_list, rows),
+    }
 
 
 def memo(

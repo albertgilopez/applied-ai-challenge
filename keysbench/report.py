@@ -43,6 +43,32 @@ def failure_names(tasks_dir: Path = TASKS) -> dict[str, dict[str, str]]:
     return names
 
 
+CONFIGS = {
+    "B": "the API called directly from this repository's agent loop, with three file tools (list, read, "
+    "write) and no code execution",
+    "A0": "Claude Code (the CLI, as shipped) with its file tools, no code execution",
+    "A": "Claude Code with its file tools and Python",
+}
+TERMS = {
+    "pass rate": "passes / attempts in one cell (one task, one contestant)",
+    "pass^k": "the chance that all k attempts pass, the reliability of a contestant on a task",
+    "task-clustered 95 % interval": "a t interval over per-task pass rates: the task, not the attempt, is "
+    "the independent unit, so the interval is as wide as the number of tasks makes it",
+    "cost per pass": "everything the contestant's attempts cost (USD, measured usage at list prices) / passes",
+    "discordance": "the chance that one attempt of each of two contestants disagree on a task; it sets "
+    "how many tasks a difference between them needs to be detected",
+}
+
+
+def task_legend(task_ids: list[str], tasks_dir: Path = TASKS) -> dict[str, dict[str, str]]:
+    out: dict[str, dict[str, str]] = {}
+    for t in task_ids:
+        toml = tasks_dir / t / "task.toml"
+        raw = tomllib.loads(toml.read_text("utf-8")) if toml.is_file() else {}
+        out[t] = {"title": str(raw.get("title", "")), "track": str(raw.get("track", ""))}
+    return out
+
+
 def _recordings(rows: list[JSONObject], cassettes: Path) -> dict[str, str]:
     """sha256 of every recording an attempt of this ledger was (or would be) replayed from."""
     from keysbench.runner import AttemptKey
@@ -83,8 +109,16 @@ def results(rows: list[JSONObject], plan: Plan, *, ledger_bytes: bytes, cassette
         "cells": data["cells"],
         "by_contestant": data["by_contestant"],
         "deltas": data["deltas"],
+        "reduction": {
+            "applied_step": plan.applied_step,
+            "applied": [
+                {"why": s.get("why", ""), "limits": s.get("limits", [])} for s in plan.reduction[: plan.applied_step]
+            ],
+            "k": {c: {m: plan.k_at(m, c, plan.applied_step) for m in plan.models} for c in plan.configs},
+        },
         "not_run": list(plan.not_run),
         "limits": list(LIMITS),
+        "legend": {"tasks": task_legend(sorted({c["task_id"] for c in data["cells"]})), "configs": CONFIGS},
     }
 
 
@@ -108,9 +142,99 @@ def _table(headers: list[str], rows: list[list[str]]) -> list[str]:
     return out
 
 
+def _who(config: str, model: str) -> str:
+    return f"{config} · {model}"
+
+
+def _answer(data: JSONObject) -> list[str]:
+    """The memo's first section, every sentence computed from the results: what a reader who will not read
+    the tables needs (review lens 2B F2). No contestant is ranked (DR-10)."""
+    legend = data.get("legend", {}).get("tasks", {})
+    tracks: dict[str, int] = {}
+    for t in legend.values():
+        tracks[t["track"] or "unknown"] = tracks.get(t["track"] or "unknown", 0) + 1
+    track_text = ", ".join(f"{n} {track}" for track, n in sorted(tracks.items()))
+    n_tasks = int(data["tasks"])
+    rule = "the scorer defines none for 8 tasks or fewer" if n_tasks <= 8 else "no ranking rule is defined"
+    out = [f"- **{n_tasks} tasks** ({track_text}). No ranking: {rule}."]
+    cells = data["cells"]
+    unsolved = sorted({c["task_id"] for c in cells} - {c["task_id"] for c in cells if c["passes"]})
+    if unsolved:
+        out.append(f"- **Solved by no contestant:** {', '.join(md_cell(t) for t in unsolved)}.")
+    for c in data["memo"]["commodity"]:
+        out.append(
+            f"- **Solved by every {md_cell(c['config'])} contestant:** {md_cell(c['task_id'])}; the cheapest that "
+            f"did is {md_cell(c['cheapest_passing_model'])} at {_n(c['cost_per_pass'])} USD per pass."
+        )
+    for d in data["deltas"]:
+        if d["kind"] != "A-B":
+            continue
+        lo, hi = d["task_clustered_95"]
+        if lo > 0 or hi < 0:
+            verdict = "a difference these tasks show"
+        elif lo == hi == 0:
+            verdict = "no difference on these tasks"
+        else:
+            verdict = "not separable on these tasks"
+        out.append(
+            f"- **Claude Code against the API loop (A − B), {md_cell(d['model'])}:** "
+            f"{d['mean_paired_difference'] * 100:+.0f} points of pass rate over {d['tasks']} tasks, "
+            f"95 % [{lo * 100:+.0f}, {hi * 100:+.0f}]: {verdict}."
+        )
+    pairs = data["memo"]["decision_grade"].get("pairs") or []
+    if pairs:
+        p = pairs[0]
+        n15 = p["tasks_needed"]["15"]
+        need = (
+            "a 15-point difference could not occur at their measured discordance"
+            if n15 is None
+            else f"a gap seen on {p['tasks']} tasks is not conclusive: detecting 15 points reliably (power 0.8) "
+            f"would need {n15} paired tasks"
+            + ("" if p["est_cost_usd"] is None else f", about {p['est_cost_usd']:.2f} USD a month for the two")
+        )
+        gap = abs(p["mean_difference"]) * 100
+        ahead = p["x"] if p["mean_difference"] > 0 else p["y"]
+        apart = "level" if gap == 0 else f"{gap:.0f} points apart, {md_cell(ahead)} ahead"
+        out.append(
+            f"- **Hardest pair to tell apart:** {md_cell(_who(p['config'], p['x']))} and "
+            f"{md_cell(_who(p['config'], p['y']))}, {apart} over {p['tasks']} tasks; {need}."
+        )
+    return out
+
+
+def _glance(data: JSONObject) -> list[str]:
+    cells = data["cells"]
+    who = sorted({(c["config"], c["model"]) for c in cells})
+    tasks = sorted({c["task_id"] for c in cells})
+    at = {(c["task_id"], c["config"], c["model"]): f"{c['passes']} / {c['attempts']}" for c in cells}
+    return _table(
+        ["task", *[md_cell(_who(*w)) for w in who]],
+        [[md_cell(t), *[at.get((t, *w), "—") for w in who]] for t in tasks],
+    )
+
+
+def _legend(data: JSONObject) -> list[str]:
+    legend = data.get("legend", {})
+    return [
+        *_table(
+            ["task", "track", "what it asks"],
+            [[md_cell(t), md_cell(v["track"]), md_cell(v["title"])] for t, v in legend.get("tasks", {}).items()],
+        ),
+        "",
+        "Configurations (the same models in each):",
+        "",
+        *[f"- {md_cell(k)}: {md_cell(v)}" for k, v in legend.get("configs", {}).items()],
+        "",
+        "Terms:",
+        "",
+        *[f"- {md_cell(k)}: {md_cell(v)}" for k, v in TERMS.items()],
+    ]
+
+
 def to_markdown(data: JSONObject) -> str:
     memo = data["memo"]
     grade = memo["decision_grade"]
+    tracks = {t: v["track"] for t, v in data.get("legend", {}).get("tasks", {}).items()}
     lines = [
         f"# {md_cell(str(data['benchmark']))}",
         "",
@@ -119,13 +243,35 @@ def to_markdown(data: JSONObject) -> str:
         "",
         "## Decision memo",
         "",
+        "### Answer",
+        "",
+        *_answer(data),
+        "",
+        "### At a glance: passes / attempts",
+        "",
+        *_glance(data),
+        "",
+        "### Reading this",
+        "",
+        *_legend(data),
+        "",
         "### Per task",
         "",
         *_table(
-            ["task", "config", "model", "effort", "passes / attempts", "cost per pass (USD)", "p95 latency (s)"],
+            [
+                "task",
+                "track",
+                "config",
+                "model",
+                "effort",
+                "passes / attempts",
+                "cost per pass (USD)",
+                "p95 latency (s)",
+            ],
             [
                 [
                     md_cell(t["task_id"]),
+                    md_cell(tracks.get(t["task_id"], "")),
                     md_cell(t["config"]),
                     md_cell(t["model"]),
                     md_cell(t["effort"]),
@@ -170,6 +316,39 @@ def to_markdown(data: JSONObject) -> str:
         f"- Tasks needed to detect a 15-point difference: {_n(grade['tasks_needed_for_15_points'])}",
         f"- Estimated cost of such a month at this run's prices (USD): {_n(grade['est_cost_usd'], 2)}",
         f"- {md_cell(str(grade['note']))}",
+        "",
+        "Per pair of contestants in a configuration, the closest first (the hardest decision):",
+        "",
+        *_table(
+            [
+                "config",
+                "x",
+                "y",
+                "tasks",
+                "mean difference",
+                "discordance",
+                "tasks for 5 points",
+                "tasks for 10 points",
+                "tasks for 15 points",
+                "a month for the two at 15 points (USD)",
+            ],
+            [
+                [
+                    md_cell(p["config"]),
+                    md_cell(p["x"]),
+                    md_cell(p["y"]),
+                    str(p["tasks"]),
+                    f"{p['mean_difference']:+.2f}",
+                    _n(p["discordance"], 2),
+                    _n(p["tasks_needed"]["5"]),
+                    _n(p["tasks_needed"]["10"]),
+                    _n(p["tasks_needed"]["15"]),
+                    _n(p["est_cost_usd"], 2),
+                ]
+                for p in grade.get("pairs") or []
+            ]
+            or [["—"] * 10],
+        ),  # fmt: skip
         "",
         "## By contestant",
         "",
@@ -220,6 +399,20 @@ def to_markdown(data: JSONObject) -> str:
             ]
             or [["—", "—", "—", "—", "—", "—"]],
         ),  # fmt: skip
+        "",
+        "## Attempts per contestant",
+        "",
+        *(
+            [f"Reduced before the run (step {data['reduction']['applied_step']}):", ""]
+            + [f"- {md_cell(str(s['why']))}" for s in data["reduction"]["applied"]]
+            + [""]
+            if data["reduction"]["applied"]
+            else ["No reduction applied: every contestant got the planned attempts.", ""]
+        ),
+        *_table(
+            ["config", *[md_cell(m) for m in next(iter(data["reduction"]["k"].values()), {})]],
+            [[md_cell(c), *[str(k) for k in ks.values()]] for c, ks in data["reduction"]["k"].items()],
+        ),
         "",
         "## Not run",
         "",

@@ -33,12 +33,20 @@ def plan() -> Plan:
         tasks=["KB-03", "KB-04"],
         max_tokens=32000,
         max_steps=12,
+        reduction=[
+            {"why": "fewer attempts for m2", "decided": True, "limits": [{"model": "m2", "k": 1}]},
+            {"why": "a later step, not applied", "decided": True, "limits": [{"k": 1}]},
+        ],
+        applied_step=1,
         not_run=[
             {
                 "contestant": "codex-cli",
-                "reason": "no metered usage per call without its own API account; protocol written",
+                "reason": "not run: pricing it needs per-call usage from an account not set up for this run",
             },
-            {"contestant": "cursor-agent", "reason": "no headless usage report to price from; protocol written"},
+            {
+                "contestant": "cursor-agent",
+                "reason": "not run: its headless agent reports no per-call usage to price from",
+            },
         ],
     )
 
@@ -145,3 +153,47 @@ def test_contestants_are_ordered_by_name(tmp_path):
     md = report.to_markdown(report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path))
     section = md.split("## By contestant")[1].split("## ")[0]
     assert section.index("m1") < section.index("m2")
+
+
+def test_the_report_says_which_reduction_steps_were_applied_and_the_attempts_each_contestant_got(tmp_path):
+    data = report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path)
+    assert data["reduction"]["applied_step"] == 1
+    assert [s["why"] for s in data["reduction"]["applied"]] == ["fewer attempts for m2"]
+    assert data["reduction"]["k"] == {"B": {"m1": 3, "m2": 1}}
+    md = report.to_markdown(data)
+    assert "fewer attempts for m2" in md and "a later step, not applied" not in md
+
+
+# ── review lens 2B: a reader who has not read the design can use the report ─────────────────────────
+
+
+def test_the_memo_opens_with_a_computed_answer(tmp_path):
+    data = report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path)
+    md = report.to_markdown(data)
+    subheadings = [ln for ln in md.splitlines() if ln.startswith("### ")]
+    assert subheadings[0] == "### Answer"
+    answer = md[md.index("### Answer") : md.index(subheadings[1])]
+    # m1 and m2 are the only pair: it is named, with its tasks-needed figure from the scorer.
+    pair = data["memo"]["decision_grade"]["pairs"][0]
+    assert "m1" in answer and "m2" in answer and str(pair["tasks"]) in answer
+    assert "2 tasks" in answer and "no ranking" in answer.lower()
+
+
+def test_the_report_says_what_each_task_and_configuration_is(tmp_path):
+    md = report.to_markdown(report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path))
+    assert "Write the KX-100 driver" in md and "Uncertainty budget" in md  # the task titles
+    assert "| task | track |" in md
+    for gloss in ("B:", "A0:", "A:", "pass^k", "task-clustered"):
+        assert gloss in md, gloss
+
+
+def test_the_report_has_a_task_by_contestant_table(tmp_path):
+    md = report.to_markdown(report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path))
+    glance = md[md.index("### At a glance") :]
+    assert "B · m1" in glance and "2 / 3" in glance and "1 / 3" in glance
+
+
+def test_each_pair_is_listed_with_what_telling_it_apart_would_need(tmp_path):
+    md = report.to_markdown(report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path))
+    section = md[md.index("### What a decision would need") :]
+    assert "| B | m1 | m2 |" in section and "5 points" in section and "15 points" in section

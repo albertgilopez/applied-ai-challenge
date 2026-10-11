@@ -1,0 +1,34 @@
+# Pilot, part 2: Haiku 5.5 on B across every task, the reference for task size. Run into the grid's --out: its attempts are the grid's attempt 1, so the
+# grid resumes from them, and `keysbench project` reads their cost.
+label: keysbench-2026.10-pilot-b
+cap_usd: 60.0
+k: 1
+effort: high
+models:
+- claude-haiku-5-5
+configs:
+- B
+tasks:
+- KB-01
+- KB-02
+- KB-03
+- KB-04
+- KB-05
+- KB-06
+max_tokens: 32000
+max_steps: 12
+judge:
+  default: claude-opus-5-5
+  instead: claude-sonnet-5-5
+cli:
+  version: 2.1.296
+  timeout_s: 1800
+reduction: []
+applied_step: 0
+not_run:
+- contestant: codex-cli
+  reason: 'not run: pricing it on the same basis needs per-call usage from an OpenAI account that was not set up for this
+    run; the same tasks and graders would apply'
+- contestant: cursor-agent
+  reason: 'not run: its headless agent reports no per-call token usage, so cost per pass could not be measured on the same
+    basis'

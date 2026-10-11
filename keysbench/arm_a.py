@@ -49,6 +49,20 @@ PATH_KEYS = ("file_path", "path", "notebook_path")
 _WINDOWS_ABS = re.compile(r"[A-Za-z]:[\\/][^\s'\"`;|&<>()]*")
 _POSIX_ABS = re.compile(r"(?<![\w.:/\\-])/(?!/)[^\s'\"`;|&<>()]+")
 _DOTDOT = re.compile(r"[^\s'\"`;|&<>()]*\.\.(?:[\\/][^\s'\"`;|&<>()]*)?")
+# Forms that name a place outside the workspace without spelling its path (review lens 2A F3): the home
+# directory and other per-user variables, a UNC share, `cd -`. Only named variables: a bare `%x%` also
+# appears in a Python format string, and flagging it would make a legitimate attempt `invalid`.
+_ELSEWHERE = re.compile(
+    r"\$\{?(?:HOME|USERPROFILE|APPDATA|LOCALAPPDATA|TMPDIR|TEMP|TMP|OLDPWD)\b\}?"
+    r"|%(?:USERPROFILE|HOMEPATH|HOMEDRIVE|APPDATA|LOCALAPPDATA|TEMP|TMP|PUBLIC|PROGRAMDATA|ONEDRIVE)%"
+    r"|\$env:\w+"
+    r"|(?<![\w~])~(?=[/\\\s]|$)"
+    r"|(?<![\w:\\])\\\\[\w.$-]+\\"
+    r"|\bcd\s+-(?=[\s;&|]|$)",
+    re.IGNORECASE,
+)
+# Tools whose pattern is a path pattern (not a search text): its fixed prefix must stay inside.
+GLOB_KEYS = {"Glob": "pattern", "Grep": "glob"}
 
 
 def command(
@@ -125,16 +139,31 @@ def _command_paths(cmd: str) -> list[str]:
     return found
 
 
+def _glob_prefix(pattern: str) -> str:
+    """The part of a glob before its first wildcard: the directory it starts from."""
+    cut = min((i for i, ch in enumerate(pattern) if ch in "*?[{"), default=len(pattern))
+    return pattern[:cut]
+
+
 def audit(lines: list[str], workspace: Path) -> list[str]:
-    """Every tool input that reaches outside the workspace. Any finding makes the attempt `invalid`."""
+    """Every tool input that reaches outside the workspace. Any finding makes the attempt `invalid`.
+    Detection only: Python can build a path at run time that no transcript shows."""
     findings = []
     for name, inp in _tool_inputs(_parse(lines)):
+        glob_key = GLOB_KEYS.get(name)
+        glob = inp.get(glob_key) if glob_key else None
+        if isinstance(glob, str) and glob:
+            prefix = _glob_prefix(glob)
+            if prefix and (_ELSEWHERE.search(prefix) or not _inside(prefix, workspace)):
+                findings.append(f"{name}.{glob_key} reaches outside the workspace: {glob[:200]}")
         for key in PATH_KEYS:
             value = inp.get(key)
             if isinstance(value, str) and value and not _inside(value, workspace):
                 findings.append(f"{name}.{key} outside the workspace: {value[:200]}")
         cmd = inp.get("command")
         if isinstance(cmd, str):
+            for m in _ELSEWHERE.finditer(cmd):
+                findings.append(f"{name}.command names a place outside the workspace: {m.group(0)[:200]}")
             for p in _command_paths(cmd):
                 if not _inside(p, workspace):
                     findings.append(f"{name}.command reaches outside the workspace: {p[:200]}")
@@ -283,12 +312,28 @@ def _safe_rel(rel: str) -> str:
     return p.as_posix()
 
 
-def store_attempt(store: Path, lines: list[str], workspace: Path, editable: tuple[str, ...]) -> None:
+# Key formats that must never reach a committed recording (a format check: the question is syntactic).
+_KEY_PATTERNS = re.compile(r"sk-ant-[A-Za-z0-9_\-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}")
+
+
+def redact(text: str, secrets: tuple[str, ...] = ()) -> str:
+    for s in secrets:
+        if s:
+            text = text.replace(s, "<redacted>")
+    return _KEY_PATTERNS.sub("<redacted>", text)
+
+
+def store_attempt(
+    store: Path, lines: list[str], workspace: Path, editable: tuple[str, ...], *, secrets: tuple[str, ...] = ()
+) -> None:
+    """Store what the attempt left: its transcript (workspace path replaced by `<W>`) and the editable files.
+    Both are committed as a recording, so keys are redacted on the way in: the CLI's environment is
+    scrubbed, but what the contestant printed or wrote is stored as it was (review lens 2A F5)."""
     if store.exists():
         shutil.rmtree(store)
     (store / "files").mkdir(parents=True)
     root = workspace.resolve()
-    lines = to_placeholder(to_placeholder(lines, str(root)), str(workspace))
+    lines = [redact(ln, secrets) for ln in to_placeholder(to_placeholder(lines, str(root)), str(workspace))]
     (store / "transcript.jsonl").write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
     kept = []
     for rel in editable:
@@ -296,7 +341,11 @@ def store_attempt(store: Path, lines: list[str], workspace: Path, editable: tupl
         if src.is_file() and not src.is_symlink():
             target = store / "files" / rel
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(src.read_bytes())
+            raw = src.read_bytes()
+            try:
+                target.write_bytes(redact(raw.decode("utf-8"), secrets).encode("utf-8"))
+            except UnicodeDecodeError:
+                target.write_bytes(raw)
             kept.append(rel)
     (store / "manifest.json").write_bytes(json.dumps({"files": kept}, indent=1).encode("utf-8"))
 

@@ -269,7 +269,7 @@ sequenceDiagram
   `prompt bound × input price + max_tokens × output price`, where the prompt bound is the previous
   call's measured input plus one token per byte of what was added since; settle with the measured cost.
   A call that would cross the cap is not made; the attempt is `budget_stopped` with its spend counted.
-  A and A0 get `--max-budget-usd = cap − spent`.
+  ~~A and A0 get `--max-budget-usd = cap − spent`.~~ *(Changed after the code review, see below.)*
 - **The first live run has nothing to project from.** For a (config, model) with no measured attempt in
   the ledger, the projection is skipped and only the per-call reservation applies. That is the rule the
   pilot runs under; the grid runs after it, with a projection.
@@ -284,6 +284,33 @@ sequenceDiagram
   no user `env` name reaches a `Bash` subprocess.
 - **Traceability (DR-13).** `results.json.inputs` records the sha256 of the ledger and of every
   recording it was scored from.
+- **After the code review (2026-10-11), each reproduced or measured first:**
+  - **An attempt's spend is never lost.** An attempt that errored after a paid call recorded 0 and was
+    never retried (reproduced: 0.41 USD missing from the ledger). Every stopped or errored attempt keeps
+    what its calls cost; an `error` is run again once on resume and then left as an error; errors and
+    stops are not used to project. Retries honour `retry-after` (capped at 120 s), five of them at 4 s
+    doubling, so an overload of a minute or two is not an `error` row. One live run per output
+    directory (a lock file): two would each spend the whole remaining cap.
+  - **A CLI attempt gets B's bound.** The first A attempt was handed the whole remaining cap and no turn
+    limit. Now `--max-turns = max_steps` and `--max-budget-usd = min(max_steps × max_tokens × output
+    price, remaining − one turn)`, the turn of headroom because the CLI's budget can be passed by the turn
+    in flight. For Fable 5.1 that bound is about 19 USD; after the pilot it is tightened from the measured
+    mean. That `--max-turns` stops the run is checked in the pilot.
+  - **The reduction order is data the code applies.** "A and A0 at k = 1" could not be expressed when k
+    was per model only. The plan now carries ordered, cumulative steps (`why`, `limits` by model and/or
+    configuration) and `applied_step`; the report states which steps were applied and the attempts each
+    contestant got. A step with `decided: false` can be projected but not applied: step 4 (Fable 5.1 out
+    of A0 and A) is recommended, not decided.
+  - **The projection accounts for task size.** A pilot on KB-03 alone priced every task like the
+    smallest (KB-03 rewrites 1.3 KB; KB-01 and KB-02 rewrite 7 to 10 KB). The pilot is two plans run into
+    the grid's output: every contestant on KB-03, and Haiku 5.5 on B across all six tasks as the reference
+    for task size. A measured (task, contestant) projects at its own mean; otherwise the contestant's
+    mean is scaled by the task's size on the reference, and a task nobody measured is priced like the
+    largest. The scaling assumes a bigger task is bigger for every model in the same proportion.
+    `python -m keysbench project --plan --ledger` prints the cost at every step: that is the number
+    looked at before the grid.
+  - **A message repeated in the CLI transcript is priced from its largest usage**, not the first one
+    seen (a streamed partial usage would undercount the output).
 
 ## Tasks
 

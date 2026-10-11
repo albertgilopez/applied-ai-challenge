@@ -14,12 +14,25 @@ judge: { default: claude-opus-5-5, instead: claude-sonnet-5-5 }
 # Claude Code CLI for configurations A and A0, pinned and installed in its own prefix (T0: 2.1.285 did not
 # know the 5.5 models and priced them about forty times too high).
 cli: { version: "2.1.296", timeout_s: 1800 }
-# Reduction order, decided before the run, if the projection from the pilot is above the cap:
-#   1. Fable 5.1 at k = 1 in every configuration;  2. A and A0 at k = 1;  3. everything at k = 1.
-# Applied by setting k_by_model here and recording why in the report.
-k_by_model: {}
+# The reduction order, decided before the run. Steps are cumulative; `applied_step` says how many apply,
+# and the report states which and why. `python -m keysbench project` prints the cost at each step from
+# what the pilot measured. A step with `decided: false` can be projected but not applied.
+reduction:
+  - why: "Fable 5.1 costs five times Sonnet 5.5 per output token; one attempt each"
+    decided: true
+    limits: [{ model: claude-fable-5-1, k: 1 }]
+  - why: "the CLI configurations, one attempt each; B, the common harness, keeps three"
+    decided: true
+    limits: [{ config: A0, k: 1 }, { config: A, k: 1 }]
+  - why: "one attempt for everything"
+    decided: true
+    limits: [{ k: 1 }]
+  - why: "recommended if step 3 still does not fit: Fable 5.1 out of A0 and A. It stays in B, so the four-model comparison holds on the common harness, and the A0-B and A-A0 deltas hold for three models"
+    decided: false
+    limits: [{ model: claude-fable-5-1, config: A0, k: 0 }, { model: claude-fable-5-1, config: A, k: 0 }]
+applied_step: 0
 not_run:
   - contestant: codex-cli
-    reason: "same tasks and graders apply, but pricing needs per-call usage from an OpenAI account we did not set up for this run; protocol written, not run"
+    reason: "not run: pricing it on the same basis needs per-call usage from an OpenAI account that was not set up for this run; the same tasks and graders would apply"
   - contestant: cursor-agent
-    reason: "its headless agent reports no per-call token usage to price from, so cost per pass could not be measured on the same basis; protocol written, not run"
+    reason: "not run: its headless agent reports no per-call token usage, so cost per pass could not be measured on the same basis"

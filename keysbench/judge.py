@@ -73,6 +73,15 @@ def _fail(reason: str, **extra: Any) -> dict[str, Any]:
             "points_at_defect": False, **extra}  # fmt: skip
 
 
+_CLOSE = re.compile(r"</\s*review\s*>", re.IGNORECASE)
+
+
+def _no_close(text: str) -> str:
+    """A review that writes `</review>` would end the data block early and put the rest where the
+    instructions are (review lens 2A F6): the closing tag is neutralised inside the data."""
+    return _CLOSE.sub("</review_>", text)
+
+
 def judge_review(
     *,
     review: str,
@@ -96,7 +105,7 @@ def judge_review(
         return {**_fail("no review written"), **base}
     user = (
         f"Rubric:\n{rubric_text()}\n\nThe change under review:\n```diff\n{diff}```\n\n"
-        f"<review>\n{mask(review)}\n</review>"
+        f"<review>\n{_no_close(mask(review))}\n</review>"
     )
     agent = Agent(
         provider=provider,

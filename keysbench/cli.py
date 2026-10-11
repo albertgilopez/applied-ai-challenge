@@ -2,6 +2,7 @@
 
     run            --plan PATH --out DIR [--live] [--budget-usd N]   one ledger line per attempt; resumes
     score          --plan PATH --ledger PATH --out DIR               results.json, results.md; no network
+    project        --plan PATH --ledger PATH                         cost at each reduction step; no network
     check-graders  [--live] [--task ID ...]                          each grader against its variants
 
 Exit 0 on success; 1 when check-graders finds a grader that is not trusted; 2 on a refused command (an
@@ -20,6 +21,7 @@ from typing import TextIO
 
 from harness.providers import AnthropicProvider, Provider, RetryingProvider
 from harness.replay import CassetteMiss, RecordingProvider, ReplayProvider
+from harness.storage import read_jsonl
 from keysbench import report, runner
 from keysbench.check import TASKS, JudgeContext, check_cassette, check_task, expected_scores
 from keysbench.graders import load_task
@@ -61,6 +63,22 @@ def _check_graders(tasks: list[str], live: bool, out: TextIO, err: TextIO) -> in
     return 1 if bad else 0
 
 
+def _project(plan: runner.Plan, ledger_path: Path, out: TextIO) -> int:
+    ledger = [r for r in read_jsonl(ledger_path) if r.get("kind") == "attempt"]
+    out.write(f"{plan.label}: spent {runner.spent(ledger):.2f} USD, cap {plan.cap_usd:.2f}\n")
+    for s in runner.projection_table(plan, ledger, TASKS):
+        total = "n/a (nothing measured)" if s["total_usd"] is None else f"{s['total_usd']:8.2f} USD"
+        verdict = "" if s["total_usd"] is None else ("fits" if s["total_usd"] <= plan.cap_usd else "OVER")
+        note = "" if s["decided"] else "  [not decided]"
+        out.write(
+            f"step {s['step']}: {s['attempts']:4} attempts, {s['left']:4} left ({s['unmeasured']} unmeasured), "
+            f"projected {total} {verdict}  {s['why']}{note}\n"
+        )
+    applied = "applied" if plan.applied_step else "none applied"
+    out.write(f"step in the plan: {plan.applied_step} ({applied}); unmeasured contestants are not in the total\n")
+    return 0
+
+
 def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = sys.stderr) -> int:
     ap = argparse.ArgumentParser(prog="keysbench")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -73,6 +91,9 @@ def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = 
     s.add_argument("--plan", type=Path, required=True)
     s.add_argument("--ledger", type=Path, required=True)
     s.add_argument("--out", type=Path, required=True)
+    pr = sub.add_parser("project")
+    pr.add_argument("--plan", type=Path, required=True)
+    pr.add_argument("--ledger", type=Path, required=True)
     c = sub.add_parser("check-graders")
     c.add_argument("--live", action="store_true")
     c.add_argument("--task", action="append")
@@ -83,6 +104,8 @@ def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = 
         return _check_graders(tasks, a.live, out, err)
 
     plan = runner.Plan.load(a.plan)
+    if a.cmd == "project":
+        return _project(plan, a.ledger, out)
     unknown = [t for t in plan.tasks if not (TASKS / t).is_dir()]
     if unknown:
         err.write(f"unknown task(s): {unknown}\n")

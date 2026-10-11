@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -24,6 +25,9 @@ Verdict = Literal["allow", "deny", "escalate"]
 class Decision:
     verdict: Verdict
     reason: str
+
+
+_DEVICE = re.compile(r"^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(\.[^.]*)?$", re.IGNORECASE)
 
 
 class Gate:
@@ -62,6 +66,8 @@ class Gate:
         rel = PurePosixPath(raw.replace("\\", "/"))
         if rel.is_absolute() or PureWindowsPath(raw).drive or ".." in rel.parts:
             return None
+        if any(_DEVICE.match(part) for part in rel.parts):
+            return None  # NUL, CON, COM1... name a device on Windows, wherever they are
         return (self.base / rel).resolve()
 
     def _inside(self, raw: str, roots: list[Path]) -> bool:
