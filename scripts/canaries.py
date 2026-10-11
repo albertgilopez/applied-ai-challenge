@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 muts = [
     (
@@ -240,6 +241,42 @@ muts = [
     ("core/manifest.py", "if not ok or authority not in policy.source_hosts:", "if False:"),
     ("core/manifest.py", "if type(value) is not list or not all(type(v) is str for v in value):", "if False:"),
     ("core/manifest.py", "        return 3\n", "        return 2\n"),
+    # STORY-004 T1: workspace-relative paths, measured latency, retries recorded as calls.
+    (
+        "harness/gate.py",
+        'if rel.is_absolute() or PureWindowsPath(raw).drive or ".." in rel.parts:',
+        "if rel.is_absolute() or PureWindowsPath(raw).drive:",
+    ),
+    ("harness/gate.py", "if rel.is_absolute() or PureWindowsPath(raw).drive", "if PureWindowsPath(raw).drive"),
+    ("harness/gate.py", 'rel = PurePosixPath(raw.replace("\\\\", "/"))', "rel = PurePosixPath(raw)"),
+    (
+        "harness/loop.py",
+        "latency = sum(measured) if model_calls and len(measured) == len(model_calls) else wall",
+        "latency = wall",
+    ),
+    ("harness/loop.py", 'for failed in measured.get("failed_tries") or []:', "for failed in []:"),
+    ("harness/loop.py", 'request["cache_control"] = {"type": "ephemeral"}', "pass"),
+    ("harness/providers.py", "return status in RETRYABLE_STATUS", "return True"),
+    # STORY-004 T4: each grader guard on its own layer.
+    (
+        "keysbench/graders.py",
+        "    for rel in spec.editable:\n",
+        "    for rel in [p.name for p in workspace.iterdir()]:\n",
+    ),
+    ("keysbench/graders.py", '"--noconftest", "-p", "no:cacheprovider",', '"-p", "no:cacheprovider",'),
+    ("keysbench/graders.py", 'sys.executable, "-I", "-B", "-m", "pytest",', 'sys.executable, "-B", "-m", "pytest",'),
+    (
+        "keysbench/graders.py",
+        'return GradeResult(False, ("no_report",), f"exit {proc.returncode} and no test report")',
+        'return GradeResult(True, (), "")',
+    ),
+    ("keysbench/graders.py", '("failure", "error", "skipped")', '("failure", "error")'),
+    (
+        "keysbench/graders.py",
+        "env = {k: v for k, v in os.environ.items() if k.upper() in _KEEP}",
+        "env = dict(os.environ)",
+    ),
+    ("keysbench/kbcall.py", "    if type(actual) is not type(expected):\n", "    if False:\n"),
 ]
 # Every anchor is checked before anything is mutated: a reformat that splits a
 # line should report all the stale anchors at once, not stop at the first.
@@ -254,7 +291,7 @@ if missing:
 # a parallel session or a `git add` in that window could keep it (security scan H9).
 REPO = pathlib.Path.cwd()
 VENV_PY = REPO / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-TIMEOUT_S = 120
+TIMEOUT_S = 120.0
 
 work = pathlib.Path(tempfile.mkdtemp(prefix="canaries-"))
 # Tracked files AND new files not yet added (but not ignored ones): copying only what git tracks
@@ -272,7 +309,7 @@ for rel in filter(None, tracked):
     shutil.copyfile(REPO / rel, dest)
 
 
-def _suite(cwd: pathlib.Path) -> int:
+def _suite(cwd: pathlib.Path, timeout_s: float | None = None) -> int:
     # No bytecode cache (-B). Python reuses a .pyc when the source has the same size and the same
     # mtime in whole seconds. A mutation that swaps two expressions of equal length, written in the
     # same second as the previous restore, then ran the OLD code: on Linux, where the suite takes
@@ -283,7 +320,7 @@ def _suite(cwd: pathlib.Path) -> int:
         cwd=cwd,
         capture_output=True,
         text=True,
-        timeout=TIMEOUT_S,
+        timeout=timeout_s,
         env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
     )
     return r.returncode
@@ -291,10 +328,16 @@ def _suite(cwd: pathlib.Path) -> int:
 
 # Baseline: the UNMUTATED copy must pass. If it does not (a file missing from the copy, a broken
 # environment), every mutation would read as KILLED and the run would prove nothing.
+started = time.monotonic()
 if _suite(work) != 0:
     shutil.rmtree(work, ignore_errors=True)
     print("BASELINE RED: the unmutated copy fails its own suite; no mutation result would mean anything")
     sys.exit(3)
+# A mutation that makes the suite hang has not passed it, so a timeout counts as KILLED. The limit is
+# therefore tied to how long the clean suite takes: with a fixed 120 s, a suite that grew past it would
+# have read every survivor as KILLED (the KeysBench grader tests made the suite several times longer).
+TIMEOUT_S = max(TIMEOUT_S, 4 * (time.monotonic() - started))
+print(f"baseline {time.monotonic() - started:.0f} s; a mutation times out after {TIMEOUT_S:.0f} s")
 
 bad = 0
 try:
@@ -307,7 +350,7 @@ try:
         try:
             p.write_bytes(orig.replace(a, b, 1).encode("utf-8"))
             assert p.read_bytes() != raw
-            status = "KILLED" if _suite(work) != 0 else "SURVIVED"
+            status = "KILLED" if _suite(work, TIMEOUT_S) != 0 else "SURVIVED"
         except subprocess.TimeoutExpired:
             status = "KILLED"  # a mutation that makes the suite hang has not passed it
         finally:
