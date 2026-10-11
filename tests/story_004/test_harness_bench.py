@@ -297,3 +297,31 @@ def test_s4_12_the_tool_and_the_gate_resolve_the_same_path(workspace):
     gate = Gate(read_roots=["."], base=workspace)
     assert gate.resolve("sub\\new.py") == (workspace / "sub" / "new.py").resolve()
     assert gate.resolve("../secret.txt") is None
+
+
+def test_a_retry_waits_at_least_what_the_server_asks_for():
+    # A 529 or 429 can carry retry-after; the wait honours it (capped), never just the fixed backoff.
+    class Response:
+        headers = {"retry-after": "30"}
+
+    class Overloaded529(Exception):
+        status_code = 529
+        response = Response()
+
+    class Once:
+        def __init__(self) -> None:
+            self.n = 0
+
+        def create(self, **request):
+            self.n += 1
+            if self.n == 1:
+                raise Overloaded529("overloaded")
+            return {"content": [], "usage": {}, "_call": {}}
+
+    waits: list[float] = []
+    RetryingProvider(Once(), retries=2, backoff_s=2.0, sleep=waits.append).create(model="m")
+    assert waits == [30.0]
+    waits.clear()
+    Response.headers = {"retry-after": "9999"}
+    RetryingProvider(Once(), retries=2, backoff_s=2.0, sleep=waits.append, max_wait_s=120.0).create(model="m")
+    assert waits == [120.0]

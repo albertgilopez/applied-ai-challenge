@@ -22,7 +22,8 @@ import os
 import shutil
 import tempfile
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -170,7 +171,7 @@ def project(plan: Plan, ledger: list[JSONObject], remaining: list[AttemptKey]) -
     Contestants with nothing measured are left out (the pilot runs on the per-call reservation)."""
     means: dict[tuple[str, str], list[float]] = {}
     for r in ledger:
-        if r.get("cost_usd") is not None and r.get("outcome") != "budget_stopped":
+        if r.get("cost_usd") is not None and r.get("outcome") not in ("budget_stopped", "error"):
             means.setdefault((r["config"], r["contestant"]["model"]), []).append(float(r["cost_usd"]))
     known = [k for k in remaining if (k.config, k.model) in means]
     if not known:
@@ -241,7 +242,9 @@ def attempt_b(
             row["cost_usd"] = run.cost_usd
             row["cost_basis"] = "measured-usage" if run.cost_usd is not None else "unpriced"
             row["latency_s"] = round(run.latency_s, 3)
-    if isinstance(provider, BudgetedProvider) and row.get("outcome") == "budget_stopped":
+    if isinstance(provider, BudgetedProvider) and run is None:
+        # The attempt stopped or crashed before it returned: what its calls cost is still on the bill
+        # (review lens 1A F2: a 0.41 USD call followed by an error was recorded as 0).
         row["cost_usd"] = round(provider.attempt_spent, 6)
         row["cost_basis"] = "measured-usage"
     row.setdefault("grader", None)
@@ -252,6 +255,17 @@ def attempt_b(
 
 
 CliRunner = Callable[[list[str], Path, dict[str, str]], list[str]]
+
+
+def cli_budget(plan: Plan, model: str, remaining: float) -> float:
+    """What one CLI attempt may spend: B's own bound (max_steps calls of at most max_tokens output each),
+    and never more than the remaining cap less one turn, because the CLI documents that its budget can be
+    passed by the turn in flight. Before this, the first CLI attempt was handed the whole cap
+    (review lens 1A F3)."""
+    one_turn = plan.max_tokens * PRICES[model].output / 1_000_000
+    return max(0.0, min(plan.max_steps * one_turn, remaining - one_turn))
+
+
 MIN_CLI_BUDGET_USD = 0.05  # below this a CLI attempt is not started: it could not finish one call
 
 
@@ -302,7 +316,7 @@ def attempt_a(
     with tempfile.TemporaryDirectory(prefix="kb-attempt-") as tmp:
         workspace = fresh_workspace(spec, Path(tmp) / "w")
         if live:
-            remaining = budget.cap_usd - budget.spent_usd
+            remaining = cli_budget(plan, key.model, budget.cap_usd - budget.spent_usd)
             if remaining < MIN_CLI_BUDGET_USD:
                 row.update(outcome="budget_stopped", cost_usd=0.0, cost_basis="cli-usage", wall_s=0.0, at=utc_stamp())
                 return row
@@ -313,6 +327,7 @@ def attempt_a(
                 effort=key.effort,
                 instruction=instruction,
                 remaining_usd=remaining,
+                max_turns=plan.max_steps,
                 cli=default_cli(plan),
                 settings=arm_a.SETTINGS[key.config],
             )
@@ -347,6 +362,13 @@ def attempt_a(
     return row
 
 
+def live_retrying() -> RetryingProvider:
+    """Five retries, 4 s doubling (up to about two minutes in all) or what the server asks for: an overload
+    shorter than that is not an `error` row (review lens 1A F2: two retries at 2 s and 4 s gave up on a 529
+    after about 6 s)."""
+    return RetryingProvider(AnthropicProvider(stream=True, max_retries=0), retries=5, backoff_s=4.0)
+
+
 JudgeFactory = Callable[[AttemptKey], JudgeContext]
 JUDGE_MAX_TOKENS = 8000
 
@@ -364,7 +386,7 @@ def default_judge_factory(plan: Plan, cassettes: Path, out: Path, budget: Budget
         path = judge_cassette(cassettes, key)
         provider: Provider
         if live:
-            inner = RecordingProvider(RetryingProvider(AnthropicProvider(stream=True, max_retries=0)), path)
+            inner = RecordingProvider(live_retrying(), path)
             provider = BudgetedProvider(inner, budget, model=model, max_tokens=JUDGE_MAX_TOKENS)
         else:
             provider = ReplayProvider(path)
@@ -392,18 +414,48 @@ def plan_keys(plan: Plan, tasks_dir: Path) -> list[AttemptKey]:
     return keys
 
 
+MAX_ERROR_TRIES = 2  # an attempt that errors (an outage, a crash) is run again once, then left as an error
+
+
 def _recorded(ledger: list[JSONObject]) -> set[tuple[Any, ...]]:
-    return {
-        (r["task_sha256"], r["config"], r["contestant"]["model"], r["contestant"]["effort"], r["attempt"])
-        for r in ledger
-        if r.get("kind") == "attempt" and r.get("outcome") != "budget_stopped"
-    }
+    """Keys a resume skips. A `budget_stopped` attempt is run again when there is budget; an `error` one
+    is run again until it has errored MAX_ERROR_TRIES times. Every row stays in the ledger, so what each
+    try spent is counted."""
+    errors: dict[tuple[Any, ...], int] = {}
+    done = set()
+    for r in ledger:
+        if r.get("kind") != "attempt":
+            continue
+        k = (r["task_sha256"], r["config"], r["contestant"]["model"], r["contestant"]["effort"], r["attempt"])
+        if r.get("outcome") == "error":
+            errors[k] = errors.get(k, 0) + 1
+            if errors[k] >= MAX_ERROR_TRIES:
+                done.add(k)
+        elif r.get("outcome") != "budget_stopped":
+            done.add(k)
+    return done
+
+
+@contextmanager
+def run_lock(out: Path) -> Iterator[None]:
+    """One live run per output directory: two would each spend the whole remaining cap."""
+    out.mkdir(parents=True, exist_ok=True)
+    lock = out / ".run.lock"
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError as exc:
+        raise RunRefused(f"a run is already writing to {out} (remove {lock.name} if no run is going on)") from exc
+    try:
+        os.write(fd, f"{os.getpid()}\n".encode())
+        os.close(fd)
+        yield
+    finally:
+        lock.unlink(missing_ok=True)
 
 
 def live_provider_factory(cassettes: Path, budget: Budget, plan: Plan) -> ProviderFactory:
     def factory(key: AttemptKey) -> Provider:
-        inner = RetryingProvider(AnthropicProvider(stream=True, max_retries=0))
-        recorded = RecordingProvider(inner, cassette_path(cassettes, key))
+        recorded = RecordingProvider(live_retrying(), cassette_path(cassettes, key))
         return BudgetedProvider(recorded, budget, model=key.model, max_tokens=plan.max_tokens)
 
     return factory
@@ -426,6 +478,23 @@ def run(
         raise RunRefused(f"no price for {unpriced}: a cost would be unknown")
     if live and provider_factory is None and not os.environ.get("ANTHROPIC_API_KEY"):
         raise RunRefused("--live needs ANTHROPIC_API_KEY in the environment")
+    if live:
+        with run_lock(out):
+            return _run(plan, tasks_dir, out, live, cassettes, provider_factory, budget_usd, cli_runner, judge_factory)
+    return _run(plan, tasks_dir, out, live, cassettes, provider_factory, budget_usd, cli_runner, judge_factory)
+
+
+def _run(
+    plan: Plan,
+    tasks_dir: Path,
+    out: Path,
+    live: bool,
+    cassettes: Path,
+    provider_factory: ProviderFactory | None,
+    budget_usd: float | None,
+    cli_runner: CliRunner | None,
+    judge_factory: JudgeFactory | None,
+) -> list[JSONObject]:
     ledger_path = out / "ledger.jsonl"
     ledger = [r for r in read_jsonl(ledger_path) if r.get("kind") == "attempt"]
     done = _recorded(ledger)

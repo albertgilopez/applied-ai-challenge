@@ -277,6 +277,30 @@ muts = [
         "env = dict(os.environ)",
     ),
     ("keysbench/kbcall.py", "    if type(actual) is not type(expected):\n", "    if False:\n"),
+    # Review lens 1A: an error keeps its spend and is retried; a CLI attempt has B's bound; the largest
+    # usage of a repeated message is priced; retry-after is honoured; one live run per output directory.
+    ("keysbench/runner.py", "            if errors[k] >= MAX_ERROR_TRIES:\n", "            if True:\n"),
+    (
+        "keysbench/runner.py",
+        "    if isinstance(provider, BudgetedProvider) and run is None:\n",
+        '    if isinstance(provider, BudgetedProvider) and row.get("outcome") == "budget_stopped":\n',
+    ),
+    (
+        "keysbench/runner.py",
+        "    return max(0.0, min(plan.max_steps * one_turn, remaining - one_turn))",
+        "    return max(0.0, remaining)",
+    ),
+    ("keysbench/runner.py", "os.O_CREAT | os.O_EXCL | os.O_WRONLY", "os.O_CREAT | os.O_WRONLY"),
+    (
+        "keysbench/arm_a.py",
+        'or (u.get("output_tokens") or 0) > (usages[msg_id].get("output_tokens") or 0)',
+        "or False",
+    ),
+    (
+        "harness/providers.py",
+        "max(self.backoff_s * (2**attempt), _retry_after(exc))",
+        "self.backoff_s * (2**attempt)",
+    ),
     # The container that runs contestant code: no network, only code/ mounted, mounted read-only.
     ("keysbench/kbcall.py", '"--network", "none", ', ""),
     (
@@ -336,11 +360,9 @@ muts = [
         "by_price = sorted(plan.models, key=lambda m: (PRICES[m].output, m))",
         "by_price = list(plan.models)",
     ),
-    (
-        "keysbench/runner.py",
-        'if r.get("kind") == "attempt" and r.get("outcome") != "budget_stopped"',
-        'if r.get("kind") == "attempt" and False',
-    ),
+    # Resume: a recorded attempt is skipped; a budget_stopped one is run again.
+    ("keysbench/runner.py", "            done.add(k)\n    return done", "            pass\n    return done"),
+    ("keysbench/runner.py", '        elif r.get("outcome") != "budget_stopped":\n', "        else:\n"),
     ("keysbench/runner.py", "if self.budget.spent_usd + worst > self.budget.cap_usd:", "if False:"),
     ("keysbench/runner.py", "if projected is not None and budget.spent_usd + projected > cap:", "if False:"),
     ("keysbench/runner.py", 'row["cost_usd"] = round(provider.attempt_spent, 6)', 'row["cost_usd"] = 0.0'),
@@ -415,14 +437,41 @@ for rel in filter(None, tracked):
     shutil.copyfile(REPO / rel, dest)
 
 
-def _suite(cwd: pathlib.Path, timeout_s: float | None = None) -> int:
+# Which tests run for a mutation, by the file it mutates (first matching prefix). The whole suite per
+# mutation took 30 of CI's 45 minutes before contestant code ran in containers, and each container call
+# adds about a second. Scoping can only make a canary SURVIVE that the full suite would kill (a visible
+# failure, fixed by widening the scope), never the reverse; and each scope's clean run must pass first.
+DOCKER_HEAVY = ["--ignore=tests/story_004/test_check_graders.py", "--ignore=tests/story_004/test_graders.py"]
+SCOPES: list[tuple[str, list[str]]] = [
+    ("keysbench/tasks/", ["tests/story_004/test_check_graders.py"]),
+    ("keysbench/hacks.py", ["tests/story_004/test_check_graders.py"]),
+    ("keysbench/check.py", ["tests/story_004/test_check_graders.py"]),
+    ("keysbench/kbcall.py", ["tests/story_004/test_graders.py"]),
+    ("keysbench/graders.py", ["tests/story_004/test_graders.py"]),
+    ("keysbench/judge.py", ["tests/story_004/test_judge.py", "tests/story_004/test_check_graders.py"]),
+    ("keysbench/arm_a.py", ["tests/story_004/test_arm_a.py", "tests/story_004/test_runner.py"]),
+    ("keysbench/runner.py", ["tests/story_004/test_runner.py"]),
+    ("keysbench/contestants.py", ["tests/story_004/test_runner.py"]),
+    ("keysbench/report.py", ["tests/story_004/test_report.py"]),
+    ("keysbench/instrument/", ["tests/story_004/test_instrument.py", "tests/story_004/test_instrument_copies.py"]),
+    ("keysbench/", ["tests/story_004/"]),
+    ("core/bench_score.py", ["tests/story_004/test_score.py"]),
+    ("", ["tests", *DOCKER_HEAVY]),
+]
+
+
+def scope_for(path: str) -> list[str]:
+    return next(tests for prefix, tests in SCOPES if path.startswith(prefix))
+
+
+def _suite(cwd: pathlib.Path, timeout_s: float | None = None, tests: list[str] | None = None) -> int:
     # No bytecode cache (-B). Python reuses a .pyc when the source has the same size and the same
     # mtime in whole seconds. A mutation that swaps two expressions of equal length, written in the
     # same second as the previous restore, then ran the OLD code: on Linux, where the suite takes
     # half a second, that canary read SURVIVED while the guard was fine. The opposite case is worse:
     # a restore that does not take effect leaves a mutation live and the next canary reads KILLED.
     r = subprocess.run(
-        [str(VENV_PY), "-B", "-m", "pytest", "-q", "-x", "-p", "no:cacheprovider"],
+        [str(VENV_PY), "-B", "-m", "pytest", "-q", "-x", "-p", "no:cacheprovider", *(tests or [])],
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -432,18 +481,21 @@ def _suite(cwd: pathlib.Path, timeout_s: float | None = None) -> int:
     return r.returncode
 
 
-# Baseline: the UNMUTATED copy must pass. If it does not (a file missing from the copy, a broken
-# environment), every mutation would read as KILLED and the run would prove nothing.
-started = time.monotonic()
-if _suite(work) != 0:
-    shutil.rmtree(work, ignore_errors=True)
-    print("BASELINE RED: the unmutated copy fails its own suite; no mutation result would mean anything")
-    sys.exit(3)
+# Baseline, per scope: the UNMUTATED copy must pass each selection a mutation will run. If it does not
+# (a file missing from the copy, a broken environment), every mutation would read as KILLED and the run
+# would prove nothing.
 # A mutation that makes the suite hang has not passed it, so a timeout counts as KILLED. The limit is
-# therefore tied to how long the clean suite takes: with a fixed 120 s, a suite that grew past it would
-# have read every survivor as KILLED (the KeysBench grader tests made the suite several times longer).
-TIMEOUT_S = max(TIMEOUT_S, 4 * (time.monotonic() - started))
-print(f"baseline {time.monotonic() - started:.0f} s; a mutation times out after {TIMEOUT_S:.0f} s")
+# therefore tied to how long the clean selection takes: with a fixed 120 s, a suite that grew past it
+# would have read every survivor as KILLED (the KeysBench grader tests made the suite several times longer).
+timeouts: dict[tuple[str, ...], float] = {}
+for scope in {tuple(scope_for(f)) for f, _, _ in muts}:
+    started = time.monotonic()
+    if _suite(work, tests=list(scope)) != 0:
+        shutil.rmtree(work, ignore_errors=True)
+        print(f"BASELINE RED for {' '.join(scope)}: no mutation result on it would mean anything")
+        sys.exit(3)
+    timeouts[scope] = max(TIMEOUT_S, 4 * (time.monotonic() - started))
+    print(f"baseline {time.monotonic() - started:5.0f} s  {' '.join(scope)}")
 
 bad = 0
 try:
@@ -456,7 +508,8 @@ try:
         try:
             p.write_bytes(orig.replace(a, b, 1).encode("utf-8"))
             assert p.read_bytes() != raw
-            status = "KILLED" if _suite(work, TIMEOUT_S) != 0 else "SURVIVED"
+            selection = scope_for(f)
+            status = "KILLED" if _suite(work, timeouts[tuple(selection)], selection) != 0 else "SURVIVED"
         except subprocess.TimeoutExpired:
             status = "KILLED"  # a mutation that makes the suite hang has not passed it
         finally:

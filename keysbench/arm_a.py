@@ -52,7 +52,15 @@ _DOTDOT = re.compile(r"[^\s'\"`;|&<>()]*\.\.(?:[\\/][^\s'\"`;|&<>()]*)?")
 
 
 def command(
-    config: str, *, model: str, effort: str, instruction: str, remaining_usd: float, cli: str, settings: Path
+    config: str,
+    *,
+    model: str,
+    effort: str,
+    instruction: str,
+    remaining_usd: float,
+    cli: str,
+    settings: Path,
+    max_turns: int | None = None,
 ) -> list[str]:
     if cli.lower().endswith((".cmd", ".bat")) and "\n" in instruction:
         # cmd.exe ends a command line at the first newline: every flag after the prompt (model, budget,
@@ -66,6 +74,7 @@ def command(
         "--settings", str(settings), "--strict-mcp-config",
         "--no-session-persistence",
         "--tools", TOOLS[config],
+        *(["--max-turns", str(max_turns)] if max_turns else []),
     ]  # fmt: skip
 
 
@@ -142,8 +151,12 @@ def summarise(lines: list[str], *, model: str) -> dict[str, Any]:
         if e.get("type") == "assistant":
             msg = e.get("message") or {}
             msg_id = str(msg.get("id"))
-            if msg_id not in usages and isinstance(msg.get("usage"), dict):
-                usages[msg_id] = msg["usage"]
+            u = msg.get("usage")
+            # A message can appear more than once with a partial usage first: keep the largest output.
+            if isinstance(u, dict) and (
+                msg_id not in usages or (u.get("output_tokens") or 0) > (usages[msg_id].get("output_tokens") or 0)
+            ):
+                usages[msg_id] = u
             last_stop = msg.get("stop_reason") or last_stop
     costs = [call_cost(u, model) for u in usages.values()]
     cost = None if not costs or any(c is None for c in costs) else sum(c for c in costs if c is not None)

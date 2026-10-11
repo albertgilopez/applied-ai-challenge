@@ -81,6 +81,15 @@ def _retryable(exc: Exception) -> bool:
     return isinstance(exc, APIConnectionError)  # covers timeouts too
 
 
+def _retry_after(exc: Exception) -> float:
+    """Seconds the server asked to wait (`retry-after`), or 0 when it did not say."""
+    headers = getattr(getattr(exc, "response", None), "headers", None) or {}
+    try:
+        return max(0.0, float(headers.get("retry-after", 0)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
 class RetryingProvider:
     """Retries a retryable failure up to `retries` times with exponential backoff. Every failed try is
     kept on the final response (`_call.failed_tries`) with its error and how long it took, so a retry
@@ -94,9 +103,10 @@ class RetryingProvider:
         backoff_s: float = 2.0,
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
+        max_wait_s: float = 120.0,
     ) -> None:
         self.inner, self.retries, self.backoff_s = inner, retries, backoff_s
-        self.sleep, self.clock = sleep, clock
+        self.sleep, self.clock, self.max_wait_s = sleep, clock, max_wait_s
 
     def create(self, **request: Any) -> JSONObject:
         failed: list[JSONObject] = []
@@ -113,7 +123,7 @@ class RetryingProvider:
                         "error": f"{type(exc).__name__}: {getattr(exc, 'status_code', '')}".rstrip(": "),
                     }
                 )
-                self.sleep(self.backoff_s * (2**attempt))
+                self.sleep(min(self.max_wait_s, max(self.backoff_s * (2**attempt), _retry_after(exc))))
                 continue
             call = dict(response.get("_call") or {})
             call["failed_tries"] = [*call.get("failed_tries", []), *failed]

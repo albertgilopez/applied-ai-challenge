@@ -453,3 +453,78 @@ def test_a_tool_error_names_only_the_relative_path_so_the_attempt_replays(tasks,
     assert "tool failed" in sent and "kb-attempt-" not in sent
     [replayed] = runner.run(plan(tasks), tasks_dir=tasks, out=tmp_path / "replay", cassettes=cassettes)
     assert live["outcome"] == replayed["outcome"] == "pass"
+
+
+# ── what an attempt spends is never lost, and one attempt cannot take the whole cap (review lens 1A) ──
+
+
+class FailsAfter:
+    """Answers its scripted calls, then raises a non-retryable error: the spend before it was real."""
+
+    def __init__(self, responses):
+        self.responses = list(responses)
+
+    def create(self, **request):
+        if not self.responses:
+            raise RuntimeError("529 overloaded after retries")
+        return self.responses.pop(0)
+
+
+def test_an_error_attempt_keeps_what_it_spent_and_is_retried_up_to_a_limit(tasks, tmp_path):
+    out = tmp_path / "out"
+    first = write_call(BAD)
+    first["usage"] = {"input_tokens": 0, "output_tokens": 10000, "inference_geo": "global"}  # 0.10 USD on Sonnet
+    p = plan(tasks)
+
+    def failing(key):
+        return FailsAfter([json.loads(json.dumps(first))])
+
+    [row] = runner.run(p, tasks_dir=tasks, out=out, provider_factory=failing, live=True)
+    assert row["outcome"] == "error" and row["cost_usd"] == pytest.approx(0.10)
+    ledger = [r for r in read_jsonl(out / "ledger.jsonl") if r.get("kind") == "attempt"]
+    assert runner.spent(ledger) == pytest.approx(0.10)
+    # The run is resumed: the errored attempt runs again, once more, and then stays an error.
+    assert len(runner.run(p, tasks_dir=tasks, out=out, provider_factory=failing, live=True)) == 1
+    assert runner.run(p, tasks_dir=tasks, out=out, provider_factory=failing, live=True) == []
+    ledger = [r for r in read_jsonl(out / "ledger.jsonl") if r.get("kind") == "attempt"]
+    assert runner.spent(ledger) == pytest.approx(0.20)
+
+
+def test_an_error_is_not_used_to_project_the_cost_of_the_rest(tasks, tmp_path):
+    ledger = [
+        {"config": "B", "contestant": {"model": "claude-sonnet-5-5"}, "outcome": "error", "cost_usd": 0.01},
+        {"config": "B", "contestant": {"model": "claude-sonnet-5-5"}, "outcome": "pass", "cost_usd": 1.0},
+    ]
+    key = runner.AttemptKey("KB-T", "x", "B", "claude-sonnet-5-5", "high", 2)
+    assert runner.project(plan(tasks), ledger, [key]) == pytest.approx(1.0)
+
+
+def test_a_second_live_run_on_the_same_output_is_refused(tasks, tmp_path):
+    out = tmp_path / "out"
+    with runner.run_lock(out), pytest.raises(runner.RunRefused, match="already"):
+        runner.run(plan(tasks), tasks_dir=tasks, out=out, provider_factory=by_attempt({}), live=True)
+    # Released: the next run goes ahead.
+    rows = runner.run(
+        plan(tasks), tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [write_call(GOOD), done()]}), live=True
+    )
+    assert rows[0]["outcome"] == "pass"
+
+
+def test_a_cli_attempt_is_bounded_like_configuration_b(tasks, tmp_path, monkeypatch):
+    # B is bounded by max_steps calls of at most max_tokens each; the CLI gets the same bound in turns and
+    # in dollars, never the whole remaining cap, and leaves one turn of headroom because the CLI's own
+    # budget can be passed by the turn in flight.
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    seen: list = []
+    cli = fake_cli(GOOD)
+
+    def spy(cmd, workspace, env):
+        seen.append(cmd)
+        return cli(cmd, workspace, env)
+
+    p = plan(tasks, configs=["A"], cli={"version": "2.1.296"}, max_steps=6, max_tokens=32000, cap_usd=60.0)
+    runner.run(p, tasks_dir=tasks, out=tmp_path / "o", live=True, cassettes=tmp_path / "c", cli_runner=spy)
+    [cmd] = seen
+    assert cmd[cmd.index("--max-turns") + 1] == "6"
+    per_attempt = 6 * 32000 * 10 / 1e6  # max_steps x max_tokens x Sonnet 5.5's output price
+    assert float(cmd[cmd.index("--max-budget-usd") + 1]) == pytest.approx(per_attempt, abs=1e-3)

@@ -302,3 +302,16 @@ def test_settings_block_reads_outside_the_working_directory():
         data = json.loads(Path(arm_a.SETTINGS[config]).read_text("utf-8"))
         # The key path is the CLI's own: "permissions.blockReadsOutsideWorkingDirectories" (2.1.296 binary).
         assert data["permissions"].get("blockReadsOutsideWorkingDirectories") is True
+
+
+def test_usage_repeated_on_a_message_is_priced_from_its_largest_output():
+    # Streamed transcripts can repeat a message with a partial usage first; pricing the first line seen
+    # would undercount the output (review lens 1A F6).
+    def line(out):
+        usage = {"input_tokens": 100, "output_tokens": out, "inference_geo": "global"}
+        return json.dumps({"type": "assistant", "message": {"id": "m1", "content": [], "usage": usage}})
+
+    end = json.dumps({"type": "result", "subtype": "success", "is_error": False, "total_cost_usd": 0.01})
+    summary = arm_a.summarise([line(1), line(400), end], model="claude-sonnet-5-5")
+    assert summary["calls"] == 1
+    assert summary["cost_usd"] == pytest.approx((100 * 2 + 400 * 10) / 1e6)
