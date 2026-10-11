@@ -1,11 +1,11 @@
 {
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
-  "as_of": "2026-10-10",
-  "at_commit": "c4239be",
-  "where_we_are": "Challenge A complete: STORY-001, STORY-002 and STORY-003 done (model cards reviewed with Claude Haiku 5.5, quotes grounded by code, run recorded and replayed offline in CI). Challenge B: the manifest validator (STORY-B01) is built: strict YAML loader, rules R1-R7, tier and provenance, CLI exit 0/1/2. A second adversarial review (MCP vs CLI delivery) found two holes that are now fixed: a relabelled asset escaped the tool rule and its tier, and the harness had no physical effect. The design doc describes one catalog projected to CLI or MCP, with the gate in a platform runtime. 307 tests, 102 canaries all killed. KeysBench (STORY-004) is specified and designed; not built.",
+  "as_of": "2026-10-11",
+  "at_commit": "d85f7a6",
+  "where_we_are": "Both challenges are delivered. Challenge A: STORY-001, STORY-002 and STORY-003 done (model cards reviewed with Claude Haiku 5.5, quotes grounded by code, run recorded and replayed offline in CI). Challenge B: the manifest validator (STORY-B01) is built (strict YAML loader, rules R1-R7, tier and provenance, CLI exit 0/1/2) and the design doc is four pages with one architecture diagram (docs/marketplace/DESIGN.pdf). 307 tests, 102 canaries all killed, CI green. KeysBench (STORY-004, optional) is specified and designed; not built.",
   "next": [
-    "Challenge B: fit the design doc in four pages and render it; the 20-minute presentation",
     "Rehearse the live change for challenge A and the challenge B demo (samples/marketplace/unsafe)",
+    "Challenge B: the 20-minute presentation",
     "KeysBench pilot if time allows: one task, configuration B, four models, one attempt"
   ],
   "blocked": [],
