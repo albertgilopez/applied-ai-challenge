@@ -38,6 +38,9 @@ class RunResult:
     cost_usd: float | None
     latency_s: float
     tool_calls: list[JSONObject] = field(default_factory=list)
+    # One entry per model call, failed tries included: latency, ttft, request id, error, cost.
+    calls: list[JSONObject] = field(default_factory=list)
+    wall_s: float = 0.0
 
 
 class Agent:
@@ -57,6 +60,8 @@ class Agent:
         max_tokens: int = 2048,
         on_escalate: Escalation | None = None,
         output_config: JSONObject | None = None,
+        effort: str | None = None,
+        cache: bool = False,
     ) -> None:
         self.provider, self.model, self.system = provider, model, system
         self.prompt_id, self.registry = prompt_id, registry
@@ -66,6 +71,11 @@ class Agent:
         # Effort and the answer's format are part of every request, so they are part of the
         # recording key too: a run recorded at one setting cannot answer a run at another.
         self.output_config = output_config
+        if effort is not None:  # STORY-004 DR-2: a fixed effort is sent explicitly on every call
+            self.output_config = {**(output_config or {}), "effort": effort}
+        # Off by default so earlier recordings keep their keys. A benchmark turns it on: the history
+        # grows every step, and without a cache marker each step pays for all of it again.
+        self.cache = cache
 
     def _run_tool(self, call: JSONObject) -> tuple[JSONObject, JSONObject]:
         name, args = call["name"], call.get("input") or {}
@@ -129,15 +139,21 @@ class Agent:
         )
         started = time.monotonic()
         usage, calls, costs = Usage(), list[JSONObject](), list[float | None]()
+        model_calls: list[JSONObject] = []
         text, stop, step, error = "", "max_steps", 0, None
         try:
-            text, stop, step = self._loop(user, usage, calls, costs)
+            text, stop, step = self._loop(user, usage, calls, costs, model_calls)
         except Exception as exc:
             # A crashed run still closes in the ledger, with the error, before it propagates.
             stop, error = "error", f"{type(exc).__name__}: {exc}"
             raise
         finally:
-            latency = time.monotonic() - started
+            wall = time.monotonic() - started
+            # STORY-004 DR-4: the latency of a run is the sum of its measured call latencies, the same
+            # live and replayed. A response recorded without one (before latency was kept) falls back to
+            # the wall clock, which includes tool time.
+            measured = [c["latency_s"] for c in model_calls if isinstance(c.get("latency_s"), (int, float))]
+            latency = sum(measured) if model_calls and len(measured) == len(model_calls) else wall
             # Priced per call and summed; one call the table does not cover makes the run unpriced.
             cost = None if not costs or any(c is None for c in costs) else sum(c for c in costs if c is not None)
             self.ledger.append(
@@ -149,14 +165,28 @@ class Agent:
                     **dataclasses.asdict(usage),
                     "cost_usd": cost,
                     "latency_s": round(latency, 3),
+                    "wall_s": round(wall, 3),
                 }
             )
         return RunResult(
-            text=text, stop_reason=stop, steps=step, usage=usage, cost_usd=cost, latency_s=latency, tool_calls=calls
+            text=text,
+            stop_reason=stop,
+            steps=step,
+            usage=usage,
+            cost_usd=cost,
+            latency_s=latency,
+            tool_calls=calls,
+            calls=model_calls,
+            wall_s=wall,
         )
 
     def _loop(
-        self, user: str, usage: Usage, calls: list[JSONObject], costs: list[float | None]
+        self,
+        user: str,
+        usage: Usage,
+        calls: list[JSONObject],
+        costs: list[float | None],
+        model_calls: list[JSONObject],
     ) -> tuple[str, str, int]:
         messages: list[JSONObject] = [{"role": "user", "content": user}]
         seen: dict[str, int] = {}
@@ -171,15 +201,34 @@ class Agent:
             }
             if self.output_config is not None:
                 request["output_config"] = self.output_config
+            if self.cache:
+                request["cache_control"] = {"type": "ephemeral"}
             response = self.provider.create(**request)
+            measured = response.get("_call") or {}
+            # A retried call leaves its failed tries on the response: each is a call of its own,
+            # recorded before the one that succeeded (it took time and may have been billed).
+            for failed in measured.get("failed_tries") or []:
+                entry = {"step": step, "latency_s": failed.get("latency_s"), "error": failed.get("error")}
+                model_calls.append(entry)
+                self.ledger.append({"kind": "model_call", **entry})
             usage.add(response.get("usage"))
-            costs.append(call_cost(response.get("usage"), self.model))
+            call_usd = call_cost(response.get("usage"), self.model)
+            costs.append(call_usd)
+            entry = {
+                "step": step,
+                "latency_s": measured.get("latency_s"),
+                "ttft_s": measured.get("ttft_s"),
+                "request_id": measured.get("request_id"),
+                "cost_usd": call_usd,
+            }
+            model_calls.append(entry)
             self.ledger.append(
                 {
                     "kind": "model_call",
                     "step": step,
                     "stop_reason": response.get("stop_reason"),
                     "usage": response.get("usage"),
+                    **{k: v for k, v in entry.items() if k != "step"},
                 }
             )
             content = response.get("content") or []

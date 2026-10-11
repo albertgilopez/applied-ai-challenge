@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Literal
 
 from harness.catalog import Tool
@@ -27,17 +27,46 @@ class Decision:
 
 
 class Gate:
-    def __init__(self, write_roots: Iterable[Path | str] = (), read_roots: Iterable[Path | str] = ()) -> None:
+    def __init__(
+        self,
+        write_roots: Iterable[Path | str] = (),
+        read_roots: Iterable[Path | str] = (),
+        base: Path | str | None = None,
+    ) -> None:
         # Writes may go only under write_roots; a read tool that takes a path may read
         # only under read_roots (or write_roots). Its output goes to the model and the
         # ledger, so "read-only" is not "harmless" if it can be pointed at `.env`.
-        self.write_roots = [Path(r).resolve() for r in write_roots]
-        self.read_roots = [Path(r).resolve() for r in read_roots] + self.write_roots
+        #
+        # With a `base` (a benchmark workspace), roots and tool paths are relative to it, and a
+        # tool path must be relative: absolute paths and `..` are refused outright, and a
+        # backslash is read as `/`. The prompt never names the temporary directory, so a
+        # recording made on one machine replays on another (STORY-004 DR-12). Without a base,
+        # paths resolve against the process working directory, as before.
+        self.base = None if base is None else Path(base).resolve()
+        self.write_roots = [self._root(r) for r in write_roots]
+        self.read_roots = [self._root(r) for r in read_roots] + self.write_roots
 
-    @staticmethod
-    def _inside(raw: str, roots: list[Path]) -> bool:
-        target = Path(raw).resolve()
-        return any(target == root or root in target.parents for root in roots)
+    def _root(self, raw: Path | str) -> Path:
+        path = Path(raw)
+        if self.base is not None and not path.is_absolute():
+            return (self.base / path).resolve()
+        return path.resolve()
+
+    def resolve(self, raw: str) -> Path | None:
+        """The one path a tool argument names, or None if it is refused. Tools call this too, so the
+        gate and the tool always check and use the same path."""
+        if self.base is None:
+            return Path(raw).resolve()
+        if not raw or "\0" in raw:
+            return None
+        rel = PurePosixPath(raw.replace("\\", "/"))
+        if rel.is_absolute() or PureWindowsPath(raw).drive or ".." in rel.parts:
+            return None
+        return (self.base / rel).resolve()
+
+    def _inside(self, raw: str, roots: list[Path]) -> bool:
+        target = self.resolve(raw)
+        return target is not None and any(target == root or root in target.parents for root in roots)
 
     def _check_paths(self, t: Tool, args: JSONObject, roots: list[Path], kind: str) -> Decision | None:
         for name in t.path_args or ():
