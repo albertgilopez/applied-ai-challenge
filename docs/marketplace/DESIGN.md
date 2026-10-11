@@ -15,7 +15,7 @@ reason.
 
 Source: `architecture.html`.
 
-The orange boxes are where a decision is taken. The validator is the working piece built for this
+The red boxes are where a decision is taken. The validator is the working piece built for this
 design. The sign-off is a person. The runtime applies the same rules whether an asset ships as a CLI or as
 an MCP server.
 

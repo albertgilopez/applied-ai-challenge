@@ -1,6 +1,6 @@
 # Challenge B: an internal marketplace for AI assets
 
-- **Design doc** (4 pages, one diagram): [`DESIGN.md`](DESIGN.md), also rendered as [`DESIGN.pdf`](DESIGN.pdf).
+- **Design doc** (4 pages, one diagram; the PDF adds an unnumbered cover and back cover): [`DESIGN.md`](DESIGN.md), also rendered as [`DESIGN.pdf`](DESIGN.pdf).
 - **Working piece**: a manifest validator that rejects unsafe manifests, with tests.
   - Spec and cases: [`stories/STORY-B01.md`](../../stories/STORY-B01.md).
   - Code: `marketplace/` (CLI), `core/manifest.py` (rules), `app/strict_yaml.py` (loader).
