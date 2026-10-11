@@ -1,6 +1,9 @@
 {
   "permissions": {
-    "allow": [],
+    "allow": [
+      "Edit(./**)",
+      "Write(./**)"
+    ],
     "deny": [],
     "blockReadsOutsideWorkingDirectories": true
   },

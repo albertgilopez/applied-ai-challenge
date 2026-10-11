@@ -1,6 +1,10 @@
 {
   "permissions": {
-    "allow": ["Bash(python *)"],
+    "allow": [
+      "Edit(./**)",
+      "Write(./**)",
+      "Bash(python *)"
+    ],
     "deny": [],
     "blockReadsOutsideWorkingDirectories": true
   },

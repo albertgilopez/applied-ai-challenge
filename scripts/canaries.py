@@ -355,6 +355,15 @@ muts = [
         'max_tokens = int(request.get("max_tokens") or self.max_tokens)',
         "max_tokens = self.max_tokens",
     ),
+    # Found by the live pilot: the CLI may edit inside its working directory, it gets B's workspace rule,
+    # and an attempt an instrument bug produced is voided by an appended line, never edited.
+    ("keysbench/arm_a/settings-A0.json", '"Edit(./**)",', ""),
+    ("keysbench/arm_a.py", '        "--append-system-prompt", WORKSPACE_RULE,\n', ""),
+    (
+        "keysbench/runner.py",
+        'return [r for r in rows if r.get("kind") == "attempt" and _attempt_id(r) not in gone]',
+        'return [r for r in rows if r.get("kind") == "attempt"]',
+    ),
     # The container that runs contestant code: no network, only code/ mounted, mounted read-only.
     ("keysbench/kbcall.py", '"--network", "none", ', ""),
     (
@@ -363,7 +372,11 @@ muts = [
         '"--mount", f"type=bind,source={CODE},target=/code,readonly", '
         '"--mount", f"type=bind,source={HERE},target=/tests,readonly",',
     ),
-    ("keysbench/kbcall.py", 'target=/code,readonly"', 'target=/code"'),
+    (
+        "keysbench/kbcall.py",
+        '"--user", "65534:65534", "--mount", f"type=bind,source={CODE},target=/code,readonly",',
+        '"--mount", f"type=bind,source={CODE},target=/code",',
+    ),
     # STORY-004 T2: the scorer (the cell key, what counts as an attempt, saturation, intervals, sizing).
     (
         "core/bench_score.py",
@@ -503,6 +516,7 @@ SCOPES: list[tuple[str, list[str]]] = [
     ("keysbench/kbcall.py", ["tests/story_004/test_graders.py"]),
     ("keysbench/graders.py", ["tests/story_004/test_graders.py"]),
     ("keysbench/judge.py", ["tests/story_004/test_judge.py", "tests/story_004/test_check_graders.py"]),
+    ("keysbench/arm_a/", ["tests/story_004/test_arm_a.py"]),
     ("keysbench/arm_a.py", ["tests/story_004/test_arm_a.py", "tests/story_004/test_runner.py"]),
     ("keysbench/runner.py", ["tests/story_004/test_runner.py", "tests/story_004/test_projection.py"]),
     ("keysbench/contestants.py", ["tests/story_004/test_runner.py"]),

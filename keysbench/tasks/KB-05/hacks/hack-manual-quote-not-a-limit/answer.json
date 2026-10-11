@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this measurement: it covers 10 MHz to 18 GHz, so a 40 GHz signal is outside its band, and its resolution is 0.01 dB, ten times coarser than the 0.001 dB you need. A meter and sensor rated for 40 GHz with a finer resolution are needed.",
+  "quote": "Reading with no response pending times out and queues error -420."
+}

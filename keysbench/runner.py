@@ -498,6 +498,45 @@ def plan_keys(plan: Plan, tasks_dir: Path, *, step: int | None = None) -> list[A
     return keys
 
 
+def _attempt_id(r: JSONObject) -> tuple[Any, ...]:
+    """One recorded attempt: its key plus when it was recorded (a re-run of the same key is another row)."""
+    c = r.get("contestant") or {}
+    return (r.get("task_sha256"), r.get("config"), c.get("model", r.get("model")), c.get("effort", r.get("effort")),
+            r.get("attempt"), r.get("at"))  # fmt: skip
+
+
+def voided_ids(rows: list[JSONObject]) -> set[tuple[Any, ...]]:
+    return {_attempt_id(a) for r in rows if r.get("kind") == "void" for a in r.get("attempts") or []}
+
+
+def standing(rows: list[JSONObject]) -> list[JSONObject]:
+    """Attempts not voided. The ledger is history: an attempt an instrument bug produced is never edited
+    or removed, it is voided by an appended line, and a resume runs it again."""
+    gone = voided_ids(rows)
+    return [r for r in rows if r.get("kind") == "attempt" and _attempt_id(r) not in gone]
+
+
+def void_attempts(ledger_path: Path, *, configs: set[str], reason: str) -> int:
+    """Append one void line for every standing attempt of `configs`; returns how many. What they cost is
+    still spent (`spent` counts every attempt line)."""
+    rows = list(read_jsonl(ledger_path))
+    targets = [r for r in standing(rows) if r.get("config") in configs]
+    if targets:
+        ids = [
+            {
+                "task_sha256": r["task_sha256"],
+                "config": r["config"],
+                "model": r["contestant"]["model"],
+                "effort": r["contestant"]["effort"],
+                "attempt": r["attempt"],
+                "at": r.get("at"),
+            }  # fmt: skip
+            for r in targets
+        ]
+        append_jsonl(ledger_path, {"kind": "void", "reason": reason, "at": utc_stamp(), "attempts": ids})
+    return len(targets)
+
+
 MAX_ERROR_TRIES = 2  # an attempt that errors (an outage, a crash) is run again once, then left as an error
 
 
@@ -580,12 +619,14 @@ def _run(
     judge_factory: JudgeFactory | None,
 ) -> list[JSONObject]:
     ledger_path = out / "ledger.jsonl"
-    ledger = [r for r in read_jsonl(ledger_path) if r.get("kind") == "attempt"]
+    history = list(read_jsonl(ledger_path))  # an iterator: read once, used twice
+    every = [r for r in history if r.get("kind") == "attempt"]  # spent: voided attempts were paid for too
+    ledger = standing(history)
     done = _recorded(ledger)
     keys = plan_keys(plan, tasks_dir)
     remaining = [k for k in keys if (k.task_sha256, k.config, k.model, k.effort, k.attempt) not in done]
     cap = plan.cap_usd if budget_usd is None else budget_usd
-    budget = Budget(cap_usd=cap, spent_usd=spent(ledger))
+    budget = Budget(cap_usd=cap, spent_usd=spent(every))
     if live:
         projected = project(plan, ledger, remaining)
         if projected is not None and budget.spent_usd + projected > cap:

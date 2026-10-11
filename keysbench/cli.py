@@ -3,6 +3,7 @@
     run            --plan PATH --out DIR [--live] [--budget-usd N]   one ledger line per attempt; resumes
     score          --plan PATH --ledger PATH --out DIR               results.json, results.md; no network
     project        --plan PATH --ledger PATH                         cost at each reduction step; no network
+    void           --ledger PATH --config C [--config C] --reason R  void the standing attempts of a configuration
     check-graders  [--live] [--task ID ...]                          each grader against its variants
 
 Exit 0 on success; 1 when check-graders finds a grader that is not trusted; 2 on a refused command (an
@@ -91,6 +92,10 @@ def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = 
     s.add_argument("--plan", type=Path, required=True)
     s.add_argument("--ledger", type=Path, required=True)
     s.add_argument("--out", type=Path, required=True)
+    v = sub.add_parser("void")
+    v.add_argument("--ledger", type=Path, required=True)
+    v.add_argument("--config", action="append", required=True)
+    v.add_argument("--reason", required=True)
     pr = sub.add_parser("project")
     pr.add_argument("--plan", type=Path, required=True)
     pr.add_argument("--ledger", type=Path, required=True)
@@ -99,6 +104,10 @@ def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = 
     c.add_argument("--task", action="append")
     a = ap.parse_args(argv)
 
+    if a.cmd == "void":
+        n = runner.void_attempts(a.ledger, configs=set(a.config), reason=a.reason)
+        out.write(f"voided {n} attempts of {sorted(a.config)}: {a.reason}\n")
+        return 0
     if a.cmd == "check-graders":
         tasks = a.task or sorted(p.name for p in TASKS.glob("KB-*") if p.is_dir())
         return _check_graders(tasks, a.live, out, err)

@@ -19,7 +19,7 @@ from core.bench_score import score
 from core.report import md_cell
 from harness.storage import JSONObject, read_jsonl
 from harness.usage import PRICED_REGION, PRICES_CHECKED_ON
-from keysbench.runner import TASKS, Plan, cassette_path
+from keysbench.runner import TASKS, Plan, cassette_path, standing
 
 LIMITS = (
     "Six tasks and at most three attempts per contestant: the intervals are wide. This is an instrument, "
@@ -91,7 +91,11 @@ def _recordings(rows: list[JSONObject], cassettes: Path) -> dict[str, str]:
 
 
 def results(rows: list[JSONObject], plan: Plan, *, ledger_bytes: bytes, cassettes: Path) -> JSONObject:
-    attempts = [r for r in rows if r.get("kind") == "attempt"]
+    attempts = standing(rows)
+    voids: dict[str, int] = {}
+    for r in rows:
+        if r.get("kind") == "void":
+            voids[str(r.get("reason", ""))] = voids.get(str(r.get("reason", "")), 0) + len(r.get("attempts") or [])
     data = score(attempts, failure_names(), benchmark=plan.label)
     stamps = sorted(str(r.get("at", "")) for r in attempts)
     return {
@@ -117,6 +121,7 @@ def results(rows: list[JSONObject], plan: Plan, *, ledger_bytes: bytes, cassette
             "k": {c: {m: plan.k_at(m, c, plan.applied_step) for m in plan.models} for c in plan.configs},
         },
         "not_run": list(plan.not_run),
+        "voided": [{"count": n, "reason": reason} for reason, n in sorted(voids.items())],
         "limits": list(LIMITS),
         "legend": {"tasks": task_legend(sorted({c["task_id"] for c in data["cells"]})), "configs": CONFIGS},
     }
@@ -414,6 +419,18 @@ def to_markdown(data: JSONObject) -> str:
             [[md_cell(c), *[str(k) for k in ks.values()]] for c, ks in data["reduction"]["k"].items()],
         ),
         "",
+        *(
+            [
+                "## Voided attempts",
+                "",
+                "Recorded, paid for, and left out of every figure above; run again after the fix.",
+                "",
+            ]
+            + [f"- {v['count']}: {md_cell(str(v['reason']))}" for v in data.get("voided", [])]
+            + [""]
+            if data.get("voided")
+            else []
+        ),
         "## Not run",
         "",
         *[f"- {md_cell(n['contestant'])}: {md_cell(n['reason'])}" for n in data["not_run"]],
@@ -458,7 +475,7 @@ def to_markdown(data: JSONObject) -> str:
 
 def score_files(ledger_path: Path, out: Path, plan: Plan, *, cassettes: Path) -> JSONObject:
     raw = ledger_path.read_bytes()
-    rows = [r for r in read_jsonl(ledger_path) if r.get("kind") == "attempt"]
+    rows = [r for r in read_jsonl(ledger_path) if r.get("kind") in ("attempt", "void")]
     data = results(rows, plan, ledger_bytes=raw, cassettes=cassettes)
     out.mkdir(parents=True, exist_ok=True)
     (out / "results.json").write_bytes(

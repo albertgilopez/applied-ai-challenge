@@ -193,8 +193,9 @@ def test_a_stored_path_cannot_escape_on_restore(tmp_path):
 def test_settings_files_allow_python_for_a_and_nothing_for_a0():
     a = json.loads(Path(arm_a.SETTINGS["A"]).read_text("utf-8"))
     a0 = json.loads(Path(arm_a.SETTINGS["A0"]).read_text("utf-8"))
-    assert a["permissions"]["allow"] == ["Bash(python *)"] and a["env"] == {}
-    assert a0["permissions"]["allow"] == [] and a0["env"] == {}
+    # Edits and writes inside the working directory for both; Python only for A.
+    assert a["permissions"]["allow"] == ["Edit(./**)", "Write(./**)", "Bash(python *)"] and a["env"] == {}
+    assert a0["permissions"]["allow"] == ["Edit(./**)", "Write(./**)"] and a0["env"] == {}
 
 
 # ── review findings 3B F1, F2 and the verifier's timeout finding ─────────────────────────────────────
@@ -235,7 +236,7 @@ def test_a_multi_line_instruction_reaches_an_executable_intact(tmp_path):
     lines = arm_a.run_cli([cmd[0], str(echo), *cmd[1:]], tmp_path, dict(os.environ), 30)
     argv = json.loads(lines[0])
     assert argv[argv.index("-p") + 1] == "line one\nline two"
-    assert argv[-2:] == ["--tools", "Read,Edit,Write,Glob,Grep"]
+    assert argv[argv.index("--tools") + 1] == "Read,Edit,Write,Glob,Grep"
 
 
 def test_a_timeout_kills_the_whole_process_tree(tmp_path):
@@ -369,3 +370,36 @@ def test_a_stored_path_follows_the_same_rule_as_the_gate(rel):
     assert relative_path(rel) is None
     with pytest.raises(ValueError):
         arm_a._safe_rel(rel)
+
+
+# ── found by the live pilot (2026-10-11): the CLI could not write, and scratch in /tmp read as invalid ──
+
+
+@pytest.mark.parametrize("config", ["A0", "A"])
+def test_the_cli_may_edit_and_write_inside_its_working_directory_only(config):
+    # Pilot: every A0 and A attempt had its Edit of driver.py denied ("you haven't granted it yet"),
+    # because the environment scrub forces permission mode `default` and nothing allowed Edit.
+    allow = json.loads(arm_a.SETTINGS[config].read_text("utf-8"))["permissions"]["allow"]
+    assert "Edit(./**)" in allow and "Write(./**)" in allow
+    assert not any(rule in ("Edit", "Write", "Edit(**)", "Write(**)", "Edit(/**)", "Write(/**)") for rule in allow)
+
+
+def test_the_cli_gets_the_same_workspace_rule_as_configuration_b(tmp_path):
+    from harness.prompts import PromptRegistry
+
+    cmd = arm_a.command(
+        "A", model="m", effort="high", instruction="task", remaining_usd=1.0, cli="claude.exe",
+        settings=tmp_path / "s.json",
+    )  # fmt: skip
+    rule = cmd[cmd.index("--append-system-prompt") + 1]
+    assert rule == arm_a.WORKSPACE_RULE and "/tmp" in rule
+    assert PromptRegistry(arm_a.APPROVALS).is_approved(arm_a.WORKSPACE_RULE_ID, rule)
+
+
+@pytest.mark.parametrize("cmd", ["python t.py > /dev/null", "python t.py 2>NUL", "python t.py 2> nul"])
+def test_writing_to_the_null_device_is_not_reaching_outside(tmp_path, cmd):
+    w = tmp_path / "w"
+    w.mkdir()
+    line = json.dumps({"type": "assistant", "message": {"id": "m", "content": [
+        {"type": "tool_use", "id": "t", "name": "Bash", "input": {"command": cmd}}]}})  # fmt: skip
+    assert arm_a.audit([line], w) == []

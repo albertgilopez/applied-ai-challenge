@@ -47,8 +47,9 @@ def container_command(code: str, *, interactive: bool = False) -> list[str]:
         "docker", "run", "--rm", *(["-i"] if interactive else []), "--name", name,
         "--network", "none", "--read-only", "--tmpfs", "/tmp:rw,size=16m",
         "--memory", "512m", "--cpus", "1", "--pids-limit", "64", "--security-opt", "no-new-privileges",
-        "--user", "65534:65534",
-        "--mount", f"type=bind,source={CODE},target=/code,readonly",
+        # Two guards against writing the code under test: a non-root user and a read-only mount. On Linux
+        # either alone holds, so they are one line and one canary removes both.
+        "--user", "65534:65534", "--mount", f"type=bind,source={CODE},target=/code,readonly",
         "-w", "/code", IMAGE,
         "python", "-I", "-B", "-c", code,
     ]  # fmt: skip

@@ -572,3 +572,43 @@ def test_the_reservation_uses_the_requests_own_max_tokens():
     small = p.reservation({"max_tokens": 8000, "messages": []})
     assert small < p.reservation({"max_tokens": 32000, "messages": []})
     assert p.reservation({"messages": []}) == p.reservation({"max_tokens": 32000, "messages": []})
+
+
+# ── voiding attempts an instrument bug produced (live pilot, 2026-10-11) ────────────────────────────
+
+
+def test_a_voided_attempt_is_run_again_and_its_spend_still_counts(tasks, tmp_path):
+    # The ledger is history: a bug in the harness is corrected by an appended void line, never by an edit.
+    out = tmp_path / "out"
+    first = write_call(BAD)
+    first["usage"] = {"input_tokens": 0, "output_tokens": 10000, "inference_geo": "global"}  # 0.10 USD
+    [paid] = runner.run(
+        plan(tasks), tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [first, done()]}), live=True
+    )
+    voided = runner.void_attempts(out / "ledger.jsonl", configs={"B"}, reason="instrument bug: test")
+    assert voided == 1
+    rows = runner.run(
+        plan(tasks), tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [write_call(GOOD), done()]}), live=True
+    )
+    assert [r["outcome"] for r in rows] == ["pass"]  # run again
+    ledger = read_jsonl(out / "ledger.jsonl")
+    attempts = [r for r in ledger if r.get("kind") == "attempt"]
+    assert runner.spent(attempts) == pytest.approx(paid["cost_usd"] + rows[0]["cost_usd"])  # voided spend counts
+    assert runner.void_attempts(out / "ledger.jsonl", configs={"B"}, reason="again") == 1  # only the live one
+
+
+def test_a_budget_stopped_attempt_is_run_again_on_resume(tasks, tmp_path):
+    # Canary survivor in CI: nothing checked that a stopped attempt is retried once there is budget.
+    out = tmp_path / "out"
+    heavy = write_call(BAD)
+    heavy["usage"] = {"input_tokens": 0, "output_tokens": 10000, "inference_geo": "global"}  # 0.50 on Fable
+    p = plan(tasks, models=["claude-fable-5-1"])
+    [stopped] = runner.run(
+        p, tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [heavy, done()]}), live=True, budget_usd=2.0
+    )
+    assert stopped["outcome"] == "budget_stopped"
+    [again] = runner.run(
+        p, tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [write_call(GOOD), done()]}), live=True,
+        budget_usd=10.0,
+    )  # fmt: skip
+    assert again["outcome"] == "pass"

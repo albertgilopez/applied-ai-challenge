@@ -66,6 +66,13 @@ _ELSEWHERE = re.compile(
 GLOB_KEYS = {"Glob": "pattern", "Grep": "glob"}
 
 
+# The rule B's prompt gives its contestant (paths are relative to the project directory), said to the CLI:
+# without it the models in the pilot put scratch files in /tmp, which the audit reads as reaching outside.
+WORKSPACE_RULE_ID = "keysbench-arm-a-workspace-rule"
+WORKSPACE_RULE = (HERE / "prompts" / "arm_a_workspace_rule.md").read_text("utf-8").strip()
+APPROVALS = HERE / "prompts" / "approved.jsonl"
+
+
 def command(
     config: str,
     *,
@@ -89,6 +96,7 @@ def command(
         "--settings", str(settings), "--strict-mcp-config",
         "--no-session-persistence",
         "--tools", TOOLS[config],
+        "--append-system-prompt", WORKSPACE_RULE,
         *(["--max-turns", str(max_turns)] if max_turns else []),
     ]  # fmt: skip
 
@@ -134,8 +142,11 @@ def _inside(raw: str, workspace: Path) -> bool:
     return target == root or root in target.parents
 
 
+_NULL_DEVICES = {"/dev/null"}  # a sink: nothing is read from it
+
+
 def _command_paths(cmd: str) -> list[str]:
-    found = _WINDOWS_ABS.findall(cmd) + _POSIX_ABS.findall(cmd)
+    found = [p for p in _WINDOWS_ABS.findall(cmd) + _POSIX_ABS.findall(cmd) if p not in _NULL_DEVICES]
     found += [t for t in _DOTDOT.findall(cmd) if ".." in PurePosixPath(t.replace("\\", "/")).parts]
     return found
 

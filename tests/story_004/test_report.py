@@ -197,3 +197,14 @@ def test_each_pair_is_listed_with_what_telling_it_apart_would_need(tmp_path):
     md = report.to_markdown(report.results(sample_rows(), plan(), ledger_bytes=b"", cassettes=tmp_path))
     section = md[md.index("### What a decision would need") :]
     assert "| B | m1 | m2 |" in section and "5 points" in section and "15 points" in section
+
+
+def test_voided_attempts_are_left_out_and_said(tmp_path):
+    rows = sample_rows()
+    void = {"kind": "void", "reason": "instrument bug", "at": "2026-10-11T09:00:00Z",
+            "attempts": [{k: rows[0][k] for k in ("task_sha256", "config", "attempt", "at")} | {
+                "model": rows[0]["contestant"]["model"], "effort": rows[0]["contestant"]["effort"]}]}  # fmt: skip
+    data = report.results([*rows, void], plan(), ledger_bytes=b"", cassettes=tmp_path)
+    assert sum(c["attempts"] for c in data["cells"]) == len(rows) - 1
+    assert data["voided"] == [{"count": 1, "reason": "instrument bug"}]
+    assert "instrument bug" in report.to_markdown(data)
