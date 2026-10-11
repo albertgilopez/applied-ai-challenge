@@ -19,7 +19,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import shutil
 import tempfile
 import time
 from collections.abc import Callable, Iterator
@@ -34,7 +33,7 @@ from harness.providers import AnthropicProvider, Provider, RetryingProvider
 from harness.replay import CassetteMiss, RecordingProvider, ReplayProvider
 from harness.storage import JSONObject, append_jsonl, read_jsonl, utc_stamp
 from harness.usage import PRICES, call_cost
-from keysbench import arm_a, contestants
+from keysbench import arm_a, contestants, judge
 from keysbench.check import JudgeContext, fresh_workspace, grade
 from keysbench.graders import TaskSpec, load_task
 from keysbench.judge import judge_model_for
@@ -167,7 +166,10 @@ class BudgetedProvider:
         # One token per byte is an upper bound for this content; the price of a cache write is above
         # the input price, so the bound uses the higher of the two.
         per_input = max(price.input, price.cache_write_5m)
-        return (prompt_bytes * per_input + self.max_tokens * price.output) / 1_000_000
+        # The request's own max_tokens when it has one (the judge asks for fewer than a contestant);
+        # a separate constant for it had already been written twice (review lens 1B F4).
+        max_tokens = int(request.get("max_tokens") or self.max_tokens)
+        return (prompt_bytes * per_input + max_tokens * price.output) / 1_000_000
 
     def create(self, **request: Any) -> JSONObject:
         worst = self.reservation(request)
@@ -422,6 +424,8 @@ def attempt_a(
             cost_usd=cost,
             cost_basis="cli-usage" if cost is not None else "unpriced",
             cli_cost_usd=summary["cli_cost_usd"],
+            num_turns=summary["num_turns"],
+            permission_denials=len(summary["permission_denials"]),
             cli_version=summary["cli_version"],
             latency_s=summary["latency_s"],
         )
@@ -444,7 +448,6 @@ def live_retrying() -> RetryingProvider:
 
 
 JudgeFactory = Callable[[AttemptKey], JudgeContext]
-JUDGE_MAX_TOKENS = 8000
 
 
 def judge_cassette(cassettes: Path, key: AttemptKey) -> Path:
@@ -461,7 +464,7 @@ def default_judge_factory(plan: Plan, cassettes: Path, out: Path, budget: Budget
         provider: Provider
         if live:
             inner = RecordingProvider(live_retrying(), path)
-            provider = BudgetedProvider(inner, budget, model=model, max_tokens=JUDGE_MAX_TOKENS)
+            provider = BudgetedProvider(inner, budget, model=model, max_tokens=judge.MAX_TOKENS)
         else:
             provider = ReplayProvider(path)
         return JudgeContext(provider, model, out / "runs" / key.task_id / f"{key.slug()}.judge.jsonl")
@@ -646,7 +649,3 @@ def not_started(key: AttemptKey, plan: Plan) -> JSONObject:
         "judge": None,
         "at": utc_stamp(),
     }
-
-
-def copy_cassettes(src: Path, dest: Path) -> None:  # pragma: no cover - a maintenance helper
-    shutil.copytree(src, dest, dirs_exist_ok=True)

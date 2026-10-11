@@ -564,3 +564,11 @@ def test_after_a_budget_stop_the_rest_of_the_run_is_stopped_not_attempted(tasks,
     assert all(o[2] == "budget_stopped" for o in outcomes[stopped_at:]), outcomes
     assert all(r["cost_usd"] == 0.0 for r in rows[stopped_at + 1 :])
     assert len(rows) == 4  # every planned attempt has its line
+
+
+def test_the_reservation_uses_the_requests_own_max_tokens():
+    # The judge asks for 8000 tokens; reserving the contestant's 32000 for it would stop runs early.
+    p = BudgetedProvider(Scripted([]), Budget(cap_usd=10.0), model="claude-opus-5-5", max_tokens=32000)
+    small = p.reservation({"max_tokens": 8000, "messages": []})
+    assert small < p.reservation({"max_tokens": 32000, "messages": []})
+    assert p.reservation({"messages": []}) == p.reservation({"max_tokens": 32000, "messages": []})

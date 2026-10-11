@@ -30,6 +30,20 @@ class Decision:
 _DEVICE = re.compile(r"^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(\.[^.]*)?$", re.IGNORECASE)
 
 
+def relative_path(raw: str) -> PurePosixPath | None:
+    """The path below a root that `raw` names, or None if it could name anything else: empty, NUL,
+    absolute, a drive, `..`, or a Windows device name. One rule for the gate and for the files a recorded
+    attempt stores (two copies had already drifted: review lens 1B F2)."""
+    if not raw or "\0" in raw:
+        return None
+    rel = PurePosixPath(raw.replace("\\", "/"))
+    if rel.is_absolute() or PureWindowsPath(raw).drive or ".." in rel.parts:
+        return None
+    if any(_DEVICE.match(part) for part in rel.parts):
+        return None  # NUL, CON, COM1... name a device on Windows, wherever they are
+    return rel
+
+
 class Gate:
     def __init__(
         self,
@@ -61,14 +75,8 @@ class Gate:
         gate and the tool always check and use the same path."""
         if self.base is None:
             return Path(raw).resolve()
-        if not raw or "\0" in raw:
-            return None
-        rel = PurePosixPath(raw.replace("\\", "/"))
-        if rel.is_absolute() or PureWindowsPath(raw).drive or ".." in rel.parts:
-            return None
-        if any(_DEVICE.match(part) for part in rel.parts):
-            return None  # NUL, CON, COM1... name a device on Windows, wherever they are
-        return (self.base / rel).resolve()
+        rel = relative_path(raw)
+        return None if rel is None else (self.base / rel).resolve()
 
     def _inside(self, raw: str, roots: list[Path]) -> bool:
         target = self.resolve(raw)

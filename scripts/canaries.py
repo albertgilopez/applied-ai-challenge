@@ -343,11 +343,17 @@ muts = [
         "            if False:",
     ),
     ("keysbench/judge.py", '    return _CLOSE.sub("</review_>", text)', "    return text"),
-    ("harness/gate.py", "        if any(_DEVICE.match(part) for part in rel.parts):", "        if False:"),
+    ("harness/gate.py", "    if any(_DEVICE.match(part) for part in rel.parts):", "    if False:"),
     (
         "keysbench/tasks/KB-05/tests/test_kb05.py",
         "    assert not any(line in normalise(quote) for line in IRRELEVANT_LIMIT_LINES), quote",
         "    pass",
+    ),
+    # Review lens 1B F4: the reservation reads the request's own max_tokens.
+    (
+        "keysbench/runner.py",
+        'max_tokens = int(request.get("max_tokens") or self.max_tokens)',
+        "max_tokens = self.max_tokens",
     ),
     # The container that runs contestant code: no network, only code/ mounted, mounted read-only.
     ("keysbench/kbcall.py", '"--network", "none", ', ""),

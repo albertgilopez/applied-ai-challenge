@@ -31,6 +31,7 @@ import sys
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
+from harness.gate import relative_path
 from harness.storage import JSONObject
 from harness.usage import call_cost
 
@@ -306,8 +307,8 @@ def from_placeholder(lines: list[str], root: str) -> list[str]:
 
 
 def _safe_rel(rel: str) -> str:
-    p = PurePosixPath(rel.replace("\\", "/"))
-    if not rel or p.is_absolute() or PureWindowsPath(rel).drive or ".." in p.parts:
+    p = relative_path(rel)
+    if p is None:
         raise ValueError(f"unsafe stored path {rel!r}")
     return p.as_posix()
 

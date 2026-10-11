@@ -358,3 +358,14 @@ def test_the_audit_sees_home_env_unc_and_glob_forms(tmp_path, tool, inp, invalid
     line = json.dumps({"type": "assistant", "message": {"id": "m", "content": [
         {"type": "tool_use", "id": "t", "name": tool, "input": inp}]}})  # fmt: skip
     assert bool(arm_a.audit([line], w)) is invalid
+
+
+@pytest.mark.parametrize("rel", ["NUL", "../x.py", "/etc/passwd", "sub/con.txt", ""])
+def test_a_stored_path_follows_the_same_rule_as_the_gate(rel):
+    # Review lens 1B F2: one rule for tool paths and stored files; two copies had already drifted
+    # (device names were refused by the gate and accepted here).
+    from harness.gate import relative_path
+
+    assert relative_path(rel) is None
+    with pytest.raises(ValueError):
+        arm_a._safe_rel(rel)
