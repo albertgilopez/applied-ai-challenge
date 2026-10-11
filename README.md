@@ -5,6 +5,9 @@ the final call. Each component gets `Allow`, `Needs review` or `Reject` against 
 with the reason and a link to its source. A reviewer approves or overrides, every step is an
 append-only ledger line, and the result is a report Legal can attach to the CRA file.
 
+> This repo holds both take-home challenges. This page is **challenge A**. **Challenge B** (an internal
+> marketplace for AI assets: design doc and manifest validator) is in [`docs/marketplace/`](docs/marketplace/README.md).
+
 ```text
  SBOM (CycloneDX or SPDX) ─► parse ─► decide against policy ─► ledger ◄── reviewer: approve / override
                                          (fail closed)            │
@@ -20,6 +23,7 @@ append-only ledger line, and the result is a report Legal can attach to the CRA 
 | [STORY-002](stories/STORY-002.md) | AI models: read the license and usage restrictions from each model card | done |
 | [STORY-003](stories/STORY-003.md) | Reviewer CLI, audit ledger, Legal report | done |
 | [STORY-004](stories/STORY-004.md) | KeysBench: a monthly measurement of frontier models (optional) | specified and designed, reviewed adversarially; not built |
+| [STORY-B01](stories/STORY-B01.md) | Challenge B: manifest validator for the AI marketplace | done ([details](docs/marketplace/README.md)) |
 
 A generated report, from the steps in `samples/build_report.py`, is in [`samples/report/`](samples/report/report.md):
 the scan with the model cards, one reviewer override (Llama 3.1), and the report Legal attaches.
@@ -66,7 +70,7 @@ record/replay of model calls so CI never calls a model.
 
 - **Every acceptance criterion cites a case**, and a test fails if a checkbox has no case behind it.
 - **A test counts once it has been seen failing.** `scripts/canaries.py` breaks one rule at a time on a
-  temporary copy of the repo (58 mutations) and the suite must go red for each.
+  temporary copy of the repo (102 mutations across both challenges) and the suite must go red for each.
 - **An adversarial security review** of the first story found one blocking bug the tests had missed
   (two CycloneDX license entries concatenated as text could turn a `Reject` into an `Allow`). It was
   reproduced, fixed case-first, and given a canary, like every fix after it.
