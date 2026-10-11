@@ -145,3 +145,25 @@ def test_a_model_runs_only_in_the_configurations_the_plan_gives_it():
     assert p.k_for("openai/gpt-5.6-sol", "B") == 3
     assert p.k_for("openai/gpt-5.6-sol", "A") == 0 and p.k_for("openai/gpt-5.6-sol", "A0") == 0
     assert p.k_for(HAIKU, "A") == 3
+
+
+def test_run_can_take_a_subset_of_the_plan(tmp_path, monkeypatch):
+    # The grid runs per provider (each under its own budget) and per configuration (each run under the
+    # background limit): a subset of the same plan, into the same ledger.
+    seen = {}
+
+    def fake_run(plan, **kw):
+        seen["models"], seen["configs"] = plan.models, plan.configs
+        return []
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    p = tmp_path / "plan.yaml"
+    p.write_text(
+        "label: t\ncap_usd: 30\nk: 1\neffort: high\nmodels: [claude-haiku-5-5, openai/gpt-5.6-sol]\n"
+        "configs: [B, A]\ntasks: [KB-03]\nmax_tokens: 32000\nmax_steps: 12\n",
+        encoding="utf-8",
+    )
+    base = ["run", "--plan", str(p), "--out", str(tmp_path / "o")]
+    assert cli.main([*base, "--only-model", "openai/gpt-5.6-sol", "--only-config", "B"], out=io.StringIO()) == 0
+    assert seen == {"models": ["openai/gpt-5.6-sol"], "configs": ["B"]}
+    assert cli.main([*base, "--only-model", "nope"], out=io.StringIO(), err=io.StringIO()) == 2
