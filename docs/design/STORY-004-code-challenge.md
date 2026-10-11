@@ -73,3 +73,20 @@ Agent tokens, aggregated per agent with no input/output split (so no dollar figu
 lenses 346k (1A), 324k (1B), 292k (2A), 274k (2B), 297k (3A), 325k (3B); the two verifiers that ran,
 277k and 295k. About 2.43 million in all. The suite went from 482 to about 570 tests and from 47 s to
 about 170 s, almost all of it the grading container.
+
+## Found by the live run, after the review
+
+The review read the code; the live grid read what the code did with real model output. Five instrument
+errors came from it, none from a model, each fixed with a test first, the affected attempts voided (the
+ledger keeps the original lines) and re-scored or rerun:
+
+| # | What the run showed | Cause | Fix |
+|---|---|---|---|
+| L1 | Every A0 and A edit denied in the pilot | the environment scrub forces permission mode `default` and no rule allowed `Edit` | `Edit(./**)`, `Write(./**)` and a governed workspace rule (`aedc4cc`) |
+| L2 | A Haiku attempt in A `invalid` for `# mean of noise ~ 0` | any tilde read as the home directory | only `~/` or a `~` that ends a command (`253fb1a`) |
+| L3 | KB-06: 14 of 21 reviews that named the defect failed | a code check required the planted line's text (`/ 20`) in the quote | removed; the judge decides, code checks the quote is in the review (`7dad93a`) |
+| L4 | KB-05: Sonnet, Opus and Fable quoted the manual's explanatory sentence and failed | the key held only the two limit lines | the key holds the sentence and its clauses; alternative right answers score 1 in `check-graders` (`7dad93a`) |
+| L5 | Haiku in A `invalid` for `2%/sqrt(N)` in a comment; a URL written into a `.py` file not seen | Python read as shell text; written files not audited | Python is read by its single-token string literals, written `.py` files included, task literals excluded; 76 stored attempts re-audited: one verdict changed, no new invalid (`2306437`) |
+
+L5 matters beyond the false positive: the repository went public before configuration A ran, and
+without it a contestant could have fetched a published solution from a script it wrote.

@@ -26,10 +26,16 @@ LIMITS = (
     "not a verdict; the decision memo says how many tasks a decision would need.",
     "History tasks come from one repository whose fixes were written with an AI assistant; domain tasks use "
     "a fictitious instrument. Tasks that show an organisation's own advantage need its own repositories.",
-    "One provider family. The judge (KB-06 only) is a different model of the same family, anonymised, with "
-    "its evidence checked by code: bias reduced, not removed.",
-    "Configurations A and A0 run the Claude Code CLI restricted and audited, not sandboxed: the audit is "
-    "detection, and Python can build a path at run time that the audit cannot see.",
+    "Configuration B has models from four providers (three through OpenRouter); A0 and A run Anthropic's "
+    "CLI, so only Anthropic models. Qwen3 Coder Next has no reasoning setting: the effort is sent and has "
+    "no effect.",
+    "The judge (KB-06 only) is an Anthropic model, anonymised, never the contestant. Code checks that its "
+    "quote is in the review; whether the quote is the planted defect is the judge's call (a word-level check "
+    "rejected 14 of 21 correct reviews and was removed). Bias reduced, not removed.",
+    "Configurations A and A0 run the Claude Code CLI restricted and audited, not sandboxed: the audit reads "
+    "shell text and the string literals of Python the contestant runs or writes, and a path outside the "
+    "workspace or a network address makes the attempt invalid. A path or an address built at run time is "
+    "not seen.",
     "The offline measure is not the contract metric. That is cost per accepted change on real work; this is "
     "the gate before it and the regression check after it.",
 )

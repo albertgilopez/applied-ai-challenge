@@ -228,8 +228,12 @@ sequenceDiagram
   "substring of the manual"; it is not now.
 - **The judge (KB-06).** One governed prompt (approved by hash). Input: the rubric, the diff, and the
   review between data delimiters with model ids replaced by `<contestant>`. Output:
-  `{verdict, defect_found, review_quote}`. Code: `review_quote` is in `REVIEW.md` (whitespace-normalised)
-  **and** contains the planted line or its declared marker (`/ 20`); otherwise `fail` with the reason.
+  `{verdict, defect_found, review_quote}`. Code: `review_quote` is in `REVIEW.md` (whitespace-normalised);
+  otherwise `fail` with the reason. Pass = verdict `pass` and `defect_found` and the quote grounded. A
+  second code check, that the quote contains the planted line or its marker (`/ 20`), was removed after
+  the live grid: it rejected 14 of 21 reviews that named the defect in other words ("the divisor is 10,
+  not 20"). Whether the quote is the planted defect is the judge's call; `check-graders` keeps the
+  antipattern and the fake-verdict hack at 0.
   The judge model is Opus 5.5, or Sonnet 5.5 when the contestant is Opus 5.5. It runs during the
   attempt and its verdict is written on the attempt line with the prompt, rubric and artifact digests;
   `score` never calls it.
