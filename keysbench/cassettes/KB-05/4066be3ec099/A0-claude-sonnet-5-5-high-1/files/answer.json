@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this, so I have not set it up. Two limits in the manual rule it out. First, its frequency range is 10 MHz to 18 GHz, and SENS:FREQ refuses anything outside that with error -222. A 40 GHz signal therefore cannot be measured with a calibrated result. Second, its measurement resolution is 0.01 dB, ten times coarser than the 0.001 dB you asked for. Averaging and range settings do not extend either limit. To log 40 GHz drift at 0.001 dB you will need a different power meter and sensor that covers 40 GHz and resolves 0.001 dB.",
+  "quote": "The KX-100 cannot measure outside these limits, and no setting or averaging count extends them."
+}

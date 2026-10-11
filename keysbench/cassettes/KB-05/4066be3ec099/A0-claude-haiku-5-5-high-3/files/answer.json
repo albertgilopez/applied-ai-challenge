@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this as requested, for two reasons. First, its measurement resolution is 0.01 dB, so it cannot log at 0.001 dB; averaging does not change that limit. Second, its frequency range is 10 MHz to 18 GHz, so a 40 GHz link amplifier is outside the calibrated band and no calibrated reading is possible at that frequency. We cannot set up the 40 GHz qualification on this instrument; a power meter rated for 40 GHz and 0.001 dB resolution is needed.",
+  "quote": "A reading finer than the resolution is not available from the instrument, and a signal outside the frequency range cannot be measured with a calibrated result."
+}

@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this as requested. Its measurement resolution is 0.01 dB, so it cannot log power at 0.001 dB, and averaging does not change that; the manual states that no setting or averaging count extends its limits. Separately, its frequency range is 10 MHz to 18 GHz, so a 40 GHz amplifier output is outside the band and cannot be measured with a calibrated result. The meter can still log output power at 0.01 dB resolution for signals up to 18 GHz, but this link needs a meter rated for 40 GHz and finer resolution.",
+  "quote": "Measurement resolution: 0.01 dB"
+}

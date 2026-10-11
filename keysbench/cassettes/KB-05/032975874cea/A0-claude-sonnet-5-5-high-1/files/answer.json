@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this. Two limits rule it out. First, 40 GHz is well above the meter's 10 MHz to 18 GHz frequency range, so a calibrated result is not possible at that frequency. Second, the resolution is 0.01 dB, ten times coarser than the 0.001 dB requested, and averaging or other settings do not improve it. I have not configured anything on the bench unit. Qualifying the 40 GHz amplifier needs a power meter and sensor rated for 40 GHz with at least 0.001 dB resolution, or the test would need a different measurement approach.",
+  "quote": "A reading finer than the resolution is not available from the instrument, and a signal outside the frequency range cannot be measured with a calibrated result."
+}

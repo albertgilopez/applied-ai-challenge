@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 can't do this measurement, so we can't set it up for the 40 GHz qualification. Its frequency range is 10 MHz to 18 GHz. SENS:FREQ refuses any setting above 18 GHz (error -222), so a 40 GHz signal can't be measured with a calibrated result. The 0.001 dB resolution you asked for is also out of reach: the meter's resolution is 0.01 dB and FETC? returns only two decimals. The manual says no setting or averaging count extends these limits. You'll need a power meter and sensor rated to at least 40 GHz with 0.001 dB resolution.",
+  "quote": "Frequency range: 10 MHz to 18 GHz"
+}

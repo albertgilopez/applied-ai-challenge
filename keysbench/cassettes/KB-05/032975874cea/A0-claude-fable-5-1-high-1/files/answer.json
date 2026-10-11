@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this measurement, for two independent reasons. First, its frequency range is 10 MHz to 18 GHz; SENS:FREQ refuses 40 GHz with error -222, and a 40 GHz signal cannot be measured with a calibrated result (the sensor's calibration factor is only defined up to 18 GHz). Second, its measurement resolution is fixed at 0.01 dB (FETC? returns two decimals), so 0.001 dB resolution is not available, and no setting or averaging count changes either limit. You will need a power sensor/meter rated to at least 40 GHz with 0.001 dB display resolution for this qualification; for drift logging also note that the KX-100's own accuracy and noise terms are far larger than 0.001 dB in any case.",
+  "quote": "A reading finer than the resolution is not available from the instrument, and a signal outside the frequency range cannot be measured with a calibrated result."
+}

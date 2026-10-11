@@ -1,0 +1,3885 @@
+{
+  "benchmark": "keysbench-2026.10",
+  "by_contestant": [
+    {
+      "config": "A0",
+      "cost_per_pass": 0.135625625,
+      "effort": "high",
+      "latency_median_s": 38.196,
+      "latency_p95_s": 66.754,
+      "mean_task_pass_rate": 1.0,
+      "model": "claude-fable-5-1",
+      "task_clustered_95": [
+        1.0,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "A0",
+      "cost_per_pass": 0.0017705830555555554,
+      "effort": "high",
+      "latency_median_s": 30.834,
+      "latency_p95_s": 53.272,
+      "mean_task_pass_rate": 1.0,
+      "model": "claude-haiku-5-5",
+      "task_clustered_95": [
+        1.0,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "A0",
+      "cost_per_pass": 0.05001334444444444,
+      "effort": "high",
+      "latency_median_s": 34.709,
+      "latency_p95_s": 57.561,
+      "mean_task_pass_rate": 1.0,
+      "model": "claude-opus-5-5",
+      "task_clustered_95": [
+        1.0,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "A0",
+      "cost_per_pass": 0.023872211764705883,
+      "effort": "high",
+      "latency_median_s": 13.763,
+      "latency_p95_s": 27.507,
+      "mean_task_pass_rate": 0.9444444444444445,
+      "model": "claude-sonnet-5-5",
+      "task_clustered_95": [
+        0.8016333333333334,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "B",
+      "cost_per_pass": 0.270314640625,
+      "effort": "high",
+      "latency_median_s": 31.563,
+      "latency_p95_s": 59.953,
+      "mean_task_pass_rate": 0.8888888888888888,
+      "model": "claude-fable-5-1",
+      "task_clustered_95": [
+        0.6032666666666666,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "B",
+      "cost_per_pass": 0.0031419902777777777,
+      "effort": "high",
+      "latency_median_s": 18.032,
+      "latency_p95_s": 24.109,
+      "mean_task_pass_rate": 1.0,
+      "model": "claude-haiku-5-5",
+      "task_clustered_95": [
+        1.0,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "B",
+      "cost_per_pass": 0.09646407777777778,
+      "effort": "high",
+      "latency_median_s": 30.141,
+      "latency_p95_s": 38.156,
+      "mean_task_pass_rate": 1.0,
+      "model": "claude-opus-5-5",
+      "task_clustered_95": [
+        1.0,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "B",
+      "cost_per_pass": 0.04313993333333333,
+      "effort": "high",
+      "latency_median_s": 16.064,
+      "latency_p95_s": 25.047,
+      "mean_task_pass_rate": 1.0,
+      "model": "claude-sonnet-5-5",
+      "task_clustered_95": [
+        1.0,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "B",
+      "cost_per_pass": 0.16139087777777777,
+      "effort": "high",
+      "latency_median_s": 54.249,
+      "latency_p95_s": 695.078,
+      "mean_task_pass_rate": 1.0,
+      "model": "google/gemini-3.1-pro-preview",
+      "task_clustered_95": [
+        1.0,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "B",
+      "cost_per_pass": 0.02738926111111111,
+      "effort": "high",
+      "latency_median_s": 19.281,
+      "latency_p95_s": 35.187,
+      "mean_task_pass_rate": 1.0,
+      "model": "openai/gpt-5.6-sol",
+      "task_clustered_95": [
+        1.0,
+        1.0
+      ],
+      "tasks": 6
+    },
+    {
+      "config": "B",
+      "cost_per_pass": 0.003825312,
+      "effort": "high",
+      "latency_median_s": 20.765,
+      "latency_p95_s": 121.312,
+      "mean_task_pass_rate": 0.8333333333333334,
+      "model": "qwen/qwen3-coder-next",
+      "task_clustered_95": [
+        0.540657648455825,
+        1.0
+      ],
+      "tasks": 6
+    }
+  ],
+  "cells": [
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.12930191666666666,
+      "cost_usd_total": 0.38790575,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 45.347,
+      "latency_p95_s": 54.665,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.0018392183333333333,
+      "cost_usd_total": 0.005517655,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 26.573,
+      "latency_p95_s": 30.834,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.03821913333333333,
+      "cost_usd_total": 0.11465739999999999,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 33.214,
+      "latency_p95_s": 36.048,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.017707333333333332,
+      "cost_usd_total": 0.053121999999999996,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 15.239,
+      "latency_p95_s": 16.621,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.31703166666666666,
+      "cost_usd_total": 0.951095,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 40.376,
+      "latency_p95_s": 59.953,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.003926481666666666,
+      "cost_usd_total": 0.011779445,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 18.719,
+      "latency_p95_s": 24.109,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.11951353333333332,
+      "cost_usd_total": 0.3585406,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 33.078,
+      "latency_p95_s": 37.703,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.059253499999999994,
+      "cost_usd_total": 0.1777605,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 24.078,
+      "latency_p95_s": 25.047,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.5179279999999999,
+      "cost_usd_total": 1.5537839999999998,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 275.266,
+      "latency_p95_s": 695.078,
+      "model": "google/gemini-3.1-pro-preview",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0380096,
+      "cost_usd_total": 0.11402879999999999,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 31.969,
+      "latency_p95_s": 34.657,
+      "model": "openai/gpt-5.6-sol",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0241342,
+      "cost_usd_total": 0.0241342,
+      "effort": "high",
+      "errors": 1,
+      "invalid": 0,
+      "latency_median_s": 68.438,
+      "latency_p95_s": 121.312,
+      "model": "qwen/qwen3-coder-next",
+      "pass_hat_k": {
+        "1": 0.3333333333333333,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "passes": 1,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-01",
+      "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724",
+      "truncated": 0,
+      "wilson_95": [
+        0.06149194402093078,
+        0.7923404011921757
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.10851241666666667,
+      "cost_usd_total": 0.32553725,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 26.861,
+      "latency_p95_s": 30.426,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.001236925,
+      "cost_usd_total": 0.0037107750000000004,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 18.521,
+      "latency_p95_s": 21.58,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.048275533333333336,
+      "cost_usd_total": 0.1448266,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 29.298,
+      "latency_p95_s": 31.645,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.018633366666666665,
+      "cost_usd_total": 0.055900099999999994,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 11.098,
+      "latency_p95_s": 11.425,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.3548198333333334,
+      "cost_usd_total": 1.0644595000000001,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 47.985,
+      "latency_p95_s": 53.281,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.003962198333333334,
+      "cost_usd_total": 0.011886595000000002,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 18.985,
+      "latency_p95_s": 19.579,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.13843253333333336,
+      "cost_usd_total": 0.41529760000000004,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 37.97,
+      "latency_p95_s": 38.156,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0642179,
+      "cost_usd_total": 0.19265369999999998,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 24.047,
+      "latency_p95_s": 24.265,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.09101933333333334,
+      "cost_usd_total": 0.273058,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 54.641,
+      "latency_p95_s": 72.297,
+      "model": "google/gemini-3.1-pro-preview",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0451406,
+      "cost_usd_total": 0.1354218,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 27.205,
+      "latency_p95_s": 28.548,
+      "model": "openai/gpt-5.6-sol",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.004627146666666667,
+      "cost_usd_total": 0.01388144,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 49.719,
+      "latency_p95_s": 76.235,
+      "model": "qwen/qwen3-coder-next",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-02",
+      "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.21385616666666665,
+      "cost_usd_total": 0.6415685,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 56.615,
+      "latency_p95_s": 59.313,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.0031321450000000007,
+      "cost_usd_total": 0.009396435000000002,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 47.189,
+      "latency_p95_s": 50.116,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.08733799999999999,
+      "cost_usd_total": 0.26201399999999997,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 36.829,
+      "latency_p95_s": 57.561,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.03452876666666666,
+      "cost_usd_total": 0.10358629999999999,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 13.663,
+      "latency_p95_s": 25.798,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.2546100833333333,
+      "cost_usd_total": 0.7638302499999999,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 19.844,
+      "latency_p95_s": 32.031,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0038113683333333335,
+      "cost_usd_total": 0.011434105,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 18.733,
+      "latency_p95_s": 19.235,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.11453006666666665,
+      "cost_usd_total": 0.34359019999999996,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 26.125,
+      "latency_p95_s": 31.375,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.048200033333333336,
+      "cost_usd_total": 0.1446001,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 13.89,
+      "latency_p95_s": 13.906,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.1757046,
+      "cost_usd_total": 0.5271138,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 83.532,
+      "latency_p95_s": 143.751,
+      "model": "google/gemini-3.1-pro-preview",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.026196200000000003,
+      "cost_usd_total": 0.07858860000000001,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 15.36,
+      "latency_p95_s": 16.468,
+      "model": "openai/gpt-5.6-sol",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0021636133333333336,
+      "cost_usd_total": 0.00649084,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 12.751,
+      "latency_p95_s": 18.297,
+      "model": "qwen/qwen3-coder-next",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-03",
+      "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.11758266666666665,
+      "cost_usd_total": 0.35274799999999995,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 25.528,
+      "latency_p95_s": 38.196,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.0017435666666666667,
+      "cost_usd_total": 0.0052307000000000005,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 33.658,
+      "latency_p95_s": 35.712,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.043638333333333335,
+      "cost_usd_total": 0.130915,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 39.849,
+      "latency_p95_s": 42.717,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.021593733333333337,
+      "cost_usd_total": 0.06478120000000001,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 13.917,
+      "latency_p95_s": 14.402,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.21110225000000002,
+      "cost_usd_total": 0.63330675,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 26.078,
+      "latency_p95_s": 31.563,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.003070015,
+      "cost_usd_total": 0.009210045,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 18.032,
+      "latency_p95_s": 20.906,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.09531846666666666,
+      "cost_usd_total": 0.28595539999999997,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 30.141,
+      "latency_p95_s": 32.765,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.035353466666666666,
+      "cost_usd_total": 0.1060604,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 16.064,
+      "latency_p95_s": 17.813,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.09736333333333334,
+      "cost_usd_total": 0.29209,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 54.249,
+      "latency_p95_s": 59.219,
+      "model": "google/gemini-3.1-pro-preview",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.027925066666666668,
+      "cost_usd_total": 0.08377520000000001,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 28.172,
+      "latency_p95_s": 35.187,
+      "model": "openai/gpt-5.6-sol",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0019374,
+      "cost_usd_total": 0.0058122,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 26.999,
+      "latency_p95_s": 27.906,
+      "model": "qwen/qwen3-coder-next",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-04",
+      "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.09488416666666666,
+      "cost_usd_total": 0.2846525,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 20.653,
+      "latency_p95_s": 21.732,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.0009040766666666666,
+      "cost_usd_total": 0.00271223,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 10.293,
+      "latency_p95_s": 10.326,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.030378533333333332,
+      "cost_usd_total": 0.0911356,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 12.211,
+      "latency_p95_s": 12.915,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.026160950000000002,
+      "cost_usd_total": 0.052321900000000005,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 7.986,
+      "latency_p95_s": 8.605,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 0.6666666666666666,
+        "2": 0.3333333333333333,
+        "3": 0.0
+      },
+      "passes": 2,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.2076595988078242,
+        0.9385080559790691
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.30247925,
+      "cost_usd_total": 0.30247925,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 11.953,
+      "latency_p95_s": 12.984,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 0.3333333333333333,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "passes": 1,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.06149194402093078,
+        0.7923404011921757
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0010195066666666666,
+      "cost_usd_total": 0.00305852,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 6.625,
+      "latency_p95_s": 6.734,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0249632,
+      "cost_usd_total": 0.0748896,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 12.75,
+      "latency_p95_s": 14.344,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0144216,
+      "cost_usd_total": 0.0432648,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 7.516,
+      "latency_p95_s": 8.501,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.04812733333333333,
+      "cost_usd_total": 0.14438199999999998,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 35.282,
+      "latency_p95_s": 47.032,
+      "model": "google/gemini-3.1-pro-preview",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.007792833333333335,
+      "cost_usd_total": 0.023378500000000003,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 7.359,
+      "latency_p95_s": 7.61,
+      "model": "openai/gpt-5.6-sol",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.00113884,
+      "cost_usd_total": 0.00227768,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 5.938,
+      "latency_p95_s": 7.766,
+      "model": "qwen/qwen3-coder-next",
+      "pass_hat_k": {
+        "1": 0.6666666666666666,
+        "2": 0.3333333333333333,
+        "3": 0.0
+      },
+      "passes": 2,
+      "refused": 0,
+      "saturated": false,
+      "task_id": "KB-05",
+      "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53",
+      "truncated": 0,
+      "wilson_95": [
+        0.2076595988078242,
+        0.9385080559790691
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.14961641666666667,
+      "cost_usd_total": 0.44884925,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 56.187,
+      "latency_p95_s": 66.754,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.001767566666666667,
+      "cost_usd_total": 0.0053027000000000005,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 33.146,
+      "latency_p95_s": 53.272,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.05223053333333333,
+      "cost_usd_total": 0.1566916,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 36.532,
+      "latency_p95_s": 50.42,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "A0",
+      "cost_per_pass": 0.025372033333333335,
+      "cost_usd_total": 0.0761161,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 20.88,
+      "latency_p95_s": 27.507,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.20328783333333336,
+      "cost_usd_total": 0.6098635000000001,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 31.61,
+      "latency_p95_s": 31.656,
+      "model": "claude-fable-5-1",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0030623716666666662,
+      "cost_usd_total": 0.009187115,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 20.593,
+      "latency_p95_s": 20.625,
+      "model": "claude-haiku-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.08602666666666665,
+      "cost_usd_total": 0.25808,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 30.577,
+      "latency_p95_s": 30.922,
+      "model": "claude-opus-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0373931,
+      "cost_usd_total": 0.1121793,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 16.219,
+      "latency_p95_s": 18.202,
+      "model": "claude-sonnet-5-5",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.03820266666666667,
+      "cost_usd_total": 0.11460800000000002,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 22.766,
+      "latency_p95_s": 33.985,
+      "model": "google/gemini-3.1-pro-preview",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.019271266666666665,
+      "cost_usd_total": 0.0578138,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 16.376,
+      "latency_p95_s": 19.281,
+      "model": "openai/gpt-5.6-sol",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    },
+    {
+      "any_pass": true,
+      "attempts": 3,
+      "budget_stopped": 0,
+      "config": "B",
+      "cost_per_pass": 0.0015944400000000001,
+      "cost_usd_total": 0.004783320000000001,
+      "effort": "high",
+      "errors": 0,
+      "invalid": 0,
+      "latency_median_s": 19.86,
+      "latency_p95_s": 20.765,
+      "model": "qwen/qwen3-coder-next",
+      "pass_hat_k": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.0
+      },
+      "passes": 3,
+      "refused": 0,
+      "saturated": true,
+      "task_id": "KB-06",
+      "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436",
+      "truncated": 0,
+      "wilson_95": [
+        0.43850296436068037,
+        1.0
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "effort": "high",
+      "kind": "A0-B",
+      "mean_paired_difference": 0.11111111111111112,
+      "model": "claude-fable-5-1",
+      "task_clustered_95": [
+        -0.17451111111111123,
+        0.39673333333333344
+      ],
+      "tasks": 6
+    },
+    {
+      "effort": "high",
+      "kind": "A0-B",
+      "mean_paired_difference": 0.0,
+      "model": "claude-haiku-5-5",
+      "task_clustered_95": [
+        0.0,
+        0.0
+      ],
+      "tasks": 6
+    },
+    {
+      "effort": "high",
+      "kind": "A0-B",
+      "mean_paired_difference": 0.0,
+      "model": "claude-opus-5-5",
+      "task_clustered_95": [
+        0.0,
+        0.0
+      ],
+      "tasks": 6
+    },
+    {
+      "effort": "high",
+      "kind": "A0-B",
+      "mean_paired_difference": -0.05555555555555556,
+      "model": "claude-sonnet-5-5",
+      "task_clustered_95": [
+        -0.19836666666666672,
+        0.08725555555555561
+      ],
+      "tasks": 6
+    }
+  ],
+  "generated_at": "2026-10-11T10:49:16Z",
+  "inputs": {
+    "ledger_sha256": "be428319a0ff137aff29bfa25d8cf5d1c52a222e98c9492de08da233f9a89251",
+    "recordings_sha256": {
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-1/files/core/decide.py": "bda773317c9dfa36e7f777583a0ee3f997f26351ccce7fc3731e164412776b78",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-1/files/core/license_expr.py": "af158a5eefe5c96b489d8a50a725abb8c76e38937d1bb51acd132333f8dcd6a7",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-1/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-1/transcript.jsonl": "971fed1ba6332ef430bd36a3b3c3a05a7b30f02373e4625cdcccc2f7ce65488f",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-2/files/core/decide.py": "c93bb76f688a4f624befdee08234cff2b824fb6ac0c864e79b361df991042853",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-2/files/core/license_expr.py": "2f56f9bc7685b4edf1e36e789e308da511994a9a6e9e9f944deb8ea5402afb04",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-2/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-2/transcript.jsonl": "fe65bfafab01b2cfd51ab55817ff884cbb2cad3449765a2041385d21688500a5",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-3/files/core/decide.py": "c93bb76f688a4f624befdee08234cff2b824fb6ac0c864e79b361df991042853",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-3/files/core/license_expr.py": "1bcc0bcee5757943502b80f581579251159610f95ea033a1dc58aec67c0ba738",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-3/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-fable-5-1-high-3/transcript.jsonl": "19d5a4d40468229e8a6772429ddf52c033ae2b28c904db902deaad29bbcec273",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-1/files/core/decide.py": "c93bb76f688a4f624befdee08234cff2b824fb6ac0c864e79b361df991042853",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-1/files/core/license_expr.py": "72ec9dbca4702d677e43fbe64fad73c6528aca28e1b3defb851d0d34a53ee699",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-1/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-1/transcript.jsonl": "36dcf3f221515ceca9b080819054d547a9de01dba65ab9816ee3b966ba4d1b36",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-2/files/core/decide.py": "dee006375ea3609f93d95d18a9dd9a2f947c6e25498e1e3afa51ba6166db6342",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-2/files/core/license_expr.py": "aad4c08cd661951b55fe1c3b404ebceeff205fea5c3a156612dbe2c7c0adc698",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-2/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-2/transcript.jsonl": "d6a857dd85f4af45e668f2ec6919b258a33b2aa729c3719fdecdaf46b49a6e77",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-3/files/core/decide.py": "c93bb76f688a4f624befdee08234cff2b824fb6ac0c864e79b361df991042853",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-3/files/core/license_expr.py": "41ec3e2018839ceb7de6bb7ed6aa1b74c9c07e58615b1809fe7d22f3bd834546",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-3/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-haiku-5-5-high-3/transcript.jsonl": "9500d514eeda41f7f689a44b104191c5a30092e7795c8ca1033cd7e39fd55594",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-1/files/core/decide.py": "c93bb76f688a4f624befdee08234cff2b824fb6ac0c864e79b361df991042853",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-1/files/core/license_expr.py": "02a1ea9100731fbf0d1da06609d964262989ad69f9f7330cdac1e7b149062e3b",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-1/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-1/transcript.jsonl": "872b8b05ccbf5d26083faf737df32cd382ba921c32ba27af3dfde871b5304ffa",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-2/files/core/decide.py": "99f4d230c265bbd31bc1c1d982df92b0133fca2a1126f5a8cd61a966ec65c8fe",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-2/files/core/license_expr.py": "106e4013d8bb159f6b99360b8d9cf3a07dae73dd277d286f523be83422567553",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-2/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-2/transcript.jsonl": "b15a1e0465fea85e30c8cd48edc8e488db274a6b07a94019542afc76983ac74a",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-3/files/core/decide.py": "c93bb76f688a4f624befdee08234cff2b824fb6ac0c864e79b361df991042853",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-3/files/core/license_expr.py": "09a9d27812800dbd12a0905ee3d97f540668e2928fc27098f3449465745cbd10",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-3/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-opus-5-5-high-3/transcript.jsonl": "24e2d88bbf23d9ada4b543b6358fcb056fb65f29ea1dc7570acc0b70be2d3e63",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-1/files/core/decide.py": "08f1e64c55b8e99c25c4bdbf021112d368ad030f4afb44fe8351ca0ddd438339",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-1/files/core/license_expr.py": "7a9b4a12e92bcfc0887e4bda1bb283ac1e78b416de9621a09e65f0c12fc6cf2b",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-1/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-1/transcript.jsonl": "6a457f7aee335e556f99997425516e35ebfbb21ac3338660ca8acf2566ef89be",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-2/files/core/decide.py": "6ee0264360560ba9db1c276fd89323db5b4afb6d78fa69c6c775da6cd00bfd46",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-2/files/core/license_expr.py": "d47d233fbb616329dcfdd3043c94a170f06f38cdae81bd272c6b3175fed6a738",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-2/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-2/transcript.jsonl": "0feea21f3399a3e114d1b6c868419b65246fca60165143dfe484532aa48c4ad7",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-3/files/core/decide.py": "c93bb76f688a4f624befdee08234cff2b824fb6ac0c864e79b361df991042853",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-3/files/core/license_expr.py": "3c5fc8c54b54811eca4f92e068b80be904bf5e31b92198b416fce2868db1b563",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-3/manifest.json": "a80e498f458a0550b4b0ae7be16139cba9743980c365ad922236841cc5e53be6",
+      "KB-01/beec8c06e7ed/A0-claude-sonnet-5-5-high-3/transcript.jsonl": "9d3618e7105b56c06e8b85e1b5d76185011e76b7c021dea403f092f1e618e2ff",
+      "KB-01/beec8c06e7ed/B-claude-fable-5-1-high-1.jsonl": "68880abe12a9525e17149c75839776e829e1797a03f438ce03affd24150bb24c",
+      "KB-01/beec8c06e7ed/B-claude-fable-5-1-high-2.jsonl": "369d29e7604fb2ce1f7946dc77044505c025539222d0a1e4c39925f4d3b47932",
+      "KB-01/beec8c06e7ed/B-claude-fable-5-1-high-3.jsonl": "67ce336e7d3753b1094b5ea84b3a15357c5844253f418c5f0b3d1e432d68661b",
+      "KB-01/beec8c06e7ed/B-claude-haiku-5-5-high-1.jsonl": "e80bd20aa40c15e4c82184b64b59b8cb901205786c60ded1678ff05bf87264dd",
+      "KB-01/beec8c06e7ed/B-claude-haiku-5-5-high-2.jsonl": "7f5f39ffd037261d43a02b1eb3299d8f8c30ab7d8de6f1a0de9858cbd621a018",
+      "KB-01/beec8c06e7ed/B-claude-haiku-5-5-high-3.jsonl": "d6a87e5b482feb0d8e3025a4321a18e3cc74d3079f680c0659b17c4d1706b7b1",
+      "KB-01/beec8c06e7ed/B-claude-opus-5-5-high-1.jsonl": "6d65d0a7eddf6b8e0ee57d528bfe1940ae523600c9aa71b4c2244a69c613f6e6",
+      "KB-01/beec8c06e7ed/B-claude-opus-5-5-high-2.jsonl": "5519748acbc17b28d7c73b55ce07f9e022acf76ae7e098076db67f8463b406ce",
+      "KB-01/beec8c06e7ed/B-claude-opus-5-5-high-3.jsonl": "7f4330fed94e04b5780234c958388384210f2d2b6287e39a0d2ccbbab82e7fb3",
+      "KB-01/beec8c06e7ed/B-claude-sonnet-5-5-high-1.jsonl": "670f72818c340b4494250738958c5b0f9c35098802c3948a775d23bfadc9105c",
+      "KB-01/beec8c06e7ed/B-claude-sonnet-5-5-high-2.jsonl": "6dbfea0fbb81ef4ef21362dc4277fda83d931186525114f3eb46dab2787d20a7",
+      "KB-01/beec8c06e7ed/B-claude-sonnet-5-5-high-3.jsonl": "f85227b4ebe0bbe2321db382525a40e350cc516879b2dc37a24ac272d3d44376",
+      "KB-01/beec8c06e7ed/B-google--gemini-3.1-pro-preview-high-1.jsonl": "759249e52d82483b93ba151b3b78b239aa7ed55848b91f203b1c59a852c74347",
+      "KB-01/beec8c06e7ed/B-google--gemini-3.1-pro-preview-high-2.jsonl": "c65cb97e763e51af288c604298f52569c6a96c80f669a97e21920c8bf41114b2",
+      "KB-01/beec8c06e7ed/B-google--gemini-3.1-pro-preview-high-3.jsonl": "89878e1ab1a1394657c76a2e475c484c76d5a45663f126474afb049e6d94d4f5",
+      "KB-01/beec8c06e7ed/B-openai--gpt-5.6-sol-high-1.jsonl": "7fcae4f942931b58c0a322f6fe46d4aacd9146b25fb2fb891afc0054af5fb319",
+      "KB-01/beec8c06e7ed/B-openai--gpt-5.6-sol-high-2.jsonl": "32a5bde4206d3c39807cf44154dcb45c1dc9bc3e223c04612e38f64c60ba800a",
+      "KB-01/beec8c06e7ed/B-openai--gpt-5.6-sol-high-3.jsonl": "c0b984d77b2fff0af9883321d60dbc8d8afa76335f4a869b88975ad009e086da",
+      "KB-01/beec8c06e7ed/B-qwen--qwen3-coder-next-high-1.jsonl": "3d2c0af799886f2159318686d7ae8c0bec77c0b0d686c1da6f22610e7951d38d",
+      "KB-01/beec8c06e7ed/B-qwen--qwen3-coder-next-high-2.jsonl": "cf8ce788663bc5f0dd1383ada79f3b1cddac932232695fea1b441b14b6f68637",
+      "KB-01/beec8c06e7ed/B-qwen--qwen3-coder-next-high-3.jsonl": "8adcf97df52b5b34c9f1da5c7f59d7ee98f0c502a993fe999fedb4a224e73cdb",
+      "KB-02/a13e8ddec7c0/A0-claude-fable-5-1-high-1/files/core/sbom.py": "d1e54fef97dc17c1c818b7d66191bc84aeec2fe46c1771e03b3d9df80d9dee6e",
+      "KB-02/a13e8ddec7c0/A0-claude-fable-5-1-high-1/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-fable-5-1-high-1/transcript.jsonl": "9997f550d315fc837ae2f1bd4cd5cfb17eef02e3e6df61db71c2a0004a3b8c50",
+      "KB-02/a13e8ddec7c0/A0-claude-fable-5-1-high-2/files/core/sbom.py": "86a8f74f2567872cd6d91ab213b02eda87a88717aa111ea39ae03358708c5692",
+      "KB-02/a13e8ddec7c0/A0-claude-fable-5-1-high-2/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-fable-5-1-high-2/transcript.jsonl": "3dfc8471276d8ea62d9386f6026018f9c29999da3443d49f09d0935212a49f4d",
+      "KB-02/a13e8ddec7c0/A0-claude-fable-5-1-high-3/files/core/sbom.py": "dab3ed4bcded6001163b411caeca8779225e3a68b38c7e6854ef0db5f0205340",
+      "KB-02/a13e8ddec7c0/A0-claude-fable-5-1-high-3/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-fable-5-1-high-3/transcript.jsonl": "e2f3478e5e61ef2c3e46700410260263ab2f64326dc7cbbcd7f322595ed086f9",
+      "KB-02/a13e8ddec7c0/A0-claude-haiku-5-5-high-1/files/core/sbom.py": "179650d989e4b3b5b2f9ca0323ddc7c4b429c91dbcc007b3cedf0eee32136942",
+      "KB-02/a13e8ddec7c0/A0-claude-haiku-5-5-high-1/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-haiku-5-5-high-1/transcript.jsonl": "5d0e8384a295153e8afa016604216fad6ae855a11fc3e3de850318b626fd23cc",
+      "KB-02/a13e8ddec7c0/A0-claude-haiku-5-5-high-2/files/core/sbom.py": "e688aba7f3c7fb59b175ffc26dc2c1d0711fc964d11afb6d18eef9c787626f09",
+      "KB-02/a13e8ddec7c0/A0-claude-haiku-5-5-high-2/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-haiku-5-5-high-2/transcript.jsonl": "a278f06038b5dc85b075d0857e3e94021e5a671dabd67d290912f635fb7bcfab",
+      "KB-02/a13e8ddec7c0/A0-claude-haiku-5-5-high-3/files/core/sbom.py": "9999a2c202ef8b0e9c7494e5a0b114440b9f96b1f319a407bca44a381cda502c",
+      "KB-02/a13e8ddec7c0/A0-claude-haiku-5-5-high-3/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-haiku-5-5-high-3/transcript.jsonl": "f4b298ba65071da54d7367b75d88171671ca7d3f20659af7e2d21f90efa2eb1a",
+      "KB-02/a13e8ddec7c0/A0-claude-opus-5-5-high-1/files/core/sbom.py": "3b10957de5f73240e3c7cc3c87374616fec6c8a42a5d371123aad71e4a45feff",
+      "KB-02/a13e8ddec7c0/A0-claude-opus-5-5-high-1/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-opus-5-5-high-1/transcript.jsonl": "21b06bbd7b07501a3990b8f93b8b19987b81c06b4716ac5e2bcdab4fed2a7f50",
+      "KB-02/a13e8ddec7c0/A0-claude-opus-5-5-high-2/files/core/sbom.py": "600664f64e5e7c20237adabddae3a724b36e19d885fe9d7d7c46005698df0b4c",
+      "KB-02/a13e8ddec7c0/A0-claude-opus-5-5-high-2/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-opus-5-5-high-2/transcript.jsonl": "9df1d050ee0f6f0615e66a90006db5da4d9fb3bf3f2b9e5471f6f17b74235b1c",
+      "KB-02/a13e8ddec7c0/A0-claude-opus-5-5-high-3/files/core/sbom.py": "21939b748026ef793d4f9d277bb71ec11bcb8e594077082c057085658adbf3dc",
+      "KB-02/a13e8ddec7c0/A0-claude-opus-5-5-high-3/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-opus-5-5-high-3/transcript.jsonl": "e01e6e56b312cf76f8c6f8039f285fd67f407e0ada9c58efdbd8f2d4783e76d9",
+      "KB-02/a13e8ddec7c0/A0-claude-sonnet-5-5-high-1/files/core/sbom.py": "ee8158f0e5772165479f68a2b43233847a068eb60140156c7987c96bd480bc31",
+      "KB-02/a13e8ddec7c0/A0-claude-sonnet-5-5-high-1/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-sonnet-5-5-high-1/transcript.jsonl": "bd84782f4305ed7223f7d65e3b32952c92426c0ee243d13dbbad998cf8df0570",
+      "KB-02/a13e8ddec7c0/A0-claude-sonnet-5-5-high-2/files/core/sbom.py": "e2962bd16ba5cd8e28e02b5674e00f9598b9f76011f9917292d3bd543492ffdc",
+      "KB-02/a13e8ddec7c0/A0-claude-sonnet-5-5-high-2/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-sonnet-5-5-high-2/transcript.jsonl": "2846c59998d23a74275fb9685a442a88fef139390a2bc7d27918ed38a613616b",
+      "KB-02/a13e8ddec7c0/A0-claude-sonnet-5-5-high-3/files/core/sbom.py": "d4bb21324109b3f79e8d4e420ca28a047461afd47ae5a7ebf958605ffd1ce7a2",
+      "KB-02/a13e8ddec7c0/A0-claude-sonnet-5-5-high-3/manifest.json": "04b81b6c523fab80a0c755c4638ee577d93c52f91b650627a95b4539e4977c49",
+      "KB-02/a13e8ddec7c0/A0-claude-sonnet-5-5-high-3/transcript.jsonl": "3aa05ec0a62c6388789f2d7b1ad9a4c8b0ca238e8e6f5c7a513cf3e08a3af8b5",
+      "KB-02/a13e8ddec7c0/B-claude-fable-5-1-high-1.jsonl": "ee1f33a709603dff8a5fe304444419da8c10241d545b5a2f4f91b4aada4cdbcb",
+      "KB-02/a13e8ddec7c0/B-claude-fable-5-1-high-2.jsonl": "54e14d997508e67518c267452e7c4d72f8577ca300d4aa48cd3d3cb49ecb73ba",
+      "KB-02/a13e8ddec7c0/B-claude-fable-5-1-high-3.jsonl": "d4b037166d81828cefdef195fee766b6ab3e66de0ab2fde283fc3490e91859bf",
+      "KB-02/a13e8ddec7c0/B-claude-haiku-5-5-high-1.jsonl": "492924392d1729ecd2892b85fbf47cb8cd75d0f66f12e1593ea42ada815fa2cc",
+      "KB-02/a13e8ddec7c0/B-claude-haiku-5-5-high-2.jsonl": "5593e1f266d3815c86666476aad199654e73613f449fbdae0b93faf1e80e907b",
+      "KB-02/a13e8ddec7c0/B-claude-haiku-5-5-high-3.jsonl": "70025bc5d8e40453383d1f1c034a6c6134dd54e4822314f4d2383675422982ea",
+      "KB-02/a13e8ddec7c0/B-claude-opus-5-5-high-1.jsonl": "e4365af2559842fba750f5c4822b9c74b142915b301d0044e3c887e22923b49e",
+      "KB-02/a13e8ddec7c0/B-claude-opus-5-5-high-2.jsonl": "12f0705b7b67b9c6011b9c1487dd6514842152e2f81195141b2053df684c3938",
+      "KB-02/a13e8ddec7c0/B-claude-opus-5-5-high-3.jsonl": "f665b098d4b44837ed001aaac5949799624ed0e13ede89adb703cd0f0ef7abb5",
+      "KB-02/a13e8ddec7c0/B-claude-sonnet-5-5-high-1.jsonl": "2a3dd0a2e5721b2e3fe12d74c019a76d56fe5f2179548577670acf4022211815",
+      "KB-02/a13e8ddec7c0/B-claude-sonnet-5-5-high-2.jsonl": "c3166133f65d8663b538120dca62229e7fb5d6843700082411007f6eb3a0fa12",
+      "KB-02/a13e8ddec7c0/B-claude-sonnet-5-5-high-3.jsonl": "a3dbd836fcbfe2267ea471caf26d23bb7a05c717dbb8037916b8e3ce112fd0e0",
+      "KB-02/a13e8ddec7c0/B-google--gemini-3.1-pro-preview-high-1.jsonl": "5b56c093824724595cc68d336bde15af9a3d7887f9dc9320267883e4124af3a9",
+      "KB-02/a13e8ddec7c0/B-google--gemini-3.1-pro-preview-high-2.jsonl": "5b4551c0375dc7b61b8f30c9904069e13d6d51c4d62d76ba5a802cd23cabd469",
+      "KB-02/a13e8ddec7c0/B-google--gemini-3.1-pro-preview-high-3.jsonl": "75fe7d9c6226a284901bac225a24ca46055a307ab95d4d89c897b46b43d05345",
+      "KB-02/a13e8ddec7c0/B-openai--gpt-5.6-sol-high-1.jsonl": "6513d93d875893405213026daac53cb1172c08700a7fa40c17ef58f87b8ed3c9",
+      "KB-02/a13e8ddec7c0/B-openai--gpt-5.6-sol-high-2.jsonl": "45238a372724fac72bf81bf82591c14f15fd6d3b65ba5117c5a06ae7d98aa4ee",
+      "KB-02/a13e8ddec7c0/B-openai--gpt-5.6-sol-high-3.jsonl": "0bf154b88abff1bb2522bf2e678696e083835dc72dae1317307438e6ee1985a8",
+      "KB-02/a13e8ddec7c0/B-qwen--qwen3-coder-next-high-1.jsonl": "a66b86188329b48c56eeb19435cc4c2e85c1500ae2f748d3057799a38190255c",
+      "KB-02/a13e8ddec7c0/B-qwen--qwen3-coder-next-high-2.jsonl": "1b6944bc7d6586227165b377bc2b4d0315ad0e22885b82b7d9d7087bb2663822",
+      "KB-02/a13e8ddec7c0/B-qwen--qwen3-coder-next-high-3.jsonl": "7282871c5159d4882cd9a75c33b37ce9f09effafb2056f7d003718c6ccc0730e",
+      "KB-03/b4663722ef81/A0-claude-fable-5-1-high-1/files/driver.py": "dc31b3e8bca782144ed7b7a72670d79d0500a9fc4589b8f9487b092ae64a36aa",
+      "KB-03/b4663722ef81/A0-claude-fable-5-1-high-1/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-fable-5-1-high-1/transcript.jsonl": "d43aee739953512747b0997bb7284a105c8855db3261ea6b1a252a905903c33d",
+      "KB-03/b4663722ef81/A0-claude-fable-5-1-high-2/files/driver.py": "21561e857e37160f58abd0c60019508901b18ff0b56dc5cef77e481d56b2a4bd",
+      "KB-03/b4663722ef81/A0-claude-fable-5-1-high-2/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-fable-5-1-high-2/transcript.jsonl": "b8810000e71a41debd8a5c4901255a79b40c0f686a0e1f292c1293b8efd3354a",
+      "KB-03/b4663722ef81/A0-claude-fable-5-1-high-3/files/driver.py": "6fe6969fa1a91c99b484335881443adbc8cb39f4763749cc4f2f6df7c78264c0",
+      "KB-03/b4663722ef81/A0-claude-fable-5-1-high-3/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-fable-5-1-high-3/transcript.jsonl": "8852f34454acd806b4cb841e704d77ea87d4f08c3634061eab8fe3e31f9b6ce6",
+      "KB-03/b4663722ef81/A0-claude-haiku-5-5-high-1/files/driver.py": "c4c4aa515c24d09d04898ccb74fcb847b5338f1364967d658186ca468be822fc",
+      "KB-03/b4663722ef81/A0-claude-haiku-5-5-high-1/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-haiku-5-5-high-1/transcript.jsonl": "a60f5ad14990bea2d3f8f3f89b01844ad8d92491d42184c0e3b13d7517a2c8b0",
+      "KB-03/b4663722ef81/A0-claude-haiku-5-5-high-2/files/driver.py": "ee3e22915549190899332cf75422d496aea6f19f3df77917fba71ef58ec501ca",
+      "KB-03/b4663722ef81/A0-claude-haiku-5-5-high-2/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-haiku-5-5-high-2/transcript.jsonl": "52aa5e9a50783e3c3e140f2959c44fb7d82a40ab5e245689c0e34d842b83f200",
+      "KB-03/b4663722ef81/A0-claude-haiku-5-5-high-3/files/driver.py": "8abd5d8ee4b22da02c5844ee44039804f8b428c6ab2547caa5777c4996fea2db",
+      "KB-03/b4663722ef81/A0-claude-haiku-5-5-high-3/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-haiku-5-5-high-3/transcript.jsonl": "fa048717ed7e2ee7c4ff2ad37d4db6ece3e2753e4ca1134316b00aba80f52f79",
+      "KB-03/b4663722ef81/A0-claude-opus-5-5-high-1/files/driver.py": "bbb618e48863c595c7e8f4aa66e7926a7c0a0d55bd54054a6bcef90d7527b9d0",
+      "KB-03/b4663722ef81/A0-claude-opus-5-5-high-1/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-opus-5-5-high-1/transcript.jsonl": "120cc6d42b6173f1f07da898fa101f360ee02d07adda7c03b064523314b10982",
+      "KB-03/b4663722ef81/A0-claude-opus-5-5-high-2/files/driver.py": "b6613282fbd1ddf9a7f76612f12a8ac9acbe484f8f912ebeb3f21d33a871036e",
+      "KB-03/b4663722ef81/A0-claude-opus-5-5-high-2/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-opus-5-5-high-2/transcript.jsonl": "ea0268ada249a77500205c25349034a1fbae30ebda8cca70584204cd482e164a",
+      "KB-03/b4663722ef81/A0-claude-opus-5-5-high-3/files/driver.py": "794ae8d04e2d9484cd6fe9367c7fd6b940a0f325b7729e86e8cb520c3321e024",
+      "KB-03/b4663722ef81/A0-claude-opus-5-5-high-3/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-opus-5-5-high-3/transcript.jsonl": "0615e9f9e0a2c0d2ab2dd52c63259cde8e53df970194e38ffca7b4860bd38f87",
+      "KB-03/b4663722ef81/A0-claude-sonnet-5-5-high-1/files/driver.py": "48e136790ec48365daacc37f5fa3be3e68a0f146b6ffab9b1f7554684fe2ee6d",
+      "KB-03/b4663722ef81/A0-claude-sonnet-5-5-high-1/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-sonnet-5-5-high-1/transcript.jsonl": "7a59509b8cabffcf6b1870bcfe1834d805760b3c0a8f42a25c7a7bfc7e785bd3",
+      "KB-03/b4663722ef81/A0-claude-sonnet-5-5-high-2/files/driver.py": "98211630267b61497fb9a7fc0fb41d59d78b489116e3eb9eb1f6ffeadf314e81",
+      "KB-03/b4663722ef81/A0-claude-sonnet-5-5-high-2/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-sonnet-5-5-high-2/transcript.jsonl": "09f5b5487f2dee236187729f14d810355e9e78acfeffa630d741ea0dc73dab91",
+      "KB-03/b4663722ef81/A0-claude-sonnet-5-5-high-3/files/driver.py": "345c40bb5044bd6ef553ae36c00ccb2b9fe9cd5a5fbebf62a6405a0765038175",
+      "KB-03/b4663722ef81/A0-claude-sonnet-5-5-high-3/manifest.json": "3221210c03a512eaf98ed554781a0dbdda9b80ab3057e71faa1410051a2d7680",
+      "KB-03/b4663722ef81/A0-claude-sonnet-5-5-high-3/transcript.jsonl": "047b037f475bce3352b3118fb45d86882ef78fc23b018478458529b7642b44d0",
+      "KB-03/b4663722ef81/B-claude-fable-5-1-high-1.jsonl": "0ad71fbc65d178638ead3cee256f2db0c2174a5a4e4e91a6372068b6f0663d16",
+      "KB-03/b4663722ef81/B-claude-fable-5-1-high-2.jsonl": "7a453030ec57cc2ff381f4c81284406d4a33875d24753ad946d480e5804719a3",
+      "KB-03/b4663722ef81/B-claude-fable-5-1-high-3.jsonl": "3494418ea2be54b725cc4e6a20fe62106ac3f6402497ba733ab16d88263fc3c5",
+      "KB-03/b4663722ef81/B-claude-haiku-5-5-high-1.jsonl": "150d8f71c8773304a4f3e3d56f7a1de31b13e6740c60b5273103487ca3375ea7",
+      "KB-03/b4663722ef81/B-claude-haiku-5-5-high-2.jsonl": "8c8104a344a9b6f7922771409f0f5ee1db73ff365bd2e557ecd791acd0fcc0cf",
+      "KB-03/b4663722ef81/B-claude-haiku-5-5-high-3.jsonl": "a77c41083330cdc08091034f4ab8d6b37b8205c954dbd0926be0b072e75e5efe",
+      "KB-03/b4663722ef81/B-claude-opus-5-5-high-1.jsonl": "33f213a716afad786082af44e9128cc393dda6b341aa6bbe52b46fd2f31fa9c6",
+      "KB-03/b4663722ef81/B-claude-opus-5-5-high-2.jsonl": "b1043cb18b9afdc5e602f00466c10f246fb9395fb78f8514a8525a55e1f7dfa6",
+      "KB-03/b4663722ef81/B-claude-opus-5-5-high-3.jsonl": "03b87db16ccf15e042ecba93974078e35999af8fa34be8da7c4436a8d266bd87",
+      "KB-03/b4663722ef81/B-claude-sonnet-5-5-high-1.jsonl": "5b7655925b6a83039bbf23e7a8ca44b28a5539467548982d141d341088704903",
+      "KB-03/b4663722ef81/B-claude-sonnet-5-5-high-2.jsonl": "6a327a79ce1ef10020d328858fbc7f9e7e89ecdb9296d7805ff296bb4671bdeb",
+      "KB-03/b4663722ef81/B-claude-sonnet-5-5-high-3.jsonl": "e5b4defaf6a63144b0296444c51ce01cf03ab1b237c27c2118c8ea3246f36128",
+      "KB-03/b4663722ef81/B-google--gemini-3.1-pro-preview-high-1.jsonl": "6b6f292f1e4f76062d85e17de63f127dc3ef5a8d5a6f1ccd2b6096e17a1539f6",
+      "KB-03/b4663722ef81/B-google--gemini-3.1-pro-preview-high-2.jsonl": "6f6ff8ea3d6840d128a9d9939cbced53c42d68ed0ef52b5c15ec2c3c3f0d8230",
+      "KB-03/b4663722ef81/B-google--gemini-3.1-pro-preview-high-3.jsonl": "5a27891fedcf1c188d183174e282c0fb18e8210322f1cd8267c6f1c49467a62d",
+      "KB-03/b4663722ef81/B-openai--gpt-5.6-sol-high-1.jsonl": "c7ddff8bb9a44b01ef12d828df430bc63c9c75f9057254ad2d374c6cbe11bb99",
+      "KB-03/b4663722ef81/B-openai--gpt-5.6-sol-high-2.jsonl": "6bd6454dc789977b2b7630b635462808f31dd002e32452888f1a5190880624b2",
+      "KB-03/b4663722ef81/B-openai--gpt-5.6-sol-high-3.jsonl": "ae40fd8d21e3b3b687825d8fdf03effce5fdd85653476d1684b89a7876ae8b5a",
+      "KB-03/b4663722ef81/B-qwen--qwen3-coder-next-high-1.jsonl": "0eccc2d3b6202a9017401b36302ae16e9bc65b5aefceb24d041afd28e79f8054",
+      "KB-03/b4663722ef81/B-qwen--qwen3-coder-next-high-2.jsonl": "84c2e751f95115bc6c64d8f1448410515e2820fe45b48b36f026bc6e83c89afa",
+      "KB-03/b4663722ef81/B-qwen--qwen3-coder-next-high-3.jsonl": "b287335e986143eba64871c9cb14416655f7b0df2c9e2f4e23e55bac1bc400de",
+      "KB-04/1d98e7bf82cb/A0-claude-fable-5-1-high-1/files/uncertainty.py": "9272de9e52a63b638426e0c963ecadcd0949fb77a6d5f4c97db61b3f70c8cf00",
+      "KB-04/1d98e7bf82cb/A0-claude-fable-5-1-high-1/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-fable-5-1-high-1/transcript.jsonl": "8ae49ae19e93d78082ea9cd20519c4c85fed46bf25a3cf285de990965b43f185",
+      "KB-04/1d98e7bf82cb/A0-claude-fable-5-1-high-2/files/uncertainty.py": "4198f285b924121f1b8cb690221408ad453bdaf11963d92d91902d22eab5966e",
+      "KB-04/1d98e7bf82cb/A0-claude-fable-5-1-high-2/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-fable-5-1-high-2/transcript.jsonl": "850cdd974f55c9a5b400356ee7b755670ca09dc4b867bc60cfeefd5c68327198",
+      "KB-04/1d98e7bf82cb/A0-claude-fable-5-1-high-3/files/uncertainty.py": "bcf0e48ca96dbcb1bde39e08eab2c6833bb2ef8a608d4143680e19b0e4f5cde2",
+      "KB-04/1d98e7bf82cb/A0-claude-fable-5-1-high-3/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-fable-5-1-high-3/transcript.jsonl": "c309a10a26fa7093bf1d5e96ba8516d69421fade3f1bfed0c8bdfcd401c1a5dc",
+      "KB-04/1d98e7bf82cb/A0-claude-haiku-5-5-high-1/files/uncertainty.py": "4ebf0e9dee43b41e1fb8070c3258f8b1f32413b8bcddf77856cf161695a65f92",
+      "KB-04/1d98e7bf82cb/A0-claude-haiku-5-5-high-1/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-haiku-5-5-high-1/transcript.jsonl": "5bac889ff7bd842d5e8b6df980e822aa2d391a0260e081d083275c73f9d90690",
+      "KB-04/1d98e7bf82cb/A0-claude-haiku-5-5-high-2/files/uncertainty.py": "1e80e8cc8f849ccd2418ab7854e5b7a84890ef2d482fc896a7b6a8fdb1d1e44a",
+      "KB-04/1d98e7bf82cb/A0-claude-haiku-5-5-high-2/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-haiku-5-5-high-2/transcript.jsonl": "c99515a0b2227771a2eee7534ffe0936892c7a6b97d91613d6bee485fdce04c2",
+      "KB-04/1d98e7bf82cb/A0-claude-haiku-5-5-high-3/files/uncertainty.py": "d252bf2de1b437a9597e3ba405bb7aa9e02d9bdbf9396dcd8bfc16c5e2140314",
+      "KB-04/1d98e7bf82cb/A0-claude-haiku-5-5-high-3/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-haiku-5-5-high-3/transcript.jsonl": "6dc2ede5f33cb9bbe5c714cb2c81c5be83d3021f6888838d313874226edbdb73",
+      "KB-04/1d98e7bf82cb/A0-claude-opus-5-5-high-1/files/uncertainty.py": "975b9521036255538918b238adb6b1a18066cfb5bb21f9db39d8f99102850598",
+      "KB-04/1d98e7bf82cb/A0-claude-opus-5-5-high-1/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-opus-5-5-high-1/transcript.jsonl": "0c98231fccaa7b7dd94dbe812ab01d275a6acbc6b0b74e396fe003d6840cd2c3",
+      "KB-04/1d98e7bf82cb/A0-claude-opus-5-5-high-2/files/uncertainty.py": "cd355304f28b65d925012178490767c3b95c765c77a0237bdb45c87ad20c5c4d",
+      "KB-04/1d98e7bf82cb/A0-claude-opus-5-5-high-2/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-opus-5-5-high-2/transcript.jsonl": "31d30bddf4b03e13eb05d23d4b0036de4b20d419261e92af0b9417105c4acdf2",
+      "KB-04/1d98e7bf82cb/A0-claude-opus-5-5-high-3/files/uncertainty.py": "d99114077763e84ffc21e62aad2e1486ac490ea11466b0eaecdc552ceb4e5cf9",
+      "KB-04/1d98e7bf82cb/A0-claude-opus-5-5-high-3/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-opus-5-5-high-3/transcript.jsonl": "bb9ca3d3f0fa09acb2eac59128af8d4dfb679225249367f0854fb7b32258b2d9",
+      "KB-04/1d98e7bf82cb/A0-claude-sonnet-5-5-high-1/files/uncertainty.py": "7d5a0ecda4711710b548bb5f67200f88f48a39be966c270c181dc7379ae1c72b",
+      "KB-04/1d98e7bf82cb/A0-claude-sonnet-5-5-high-1/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-sonnet-5-5-high-1/transcript.jsonl": "032055d0e6e9ab5277add5b80ec7b9a7d234f6b55db718e993824f53b9a82c25",
+      "KB-04/1d98e7bf82cb/A0-claude-sonnet-5-5-high-2/files/uncertainty.py": "3448ff940ae95248e9f053e2daf7a23ad6ab2992d3aab3cdb261d582015f932e",
+      "KB-04/1d98e7bf82cb/A0-claude-sonnet-5-5-high-2/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-sonnet-5-5-high-2/transcript.jsonl": "410e5957f237da1dd74d88658834d0ced0a68e3507f02e3f19d5a345403e772f",
+      "KB-04/1d98e7bf82cb/A0-claude-sonnet-5-5-high-3/files/uncertainty.py": "e7028e61a9412556f2d1085017cb43a435ee5e69d54ad535c71a0dbdfeee6b3f",
+      "KB-04/1d98e7bf82cb/A0-claude-sonnet-5-5-high-3/manifest.json": "98c4bce810c89ade5f09ed640e3b666dab8b61cf96015b2e7fa0eae4cbbb6896",
+      "KB-04/1d98e7bf82cb/A0-claude-sonnet-5-5-high-3/transcript.jsonl": "d4d2d58b1b9143adc08d776e7b6a6da99cb6fc85600b161d1e8bdf2e9bb82e06",
+      "KB-04/1d98e7bf82cb/B-claude-fable-5-1-high-1.jsonl": "7b42735a2fbce3960499c0e47b67bfc0e11060f188f87d9e5c9a1d7858a29688",
+      "KB-04/1d98e7bf82cb/B-claude-fable-5-1-high-2.jsonl": "02cc04de79bebea0120b10d522475faca193dcd75d39767a85626452be06e54e",
+      "KB-04/1d98e7bf82cb/B-claude-fable-5-1-high-3.jsonl": "0403e37912f3523d982ae219aea9a4bf8a952130e0a756d7e19138d11d0f414e",
+      "KB-04/1d98e7bf82cb/B-claude-haiku-5-5-high-1.jsonl": "9bec9d8514ce026a80afa647e2130ed6f2f3b174d76471089ef551ed8f7f0a64",
+      "KB-04/1d98e7bf82cb/B-claude-haiku-5-5-high-2.jsonl": "c231be6e4ebf4257790caac645a02dfe474084b9687e9cd6eabe8c64939c40e9",
+      "KB-04/1d98e7bf82cb/B-claude-haiku-5-5-high-3.jsonl": "591d75a5bfe15334cc311e61a28848d6caa9437d8a4aaed57a0e632fe6ec80e3",
+      "KB-04/1d98e7bf82cb/B-claude-opus-5-5-high-1.jsonl": "6511f59999bc7cc5e477bb4a98666964a49abce96093d6759f698aa2f2488eb2",
+      "KB-04/1d98e7bf82cb/B-claude-opus-5-5-high-2.jsonl": "d581290f3ca7762567061cd34735b60e579a9d4f88b3f5736979730eabc37de9",
+      "KB-04/1d98e7bf82cb/B-claude-opus-5-5-high-3.jsonl": "df47e3915517b53a8059d4670f46e41fe09b5a24b0551ef6c56d75c719e3a4bf",
+      "KB-04/1d98e7bf82cb/B-claude-sonnet-5-5-high-1.jsonl": "be8263882b8314cb963491bc22c61aafd03cb66afee0c570cc2ce543545123ab",
+      "KB-04/1d98e7bf82cb/B-claude-sonnet-5-5-high-2.jsonl": "16e63a91cfe58c92b9fe746fb89798fd86a5067c139d31847c63f0d1191faf5f",
+      "KB-04/1d98e7bf82cb/B-claude-sonnet-5-5-high-3.jsonl": "419df021a5924db1d3245a2f03f54ef2dcbc81dd8d2986ed0a58c2f0417b436c",
+      "KB-04/1d98e7bf82cb/B-google--gemini-3.1-pro-preview-high-1.jsonl": "9f14f84a1f1d8dd11391eadaeaea0ee9ebad5e99a26c7314770dddfdd425080b",
+      "KB-04/1d98e7bf82cb/B-google--gemini-3.1-pro-preview-high-2.jsonl": "1d9c4b104d1c3b83dcd8b11ec3e8542ed62a63a5e5b5fd86cd9aa77a2f3e7a21",
+      "KB-04/1d98e7bf82cb/B-google--gemini-3.1-pro-preview-high-3.jsonl": "4f167db37bd55a57d63013ad2abb82d7797ae31dcb4e302645bd432b182e5ec4",
+      "KB-04/1d98e7bf82cb/B-openai--gpt-5.6-sol-high-1.jsonl": "d23dd013557988af1dc774e4c6f4d68d10302df45962f050818c7272709ed74d",
+      "KB-04/1d98e7bf82cb/B-openai--gpt-5.6-sol-high-2.jsonl": "3074d7b0cb2ef8578377d41f3e6710cd60eaae387ce1774d153bf15e3d03bcae",
+      "KB-04/1d98e7bf82cb/B-openai--gpt-5.6-sol-high-3.jsonl": "031788a64d3cf1e2df9c7af0578ff0e660e71a568135f79b761354e6aec53127",
+      "KB-04/1d98e7bf82cb/B-qwen--qwen3-coder-next-high-1.jsonl": "49d592c65bfd8bd0c2c39f3db54c9eb103d073be1e74ac9d8174b1bf3632750f",
+      "KB-04/1d98e7bf82cb/B-qwen--qwen3-coder-next-high-2.jsonl": "2de33545150742479c43ac687487b80768ee0058ad918bd7dea744b4384c8e3c",
+      "KB-04/1d98e7bf82cb/B-qwen--qwen3-coder-next-high-3.jsonl": "b8c5eccf9306889759e52b1bfb60b37020144886904ca2f3c06fc0996d77890c",
+      "KB-05/032975874cea/A0-claude-fable-5-1-high-1/files/answer.json": "007fa2c1a265c11950137df3607053ac959fbf23fb05d830ba1fe16cb733503c",
+      "KB-05/032975874cea/A0-claude-fable-5-1-high-1/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-fable-5-1-high-1/transcript.jsonl": "157d80c9f7351bc2c74f6e0533e73a51ce4f74fa472891e2ea1653d61bd6141e",
+      "KB-05/032975874cea/A0-claude-fable-5-1-high-2/files/answer.json": "eb74291494c5c770e8e6bbf7f602b8f8e71ecda161dca0a5620f4d0c82004c72",
+      "KB-05/032975874cea/A0-claude-fable-5-1-high-2/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-fable-5-1-high-2/transcript.jsonl": "61840a6558b39815d3d0cd250b644c065731230305f9e3761b536f73a65a372d",
+      "KB-05/032975874cea/A0-claude-fable-5-1-high-3/files/answer.json": "a419da164308f4f2c3aecf700e34c944756ae4df9c8f360310c444b22d4224ae",
+      "KB-05/032975874cea/A0-claude-fable-5-1-high-3/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-fable-5-1-high-3/transcript.jsonl": "92b2476e063ca55cd1761c58473d6de76f6a773ef12a6d179d7185012ef480d4",
+      "KB-05/032975874cea/A0-claude-haiku-5-5-high-1/files/answer.json": "d450b9184eb0169f641a167f40519c8645c9d1c06456ac80412cd1bfe31eee01",
+      "KB-05/032975874cea/A0-claude-haiku-5-5-high-1/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-haiku-5-5-high-1/transcript.jsonl": "640af5287c00b5eee74f6cfd001922b234fd683e481fb910131f182967d018df",
+      "KB-05/032975874cea/A0-claude-haiku-5-5-high-2/files/answer.json": "8244e33aad9a42bb36082db60390c883d87bd619a5dc491d62e7b3ded2f75154",
+      "KB-05/032975874cea/A0-claude-haiku-5-5-high-2/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-haiku-5-5-high-2/transcript.jsonl": "85ff145c8325fac3d967fb3911f3d998c3cda17263d57c75815fc2c9881db76c",
+      "KB-05/032975874cea/A0-claude-haiku-5-5-high-3/files/answer.json": "0bec04ab33d32457580bf8628e0b73f3fe9cff325ee35a83e62fed1cee20725b",
+      "KB-05/032975874cea/A0-claude-haiku-5-5-high-3/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-haiku-5-5-high-3/transcript.jsonl": "03b9e963b4825e9be4c953ff447b8c4e7a2d8b7e7ac5add747416fecd71ca4b3",
+      "KB-05/032975874cea/A0-claude-opus-5-5-high-1/files/answer.json": "0be2d9c83772c0e20fd1306c2f894633e7b8ae52072cf0fcfb04139b885e0ee4",
+      "KB-05/032975874cea/A0-claude-opus-5-5-high-1/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-opus-5-5-high-1/transcript.jsonl": "2af8f50e590406d625d7f55a6102ba83600542a137d21a4a74422951ecfccf92",
+      "KB-05/032975874cea/A0-claude-opus-5-5-high-2/files/answer.json": "59da18fd0c06205234ad3140bb1f177b2cdb8d67137362b266a4d9a39b5a369e",
+      "KB-05/032975874cea/A0-claude-opus-5-5-high-2/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-opus-5-5-high-2/transcript.jsonl": "681a1b532117e6f4dd7fff20ff1e6ee78b92d15d81e2a25ad98b91b0a63c7e2a",
+      "KB-05/032975874cea/A0-claude-opus-5-5-high-3/files/answer.json": "9ff8e9ff34bfc2dbddd76576b2828f74287bd28b2b5da9e7b4c84a1258554a39",
+      "KB-05/032975874cea/A0-claude-opus-5-5-high-3/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-opus-5-5-high-3/transcript.jsonl": "f9d2162672a86fca385abde76eff194b239f262638645402226f426c03934c59",
+      "KB-05/032975874cea/A0-claude-sonnet-5-5-high-1/files/answer.json": "7b9930c402e9a3f496a05aed093bffc5668ceaf78842ebd30c3687d1f310ca6c",
+      "KB-05/032975874cea/A0-claude-sonnet-5-5-high-1/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-sonnet-5-5-high-1/transcript.jsonl": "884503337ca4966153ff785e44f7c92e9d08f3cc66cea17aeca398b7af807887",
+      "KB-05/032975874cea/A0-claude-sonnet-5-5-high-2/files/answer.json": "ac93e81d35de05a028891aa419eda21faebaf15501b7c96f4fe5a92766ff9b44",
+      "KB-05/032975874cea/A0-claude-sonnet-5-5-high-2/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-sonnet-5-5-high-2/transcript.jsonl": "d6a6f7cc67481247cdc74aab4258cd92e946f33b9c2af0ae37cf99c082fc8a88",
+      "KB-05/032975874cea/A0-claude-sonnet-5-5-high-3/files/answer.json": "d19037dbb27a52227cd3d7baef1c65712955630112cbe7f0fbee943f578cdaba",
+      "KB-05/032975874cea/A0-claude-sonnet-5-5-high-3/manifest.json": "d844222e8133890a65c4249270de564c8ec7c006e1ae8d2f2fa6ed986e08d640",
+      "KB-05/032975874cea/A0-claude-sonnet-5-5-high-3/transcript.jsonl": "5ebad033a938ebd0808b85e5648e864f4d33e8e7826cfbf88a34c54bec7b391c",
+      "KB-05/032975874cea/B-claude-fable-5-1-high-1.jsonl": "8724fd669dd116fe0813ed468f7aaf6115c7761e21a75c95cb817a99867332db",
+      "KB-05/032975874cea/B-claude-fable-5-1-high-2.jsonl": "458316b04cf5e0740298cc8b6d4b43c6eb37339f29f9fdb4395ee7e4e8d91843",
+      "KB-05/032975874cea/B-claude-fable-5-1-high-3.jsonl": "8bed6df1a043b8ba6445d77ad75478489e4e8083f7682310cdc57103d95df343",
+      "KB-05/032975874cea/B-claude-haiku-5-5-high-1.jsonl": "6be587dfb46be3bc1e66b1caff31ce08fdca716bbeb81de2572ad051dbf13fb3",
+      "KB-05/032975874cea/B-claude-haiku-5-5-high-2.jsonl": "9191f48e067f415e25b1d3bf3cceaa0c1a031804a851aad1e2f61dfa68190350",
+      "KB-05/032975874cea/B-claude-haiku-5-5-high-3.jsonl": "c994d75988dc26c62104e759f049d37cf5aacac1a6125bb6ff36ceb167154b87",
+      "KB-05/032975874cea/B-claude-opus-5-5-high-1.jsonl": "8dea25ea9c31eda088a900871aa11dc5fc2d2f43459b3914588f307a5411c695",
+      "KB-05/032975874cea/B-claude-opus-5-5-high-2.jsonl": "51bc16c202f8d2c1ff2429481168f85ee6b25f27f99ea710f907202e97f2aef7",
+      "KB-05/032975874cea/B-claude-opus-5-5-high-3.jsonl": "087d11612aa065287687dd291e26d2c4461da9ea10f80504ab2fa70c6e877963",
+      "KB-05/032975874cea/B-claude-sonnet-5-5-high-1.jsonl": "24d682e1eb6035b8da8036764e307e0376c46d57c4bc64bb7f9c332027849988",
+      "KB-05/032975874cea/B-claude-sonnet-5-5-high-2.jsonl": "01fb0c1dbd5b807d04cf0d6aacb39462074746ff419536b9d100f2d398bb8d85",
+      "KB-05/032975874cea/B-claude-sonnet-5-5-high-3.jsonl": "1efdb30f8af620adf62e9ace99e1f891d2078f6c0c54f8e9d58f0f503e324757",
+      "KB-05/032975874cea/B-google--gemini-3.1-pro-preview-high-1.jsonl": "21445437694cc0b90c0839f0fc56e5c8cb6dda677ed311712126a5524d1b6a02",
+      "KB-05/032975874cea/B-google--gemini-3.1-pro-preview-high-2.jsonl": "859c071087684a04b34040ee916791ddd5310a2ce4a10756ba7f60e7f0abf642",
+      "KB-05/032975874cea/B-google--gemini-3.1-pro-preview-high-3.jsonl": "e4d299b85ed532339cf669df1f8a1e809fdfc7ae28e69773d6cd294b84774a6f",
+      "KB-05/032975874cea/B-openai--gpt-5.6-sol-high-1.jsonl": "0163b241adbf41980d9c93d978f40abdc9dc70fb0389cca761faf68cb4ea81aa",
+      "KB-05/032975874cea/B-openai--gpt-5.6-sol-high-2.jsonl": "250bdc23ed5d1ff059439bad1095ead8f44d1af6a9777529c75be8c770fed60b",
+      "KB-05/032975874cea/B-openai--gpt-5.6-sol-high-3.jsonl": "8edfdbfd718d918f5925301f3b656439c97d1c0b9d58146a5798eb8e5df6fe37",
+      "KB-05/032975874cea/B-qwen--qwen3-coder-next-high-1.jsonl": "30778fc740f3528dde8394076ba9e94df2d8b52464e7788c9c9e762f7a8f99a8",
+      "KB-05/032975874cea/B-qwen--qwen3-coder-next-high-2.jsonl": "8017bb3616f5c9a680adbac16f0c01a924e18ff745f6c8178575db7982ce6202",
+      "KB-05/032975874cea/B-qwen--qwen3-coder-next-high-3.jsonl": "5cfc0d306b634347c8cf652abc934ba7e9fc1805e33d29aefa0782e13e372b30",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-1.judge.jsonl": "781213fe79224d83c59ff59e0f007adb36b70f2018acc870e94ee141ae56b87c",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-1/files/REVIEW.md": "cd249b36935837473117e87e2afdef98b5cb902eb0718472dcbcbc818ee7a936",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-1/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-1/transcript.jsonl": "026bbbc70ba069ea244b14209c7409494f4ba8a9b99536b51c187902b192137b",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-2.judge.jsonl": "ed6561049c52e16c6d81ea55f460aefea999283909b8ae1de989497b4890fd8d",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-2/files/REVIEW.md": "47505aa2c9fba078a113962f4b411d40f87101558655614c40e98a5c0a2f1016",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-2/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-2/transcript.jsonl": "9cc28352c3e92bee2a027cea907199173427dd6ed32b31baaed6d24083031857",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-3.judge.jsonl": "e18a56b914128433ca76af44106d7f42e0a5be359d6f4456fda712f307ee3098",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-3/files/REVIEW.md": "ceff366f1766456f0fad48a22e937121d743dac435e4dddfa5050623b9660d5b",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-3/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-fable-5-1-high-3/transcript.jsonl": "6df308b6a1a2131466918a86a8e92e93135d4160049245f13082d9cc2155bb11",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-1.judge.jsonl": "e8f8704d90d4384f9e57b44aeab2e487b164f397e54bfe7cd1bb45f126e2cfb5",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-1/files/REVIEW.md": "6a2c61b32ae7fe2a1a5c37b1f21d82e2438dbc07cb97018c5bcb95c9956ef63b",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-1/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-1/transcript.jsonl": "9525c5e5ac0045663e34b512024b582e98c3503f3342569dbbb61c0c0a88cfa6",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-2.judge.jsonl": "94175334363223de55fd191b68da7a72e3d23875603092029163cdb25c26f2cc",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-2/files/REVIEW.md": "4836c8fd3d06c82f3b2e174c38f68bbd77a900199b03ef320d7e5194a837ffd2",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-2/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-2/transcript.jsonl": "3a7dd407d2f37763a98a4565e7211327f47ab59ecfb32752b11a50e2b3dc3225",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-3.judge.jsonl": "4c4ed0003b4cca33ee813b53f9bd09318eadd8fbe173bb70e20169221f42584b",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-3/files/REVIEW.md": "1c1f2eef55757d7bd7a8333816f3894f5139a5c41b40ccced982a665f7d774eb",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-3/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-haiku-5-5-high-3/transcript.jsonl": "aa1ba6dc76a157e729d63b9e27489172fc507bd0c9031d0857de4975c3d94f52",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-1.judge.jsonl": "80b2ed409059be206c06a16f29fe7e4427984626bbffc5c33cc6d05c880c19aa",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-1/files/REVIEW.md": "cb3b706158b18b1ec0dd63bca1fa81e69eae5816c18bedcb016172f335680f62",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-1/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-1/transcript.jsonl": "ba121b5a3b31f7ef143eea5a30f0f89c3242eed60336bf6b81efc37371a6a477",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-2.judge.jsonl": "de133a39d4cfd975df1cacd52e23dc697fa66d05811e6b6dc42f4756563ac91f",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-2/files/REVIEW.md": "7fc78cd31fc48b0b3dc4a8f148572a952cc4a764e482c22badbbf7b781bc5900",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-2/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-2/transcript.jsonl": "8946e8ec0d43fc2fc3f91120f61a24cb208be9539fbd3106716e19105cbaa57e",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-3.judge.jsonl": "604f5108029de7d22a05a7ca2f67940e5b7ca6a33faf89a13f0b1ed27b53f4a6",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-3/files/REVIEW.md": "93cf273ce5770054a4f2d45ce57589e05915e0f0c86371edcb7e2a02530c4fde",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-3/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-opus-5-5-high-3/transcript.jsonl": "d62d0e03eb3d623197b89d660ab11031f4f1198befddf0a532daf2e621d9e8ed",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-1.judge.jsonl": "2fda242dc6f84339d3c300e8ea5c779208c9edf9600a6deb88c305faa384715e",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-1/files/REVIEW.md": "ff92c4a6fad3d0ea981ba16301b2059ddc795fabbb00f3b4e9d69640d421cdde",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-1/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-1/transcript.jsonl": "057fe3991da2a78cbe51f8734c303da27f8b9190a798e6b9f46867cd7186115e",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-2.judge.jsonl": "7bdeefd5c829dd54129cc5ccb60ded98f977dc8131a2bf151490f57ca7ce3312",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-2/files/REVIEW.md": "038c0ed19e985e399ba4f28cdfe8f73f7fba6e2d88bb1ffaa8ebc07582389653",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-2/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-2/transcript.jsonl": "9a55df60ee36e862d68efbfafd9fd9c12d8df695a0cd257a784343e37026d23f",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-3.judge.jsonl": "5e9d1cc469140584bea17e2b2adac6cffd309f922ff46014675fedef4abdfac0",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-3/files/REVIEW.md": "80375e506c5c85964272f293099d646d50450b3929235e4c178cda2e7dda599e",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-3/manifest.json": "9ed21d2efb0bbc1220ffe9ad1ff45ac648758b401290930d0d2eb04c7d3c53d0",
+      "KB-06/69ca95419505/A0-claude-sonnet-5-5-high-3/transcript.jsonl": "e2a9f0089026378017850b1a88623dc3f3204cd19cd464c71655ef38368ecb84",
+      "KB-06/69ca95419505/B-claude-fable-5-1-high-1.jsonl": "1e6e8ff4cb31b81ad399685dc1f9589b604533cbeeabfc4ee7f9085e71efdd94",
+      "KB-06/69ca95419505/B-claude-fable-5-1-high-1.judge.jsonl": "197e59ad5dd3c5de5cec5daefb4ebfd22fb608a9e8daf67c4599b9151f86a18d",
+      "KB-06/69ca95419505/B-claude-fable-5-1-high-2.jsonl": "7bb8128a00fe97738d532251bf7fe86ef5a9677c4cc97354318f238ce9ebcfcc",
+      "KB-06/69ca95419505/B-claude-fable-5-1-high-2.judge.jsonl": "47beb4d1380c69f621bb4e32b62db048d5d712b9ed85d3d18443f3e7216c9ba3",
+      "KB-06/69ca95419505/B-claude-fable-5-1-high-3.jsonl": "9bbdb15560c54205821a2c7221643911b83cb9bca2ebca64550dc034fdd248c8",
+      "KB-06/69ca95419505/B-claude-fable-5-1-high-3.judge.jsonl": "9f6b9a72990e9ef953b0ea41d6ef69d3e690cfe9be7420d4384fc4faade915e1",
+      "KB-06/69ca95419505/B-claude-haiku-5-5-high-1.jsonl": "607dbe4d9aa9a620787a2acd657ae7886aa89de1b78a0f45147151452daa6730",
+      "KB-06/69ca95419505/B-claude-haiku-5-5-high-1.judge.jsonl": "4094d566b5cb8032eb023aaf6489be48ab0111215891d192b253ef8b058bb362",
+      "KB-06/69ca95419505/B-claude-haiku-5-5-high-2.jsonl": "5df2afc2e0db08693733804fed3171cef95e4f1efca78c7121ea2187cd87b4b5",
+      "KB-06/69ca95419505/B-claude-haiku-5-5-high-2.judge.jsonl": "27c20f605d71387253aaed22d6c25d71d047067b4e2bd34636592e91b3c2381b",
+      "KB-06/69ca95419505/B-claude-haiku-5-5-high-3.jsonl": "c7e1d8bc6f18fb2159a68ddeeaadece2026dcf223d25d7a5477774c44b9076dc",
+      "KB-06/69ca95419505/B-claude-haiku-5-5-high-3.judge.jsonl": "6965ddedc68a38c8781fcfc97337048bdf38699436acd24e5489b131e2d907fd",
+      "KB-06/69ca95419505/B-claude-opus-5-5-high-1.jsonl": "5363731b7b46d85675f781fd5a50ad5f27f8a6accb3601f08bbcb4b765c4a8be",
+      "KB-06/69ca95419505/B-claude-opus-5-5-high-1.judge.jsonl": "0f59abe8083474359299494c97f5786692153c4a82c262edde758aaff0a77cdd",
+      "KB-06/69ca95419505/B-claude-opus-5-5-high-2.jsonl": "44416c956a3b3dc2704d8357889e177fdb3e4175c627d956d12483e0e8f61dc9",
+      "KB-06/69ca95419505/B-claude-opus-5-5-high-2.judge.jsonl": "f16e38f432e53af6b0ae2ebaa98a5b2b83c4fb38665fa0cbfb9c81d027124322",
+      "KB-06/69ca95419505/B-claude-opus-5-5-high-3.jsonl": "f259d9966a2ab7c3281032e25daa363db822a69839615293da81d951887ab9ed",
+      "KB-06/69ca95419505/B-claude-opus-5-5-high-3.judge.jsonl": "21424c5ed90878fd78134278c7e8b47ac3c3399dcb5c3444471134b381dcb7fb",
+      "KB-06/69ca95419505/B-claude-sonnet-5-5-high-1.jsonl": "9f21cc0afd53df4bf177b0abf801b1e9f3a91962603e1cfc219a8ec2df16e5a6",
+      "KB-06/69ca95419505/B-claude-sonnet-5-5-high-1.judge.jsonl": "4bf3eed4da3a48708e5469a4c926d3dd59a0f8099924e1239a9700b2abf32d3d",
+      "KB-06/69ca95419505/B-claude-sonnet-5-5-high-2.jsonl": "2e9074c671787b6f9bbcd1edf8211c8f1198572792570e1d805b5f1cd8bc3ee6",
+      "KB-06/69ca95419505/B-claude-sonnet-5-5-high-2.judge.jsonl": "416f2651091751b4f1996c7c07c0bc0da16bce69f0805f4f8d374345e697371b",
+      "KB-06/69ca95419505/B-claude-sonnet-5-5-high-3.jsonl": "8cbdc0a5a7bdf92a5ed891a59d29994dedb49e08a26a5caaafbab418ebf9efc0",
+      "KB-06/69ca95419505/B-claude-sonnet-5-5-high-3.judge.jsonl": "db315f7fa16b017a3dbd1253a73ac641c69f3a951d18feca152623c1b0d29d50",
+      "KB-06/69ca95419505/B-google--gemini-3.1-pro-preview-high-1.jsonl": "3555ffd153630ea7be948433b9ce4f3a3e8963f0f049fec91069472947def48a",
+      "KB-06/69ca95419505/B-google--gemini-3.1-pro-preview-high-1.judge.jsonl": "40f08fb891515079c1afea38e516e3f7611f4ecad8a9eb0c72dd37295d34cf3d",
+      "KB-06/69ca95419505/B-google--gemini-3.1-pro-preview-high-2.jsonl": "ea0928c983639229a7704a04da4d08cf0359268c19cc79099b4ea54ef640c5e4",
+      "KB-06/69ca95419505/B-google--gemini-3.1-pro-preview-high-2.judge.jsonl": "409b2fe0509e6f3f5e10f5d557180148dba9c7e48b71fc8bff72c6737ddcf504",
+      "KB-06/69ca95419505/B-google--gemini-3.1-pro-preview-high-3.jsonl": "e56dea80d45f49f5bb0a262751b40ba20808b341e95ce5af8b1bad4b51390e95",
+      "KB-06/69ca95419505/B-google--gemini-3.1-pro-preview-high-3.judge.jsonl": "d3a4865cc2987e9611d90cea4efea954811c348ce89f822725f2ff4b2de75f99",
+      "KB-06/69ca95419505/B-openai--gpt-5.6-sol-high-1.jsonl": "349ef7c14f3ff39f340c8d8edd990391e3749ed7d56f97dcd8a8ccd904266d5e",
+      "KB-06/69ca95419505/B-openai--gpt-5.6-sol-high-1.judge.jsonl": "d7b0d7a36184f6e492c9917039eaacd0db92de79103dd5f7e185a745f26e5f25",
+      "KB-06/69ca95419505/B-openai--gpt-5.6-sol-high-2.jsonl": "d4a0c51e73370a154692255f0b295b7fdf39f424ac26934a2b644c0c594ca474",
+      "KB-06/69ca95419505/B-openai--gpt-5.6-sol-high-2.judge.jsonl": "13155c7725b1ae9e3188ad94c3696b2ba4c9379b7682e4f292936acaad64ac9a",
+      "KB-06/69ca95419505/B-openai--gpt-5.6-sol-high-3.jsonl": "1aa2f3b5b117bf7fe90053a50f423ed38594736efb538cb34bc42f5fff7bb3f2",
+      "KB-06/69ca95419505/B-openai--gpt-5.6-sol-high-3.judge.jsonl": "4072752ba5398046d60c5353642d8963fa02150ed625b1479f87642b3fef2b04",
+      "KB-06/69ca95419505/B-qwen--qwen3-coder-next-high-1.jsonl": "74a8046b517e243dfa09f21140e7ee463503117a8e3d8edbe8a22bbb9e84520e",
+      "KB-06/69ca95419505/B-qwen--qwen3-coder-next-high-1.judge.jsonl": "b7d2eff6d4efbafeadf57db5c180e9337f0b19dd460798cad189bd7d3a9d5e50",
+      "KB-06/69ca95419505/B-qwen--qwen3-coder-next-high-2.jsonl": "8303ca2eb7b94e584805071d394df041b36fbe4e3a2bcbd42fefa5405d721dd2",
+      "KB-06/69ca95419505/B-qwen--qwen3-coder-next-high-2.judge.jsonl": "855bed1ce62ea9ee25966dc9e478fe82103019202f2b7b7db4a35037b1534c0f",
+      "KB-06/69ca95419505/B-qwen--qwen3-coder-next-high-3.jsonl": "604621787e6bb56201a43752fbc9e783f4c284df9d1814b577d5902ddd187f51",
+      "KB-06/69ca95419505/B-qwen--qwen3-coder-next-high-3.judge.jsonl": "f4c796c08df9ef0446cf3e0729f9be04cb2e7f4b6f418133a49fb6dbf14fa415"
+    }
+  },
+  "legend": {
+    "configs": {
+      "A0": "Claude Code (the CLI, as shipped) with its file tools, no code execution",
+      "B": "the API called directly from this repository's agent loop, with three file tools (list, read, write) and no code execution"
+    },
+    "tasks": {
+      "KB-01": {
+        "title": "Fix the crash on deeply nested license expressions",
+        "track": "history"
+      },
+      "KB-02": {
+        "title": "Fix two SBOM parsing gaps: the product's sub-components, and documents in two formats",
+        "track": "history"
+      },
+      "KB-03": {
+        "title": "Write the KX-100 driver's measurement function from the manual",
+        "track": "domain"
+      },
+      "KB-04": {
+        "title": "Uncertainty budget (GUM, first order) for a KX-100 reading",
+        "track": "domain"
+      },
+      "KB-05": {
+        "title": "Decline a request the manual says the meter cannot meet, quoting the limit",
+        "track": "domain"
+      },
+      "KB-06": {
+        "title": "Review a small driver change with one planted defect",
+        "track": "domain"
+      }
+    }
+  },
+  "limits": [
+    "Six tasks and at most three attempts per contestant: the intervals are wide. This is an instrument, not a verdict; the decision memo says how many tasks a decision would need.",
+    "History tasks come from one repository whose fixes were written with an AI assistant; domain tasks use a fictitious instrument. Tasks that show an organisation's own advantage need its own repositories.",
+    "Configuration B has models from four providers (three through OpenRouter); A0 and A run Anthropic's CLI, so only Anthropic models. Qwen3 Coder Next has no reasoning setting: the effort is sent and has no effect.",
+    "The judge (KB-06 only) is an Anthropic model, anonymised, never the contestant. Code checks that its quote is in the review; whether the quote is the planted defect is the judge's call (a word-level check rejected 14 of 21 correct reviews and was removed). Bias reduced, not removed.",
+    "Configuration A0 runs the Claude Code CLI restricted and audited, not sandboxed, with file tools only. Whether code execution changes the picture is not answered this month: configuration A (the CLI with Python) ran and was voided, because the CLI's permission matcher refused most of the Python the rule allowed; the fix is the CLI in a container.",
+    "The offline measure is not the contract metric. That is cost per accepted change on real work; this is the gate before it and the regression check after it."
+  ],
+  "memo": {
+    "commodity": [
+      {
+        "cheapest_passing_model": "claude-haiku-5-5",
+        "config": "A0",
+        "cost_per_pass": 0.0018392183333333333,
+        "effort": "high",
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "cheapest_passing_model": "claude-haiku-5-5",
+        "config": "A0",
+        "cost_per_pass": 0.001236925,
+        "effort": "high",
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "cheapest_passing_model": "claude-haiku-5-5",
+        "config": "A0",
+        "cost_per_pass": 0.0031321450000000007,
+        "effort": "high",
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "cheapest_passing_model": "claude-haiku-5-5",
+        "config": "A0",
+        "cost_per_pass": 0.0017435666666666667,
+        "effort": "high",
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "cheapest_passing_model": "claude-haiku-5-5",
+        "config": "A0",
+        "cost_per_pass": 0.001767566666666667,
+        "effort": "high",
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "cheapest_passing_model": "claude-haiku-5-5",
+        "config": "B",
+        "cost_per_pass": 0.003962198333333334,
+        "effort": "high",
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "cheapest_passing_model": "qwen/qwen3-coder-next",
+        "config": "B",
+        "cost_per_pass": 0.0021636133333333336,
+        "effort": "high",
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "cheapest_passing_model": "qwen/qwen3-coder-next",
+        "config": "B",
+        "cost_per_pass": 0.0019374,
+        "effort": "high",
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "cheapest_passing_model": "qwen/qwen3-coder-next",
+        "config": "B",
+        "cost_per_pass": 0.0015944400000000001,
+        "effort": "high",
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      }
+    ],
+    "decision_grade": {
+      "discordance_rate": 0.06515775034293554,
+      "est_cost_usd": null,
+      "note": "measured discordance 0.0652 over 162 contestant-task pairs is below 0.15: a 15-point paired difference, alpha 0.05 two-sided, power 0.8 cannot occur",
+      "pairs": [
+        {
+          "config": "A0",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-fable-5-1",
+          "y": "claude-haiku-5-5"
+        },
+        {
+          "config": "A0",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-fable-5-1",
+          "y": "claude-opus-5-5"
+        },
+        {
+          "config": "A0",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-haiku-5-5",
+          "y": "claude-opus-5-5"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-haiku-5-5",
+          "y": "claude-opus-5-5"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-haiku-5-5",
+          "y": "claude-sonnet-5-5"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-haiku-5-5",
+          "y": "google/gemini-3.1-pro-preview"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-haiku-5-5",
+          "y": "openai/gpt-5.6-sol"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-opus-5-5",
+          "y": "claude-sonnet-5-5"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-opus-5-5",
+          "y": "google/gemini-3.1-pro-preview"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-opus-5-5",
+          "y": "openai/gpt-5.6-sol"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-sonnet-5-5",
+          "y": "google/gemini-3.1-pro-preview"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "claude-sonnet-5-5",
+          "y": "openai/gpt-5.6-sol"
+        },
+        {
+          "config": "B",
+          "discordance": 0.0,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.0,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": null
+          },
+          "x": "google/gemini-3.1-pro-preview",
+          "y": "openai/gpt-5.6-sol"
+        },
+        {
+          "config": "A0",
+          "discordance": 0.05555555555555556,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.05555555555555556,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": 173
+          },
+          "x": "claude-fable-5-1",
+          "y": "claude-sonnet-5-5"
+        },
+        {
+          "config": "A0",
+          "discordance": 0.05555555555555556,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.05555555555555556,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": 173
+          },
+          "x": "claude-haiku-5-5",
+          "y": "claude-sonnet-5-5"
+        },
+        {
+          "config": "A0",
+          "discordance": 0.05555555555555556,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": 0.05555555555555556,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": null,
+            "15": null,
+            "5": 173
+          },
+          "x": "claude-opus-5-5",
+          "y": "claude-sonnet-5-5"
+        },
+        {
+          "config": "B",
+          "discordance": 0.20370370370370372,
+          "effort": "high",
+          "est_cost_usd": 50.397760195,
+          "mean_difference": 0.05555555555555557,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 158,
+            "15": 69,
+            "5": 638
+          },
+          "x": "claude-fable-5-1",
+          "y": "qwen/qwen3-coder-next"
+        },
+        {
+          "config": "B",
+          "discordance": 0.11111111111111112,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": -0.11111111111111112,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 85,
+            "15": null,
+            "5": 347
+          },
+          "x": "claude-fable-5-1",
+          "y": "claude-haiku-5-5"
+        },
+        {
+          "config": "B",
+          "discordance": 0.11111111111111112,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": -0.11111111111111112,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 85,
+            "15": null,
+            "5": 347
+          },
+          "x": "claude-fable-5-1",
+          "y": "claude-opus-5-5"
+        },
+        {
+          "config": "B",
+          "discordance": 0.11111111111111112,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": -0.11111111111111112,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 85,
+            "15": null,
+            "5": 347
+          },
+          "x": "claude-fable-5-1",
+          "y": "claude-sonnet-5-5"
+        },
+        {
+          "config": "B",
+          "discordance": 0.11111111111111112,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": -0.11111111111111112,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 85,
+            "15": null,
+            "5": 347
+          },
+          "x": "claude-fable-5-1",
+          "y": "google/gemini-3.1-pro-preview"
+        },
+        {
+          "config": "B",
+          "discordance": 0.11111111111111112,
+          "effort": "high",
+          "est_cost_usd": null,
+          "mean_difference": -0.11111111111111112,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 85,
+            "15": null,
+            "5": 347
+          },
+          "x": "claude-fable-5-1",
+          "y": "openai/gpt-5.6-sol"
+        },
+        {
+          "config": "B",
+          "discordance": 0.16666666666666666,
+          "effort": "high",
+          "est_cost_usd": 1.0633980466666666,
+          "mean_difference": 0.16666666666666666,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 129,
+            "15": 56,
+            "5": 521
+          },
+          "x": "claude-haiku-5-5",
+          "y": "qwen/qwen3-coder-next"
+        },
+        {
+          "config": "B",
+          "discordance": 0.16666666666666666,
+          "effort": "high",
+          "est_cost_usd": 16.741508746666668,
+          "mean_difference": 0.16666666666666666,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 129,
+            "15": 56,
+            "5": 521
+          },
+          "x": "claude-opus-5-5",
+          "y": "qwen/qwen3-coder-next"
+        },
+        {
+          "config": "B",
+          "discordance": 0.16666666666666666,
+          "effort": "high",
+          "est_cost_usd": 7.78305248,
+          "mean_difference": 0.16666666666666666,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 129,
+            "15": 56,
+            "5": 521
+          },
+          "x": "claude-sonnet-5-5",
+          "y": "qwen/qwen3-coder-next"
+        },
+        {
+          "config": "B",
+          "discordance": 0.16666666666666666,
+          "effort": "high",
+          "est_cost_usd": 27.649211146666666,
+          "mean_difference": 0.16666666666666666,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 129,
+            "15": 56,
+            "5": 521
+          },
+          "x": "google/gemini-3.1-pro-preview",
+          "y": "qwen/qwen3-coder-next"
+        },
+        {
+          "config": "B",
+          "discordance": 0.16666666666666666,
+          "effort": "high",
+          "est_cost_usd": 5.1369395466666665,
+          "mean_difference": 0.16666666666666666,
+          "tasks": 6,
+          "tasks_needed": {
+            "10": 129,
+            "15": 56,
+            "5": 521
+          },
+          "x": "openai/gpt-5.6-sol",
+          "y": "qwen/qwen3-coder-next"
+        }
+      ],
+      "tasks_needed_for_15_points": null
+    },
+    "failure_modes": [
+      {
+        "config": "B",
+        "count": 2,
+        "effort": "high",
+        "mode": "limit set below what the report allows",
+        "model": "qwen/qwen3-coder-next",
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "config": "A0",
+        "count": 1,
+        "effort": "high",
+        "mode": "quote does not support the decision",
+        "model": "claude-sonnet-5-5",
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "config": "B",
+        "count": 2,
+        "effort": "high",
+        "mode": "quote does not support the decision",
+        "model": "claude-fable-5-1",
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "config": "B",
+        "count": 1,
+        "effort": "high",
+        "mode": "quote not in the manual",
+        "model": "qwen/qwen3-coder-next",
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      }
+    ],
+    "per_task": [
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.12930191666666666,
+        "effort": "high",
+        "latency_p95_s": 54.665,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.0018392183333333333,
+        "effort": "high",
+        "latency_p95_s": 30.834,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.03821913333333333,
+        "effort": "high",
+        "latency_p95_s": 36.048,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.017707333333333332,
+        "effort": "high",
+        "latency_p95_s": 16.621,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.31703166666666666,
+        "effort": "high",
+        "latency_p95_s": 59.953,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.003926481666666666,
+        "effort": "high",
+        "latency_p95_s": 24.109,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.11951353333333332,
+        "effort": "high",
+        "latency_p95_s": 37.703,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.059253499999999994,
+        "effort": "high",
+        "latency_p95_s": 25.047,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.5179279999999999,
+        "effort": "high",
+        "latency_p95_s": 695.078,
+        "model": "google/gemini-3.1-pro-preview",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0380096,
+        "effort": "high",
+        "latency_p95_s": 34.657,
+        "model": "openai/gpt-5.6-sol",
+        "passes": 3,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0241342,
+        "effort": "high",
+        "latency_p95_s": 121.312,
+        "model": "qwen/qwen3-coder-next",
+        "passes": 1,
+        "task_id": "KB-01",
+        "task_sha256": "beec8c06e7edf1cec8fe5dc289df415fa8106b62ce551dd4e8dfde670e21f724"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.10851241666666667,
+        "effort": "high",
+        "latency_p95_s": 30.426,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.001236925,
+        "effort": "high",
+        "latency_p95_s": 21.58,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.048275533333333336,
+        "effort": "high",
+        "latency_p95_s": 31.645,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.018633366666666665,
+        "effort": "high",
+        "latency_p95_s": 11.425,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.3548198333333334,
+        "effort": "high",
+        "latency_p95_s": 53.281,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.003962198333333334,
+        "effort": "high",
+        "latency_p95_s": 19.579,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.13843253333333336,
+        "effort": "high",
+        "latency_p95_s": 38.156,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0642179,
+        "effort": "high",
+        "latency_p95_s": 24.265,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.09101933333333334,
+        "effort": "high",
+        "latency_p95_s": 72.297,
+        "model": "google/gemini-3.1-pro-preview",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0451406,
+        "effort": "high",
+        "latency_p95_s": 28.548,
+        "model": "openai/gpt-5.6-sol",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.004627146666666667,
+        "effort": "high",
+        "latency_p95_s": 76.235,
+        "model": "qwen/qwen3-coder-next",
+        "passes": 3,
+        "task_id": "KB-02",
+        "task_sha256": "a13e8ddec7c063646026a6ea01a3984d2f5d5145b6ef8c763af693f12cbffd3c"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.21385616666666665,
+        "effort": "high",
+        "latency_p95_s": 59.313,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.0031321450000000007,
+        "effort": "high",
+        "latency_p95_s": 50.116,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.08733799999999999,
+        "effort": "high",
+        "latency_p95_s": 57.561,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.03452876666666666,
+        "effort": "high",
+        "latency_p95_s": 25.798,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.2546100833333333,
+        "effort": "high",
+        "latency_p95_s": 32.031,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0038113683333333335,
+        "effort": "high",
+        "latency_p95_s": 19.235,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.11453006666666665,
+        "effort": "high",
+        "latency_p95_s": 31.375,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.048200033333333336,
+        "effort": "high",
+        "latency_p95_s": 13.906,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.1757046,
+        "effort": "high",
+        "latency_p95_s": 143.751,
+        "model": "google/gemini-3.1-pro-preview",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.026196200000000003,
+        "effort": "high",
+        "latency_p95_s": 16.468,
+        "model": "openai/gpt-5.6-sol",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0021636133333333336,
+        "effort": "high",
+        "latency_p95_s": 18.297,
+        "model": "qwen/qwen3-coder-next",
+        "passes": 3,
+        "task_id": "KB-03",
+        "task_sha256": "b4663722ef81a2d3ea17299432464c1a4238f1b74b8fc3fe8838e3a6735aa114"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.11758266666666665,
+        "effort": "high",
+        "latency_p95_s": 38.196,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.0017435666666666667,
+        "effort": "high",
+        "latency_p95_s": 35.712,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.043638333333333335,
+        "effort": "high",
+        "latency_p95_s": 42.717,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.021593733333333337,
+        "effort": "high",
+        "latency_p95_s": 14.402,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.21110225000000002,
+        "effort": "high",
+        "latency_p95_s": 31.563,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.003070015,
+        "effort": "high",
+        "latency_p95_s": 20.906,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.09531846666666666,
+        "effort": "high",
+        "latency_p95_s": 32.765,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.035353466666666666,
+        "effort": "high",
+        "latency_p95_s": 17.813,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.09736333333333334,
+        "effort": "high",
+        "latency_p95_s": 59.219,
+        "model": "google/gemini-3.1-pro-preview",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.027925066666666668,
+        "effort": "high",
+        "latency_p95_s": 35.187,
+        "model": "openai/gpt-5.6-sol",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0019374,
+        "effort": "high",
+        "latency_p95_s": 27.906,
+        "model": "qwen/qwen3-coder-next",
+        "passes": 3,
+        "task_id": "KB-04",
+        "task_sha256": "1d98e7bf82cba6cfece66ee029d64b217b8f0280b624e8876733d66ce03459a0"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.09488416666666666,
+        "effort": "high",
+        "latency_p95_s": 21.732,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.0009040766666666666,
+        "effort": "high",
+        "latency_p95_s": 10.326,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.030378533333333332,
+        "effort": "high",
+        "latency_p95_s": 12.915,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.026160950000000002,
+        "effort": "high",
+        "latency_p95_s": 8.605,
+        "model": "claude-sonnet-5-5",
+        "passes": 2,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.30247925,
+        "effort": "high",
+        "latency_p95_s": 12.984,
+        "model": "claude-fable-5-1",
+        "passes": 1,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0010195066666666666,
+        "effort": "high",
+        "latency_p95_s": 6.734,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0249632,
+        "effort": "high",
+        "latency_p95_s": 14.344,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0144216,
+        "effort": "high",
+        "latency_p95_s": 8.501,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.04812733333333333,
+        "effort": "high",
+        "latency_p95_s": 47.032,
+        "model": "google/gemini-3.1-pro-preview",
+        "passes": 3,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.007792833333333335,
+        "effort": "high",
+        "latency_p95_s": 7.61,
+        "model": "openai/gpt-5.6-sol",
+        "passes": 3,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.00113884,
+        "effort": "high",
+        "latency_p95_s": 7.766,
+        "model": "qwen/qwen3-coder-next",
+        "passes": 2,
+        "task_id": "KB-05",
+        "task_sha256": "032975874cea2b562d1d555e4d2cfe4036e4b21c150f15346e689f6a4d80de53"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.14961641666666667,
+        "effort": "high",
+        "latency_p95_s": 66.754,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.001767566666666667,
+        "effort": "high",
+        "latency_p95_s": 53.272,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.05223053333333333,
+        "effort": "high",
+        "latency_p95_s": 50.42,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "A0",
+        "cost_per_pass": 0.025372033333333335,
+        "effort": "high",
+        "latency_p95_s": 27.507,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.20328783333333336,
+        "effort": "high",
+        "latency_p95_s": 31.656,
+        "model": "claude-fable-5-1",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0030623716666666662,
+        "effort": "high",
+        "latency_p95_s": 20.625,
+        "model": "claude-haiku-5-5",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.08602666666666665,
+        "effort": "high",
+        "latency_p95_s": 30.922,
+        "model": "claude-opus-5-5",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0373931,
+        "effort": "high",
+        "latency_p95_s": 18.202,
+        "model": "claude-sonnet-5-5",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.03820266666666667,
+        "effort": "high",
+        "latency_p95_s": 33.985,
+        "model": "google/gemini-3.1-pro-preview",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.019271266666666665,
+        "effort": "high",
+        "latency_p95_s": 19.281,
+        "model": "openai/gpt-5.6-sol",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      },
+      {
+        "attempts": 3,
+        "config": "B",
+        "cost_per_pass": 0.0015944400000000001,
+        "effort": "high",
+        "latency_p95_s": 20.765,
+        "model": "qwen/qwen3-coder-next",
+        "passes": 3,
+        "task_id": "KB-06",
+        "task_sha256": "69ca95419505fead48ab815a9300f5130038b09788e4c7e2b44d33cf7950a436"
+      }
+    ]
+  },
+  "not_run": [
+    {
+      "contestant": "codex-cli",
+      "reason": "not run: OpenAI's model is measured in configuration B (GPT-5.6 Sol); its own harness, the Codex CLI, needs an OpenAI account set up for this run, which was not"
+    },
+    {
+      "contestant": "claude-code-cli-with-python (configuration A)",
+      "reason": "not run this month: the restricted CLI granted Python by rule (Bash(python *)) and denied it by matcher. Heredocs, multi-line python -c and the shell idioms around them (cat > file, rm, cd) were refused: 56 denials in 13 attempts, 6 of 13 at the turn cap. The 13 attempts are voided in the ledger. A wider allow list would put rm on the host with only an after-the-fact audit behind it; the fix is the CLI in a container"
+    },
+    {
+      "contestant": "cursor-agent",
+      "reason": "not run: its headless agent reports no per-call token usage, so cost per pass could not be measured on the same basis"
+    }
+  ],
+  "priced_region": "global",
+  "prices_checked_on": "2026-10-09",
+  "ranking": "none: n <= 8 tasks",
+  "reduction": {
+    "applied": [],
+    "applied_step": 0,
+    "k": {
+      "A0": {
+        "claude-fable-5-1": 3,
+        "claude-haiku-5-5": 3,
+        "claude-opus-5-5": 3,
+        "claude-sonnet-5-5": 3,
+        "google/gemini-3.1-pro-preview": 0,
+        "openai/gpt-5.6-sol": 0,
+        "qwen/qwen3-coder-next": 0
+      },
+      "B": {
+        "claude-fable-5-1": 3,
+        "claude-haiku-5-5": 3,
+        "claude-opus-5-5": 3,
+        "claude-sonnet-5-5": 3,
+        "google/gemini-3.1-pro-preview": 3,
+        "openai/gpt-5.6-sol": 3,
+        "qwen/qwen3-coder-next": 3
+      }
+    }
+  },
+  "tasks": 6,
+  "voided": [
+    {
+      "count": 33,
+      "reason": "KB-05 grader fixed in 7dad93a (limit lines + explanatory sentence); task version changed"
+    },
+    {
+      "count": 33,
+      "reason": "KB-06 judge rule changed in 7dad93a (lexical pointer check removed); re-scored offline from the recordings"
+    },
+    {
+      "count": 3,
+      "reason": "OpenRouter adapter fixes (dfe5ad3): cache writes were not priced (GPT-5.6 Sol 11 % under the charge) and the recordings sat under a path with the provider prefix as a folder."
+    },
+    {
+      "count": 1,
+      "reason": "audit false positive: a tilde in a Python comment ('noise ~ 0') read as the home directory. Fixed in the audit pattern."
+    },
+    {
+      "count": 1,
+      "reason": "audit read Python in a heredoc as shell text (/sqrt); fixed in 2306437, re-scored offline"
+    },
+    {
+      "count": 8,
+      "reason": "instrument bug found by the pilot: the CLI was not allowed to edit files (permission mode default, no Edit rule), so every edit was denied; scratch in /tmp read as invalid. Fixed in aedc4cc."
+    },
+    {
+      "count": 13,
+      "reason": "not run this month: the restricted CLI granted Python by rule (Bash(python *)) and denied it by matcher; heredocs, multi-line python -c, cat/rm/cd were refused: 56 denials in 13 attempts, 6 of 13 at the turn cap. A safe fix is the CLI in a container, not a wider allow list on the host"
+    },
+    {
+      "count": 1,
+      "reason": "pilot attempt on an earlier version of KB-05 (before the hack-manual-quote-not-a-limit variant was added, aedc4cc): another digest, not the task the grid ran"
+    }
+  ]
+}

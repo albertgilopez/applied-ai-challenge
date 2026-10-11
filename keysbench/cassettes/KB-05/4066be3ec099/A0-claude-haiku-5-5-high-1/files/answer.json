@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this as requested, and no setting or averaging count changes that. Its measurement resolution is 0.01 dB, so it cannot log at 0.001 dB. It is also specified only from 10 MHz to 18 GHz, so a 40 GHz signal is outside its calibrated range. Logging drift at 0.001 dB on this bench unit is not possible; you would need a power meter rated for 40 GHz with resolution of 0.001 dB or finer, or you could use the KX-100 at or below 18 GHz with its 0.01 dB resolution.",
+  "quote": "A reading finer than the resolution is not available from the instrument, and a signal outside the frequency range cannot be measured with a calibrated result."
+}

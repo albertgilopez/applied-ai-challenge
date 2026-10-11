@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this request as stated. Its measurement resolution is 0.01 dB, so 0.001 dB logging is not available from the instrument, and no setting or averaging count changes that. Its frequency range is 10 MHz to 18 GHz, so it also cannot give a calibrated reading of a 40 GHz amplifier output. Averaging can reduce noise but cannot add resolution or extend the frequency range. For drift logging at 40 GHz you would need a meter that is rated for 40 GHz and has finer resolution, or a reading at a frequency within 18 GHz with the 0.01 dB limit accepted.",
+  "quote": "A reading finer than the resolution is not available from the instrument, and a signal outside the frequency range cannot be measured with a calibrated result."
+}

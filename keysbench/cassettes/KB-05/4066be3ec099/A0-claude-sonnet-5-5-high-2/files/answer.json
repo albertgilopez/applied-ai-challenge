@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this, so I have not set it up. Its frequency range is 10 MHz to 18 GHz, and a 40 GHz signal is outside it. SENS:FREQ would refuse 40 GHz with error -222, and the meter cannot give a calibrated result there. Its resolution is also 0.01 dB, ten times coarser than the 0.001 dB you asked for. Averaging or range settings do not change either limit. You need a power meter and sensor rated for 40 GHz with at least 0.001 dB resolution.",
+  "quote": "The KX-100 cannot measure outside these limits, and no setting or averaging count extends them."
+}

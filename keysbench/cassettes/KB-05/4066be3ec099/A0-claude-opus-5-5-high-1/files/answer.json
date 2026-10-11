@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 can't do this measurement, so we won't be setting it up for the 40 GHz qualification. Its frequency range is 10 MHz to 18 GHz, and the manual says it cannot give a calibrated result outside that range. The meter also refuses any frequency above 18 GHz (error -222). There is a second problem: its resolution is 0.01 dB, so it can't log at the 0.001 dB you asked for, and no setting or averaging count changes either limit. You will need a sensor and meter rated to at least 40 GHz with 0.001 dB resolution.",
+  "quote": "Frequency range: 10 MHz to 18 GHz"
+}

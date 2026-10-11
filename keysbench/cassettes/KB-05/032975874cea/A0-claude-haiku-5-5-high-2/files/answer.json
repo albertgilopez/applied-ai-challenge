@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "Not feasible as requested. The KX-100 measures power at 0.01 dB resolution only (MANUAL.md section 2 and section 6), and no setting or averaging count gives a finer reading, so 0.001 dB logging cannot be set up. Separately, the 40 GHz link is outside the instrument's 10 MHz to 18 GHz frequency range, so a calibrated reading at 40 GHz is not possible with this meter either. Options: accept 0.01 dB steps (drift can still be tracked at that resolution with averaging to reduce noise), and use a power meter rated for 40 GHz for the link measurement.",
+  "quote": "A reading finer than the resolution is not available from the instrument, and a signal outside the frequency range cannot be measured with a calibrated result."
+}

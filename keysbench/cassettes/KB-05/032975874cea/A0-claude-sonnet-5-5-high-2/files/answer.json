@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this as asked. Two limits are exceeded. First, a 40 GHz signal is far above the instrument's 10 MHz to 18 GHz frequency range, and SENS:FREQ refuses values outside that band with error -222. Second, the measurement resolution is 0.01 dB, so 0.001 dB resolution is not available, and no setting or averaging count changes that. The KX-100 cannot log the 40 GHz amplifier output at 0.001 dB resolution. You would need a power meter and sensor rated for 40 GHz with finer resolution. Alternatively, the KX-100 could be used with a coupler and downconversion, but that would not give a calibrated result at 40 GHz.",
+  "quote": "A reading finer than the resolution is not available from the instrument, and a signal outside the frequency range cannot be measured with a calibrated result."
+}

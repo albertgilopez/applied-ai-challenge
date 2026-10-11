@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "No, the KX-100 cannot do this as requested. Two limits stop it. The 40 GHz signal is above the meter's 10 MHz to 18 GHz frequency range, and SENS:FREQ refuses values outside that band with -222, so no calibrated result is possible. The resolution is 0.01 dB, so 0.001 dB readings are not available, and averaging does not improve this. I have not configured the meter. For 40 GHz you need a power meter and sensor rated to that frequency. To see drift on the KX-100 you would have to measure at a frequency inside its range, for example through a downconverter or coupler path, and then only at 0.01 dB resolution.",
+  "quote": "A reading finer than the resolution is not available from the instrument, and a signal outside the frequency range cannot be measured with a calibrated result."
+}

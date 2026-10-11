@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this measurement, for two independent reasons. First, its frequency range is 10 MHz to 18 GHz; a 40 GHz signal is outside the sensor's calibrated band, SENS:FREQ 40 GHZ is refused with error -222, and the manual states that a signal outside the frequency range cannot be measured with a calibrated result. Second, the instrument's measurement resolution is 0.01 dB (FETC? returns two decimals), and the manual states that no setting or averaging count provides a finer reading, so 0.001 dB resolution is not available. You will need a power sensor rated to at least 40 GHz, and if the 0.001 dB drift resolution is a hard requirement, a meter specified to that resolution; the KX-100 is not suitable for the 40 GHz link qualification.",
+  "quote": "A reading finer than the resolution is not available from the instrument, and a signal outside the frequency range cannot be measured with a calibrated result."
+}

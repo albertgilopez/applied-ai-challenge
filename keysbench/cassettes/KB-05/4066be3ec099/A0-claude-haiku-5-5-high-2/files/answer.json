@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "The KX-100 cannot do this as requested. Its measurement resolution is 0.01 dB, so it cannot log at 0.001 dB; the manual states that no setting or averaging count extends this limit. Also, the KX-100 frequency range is 10 MHz to 18 GHz, so a 40 GHz link amplifier is outside the calibrated band and cannot be measured with a calibrated result. Drift at 0.001 dB resolution would need a different instrument rated for 40 GHz and finer resolution.",
+  "quote": "Measurement resolution: 0.01 dB"
+}

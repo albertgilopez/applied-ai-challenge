@@ -1,0 +1,5 @@
+{
+  "feasible": false,
+  "answer": "No, the KX-100 cannot do this as requested. Two limits block it. First, its frequency range is 10 MHz to 18 GHz, so a 40 GHz amplifier output is outside the band and cannot be measured with a calibrated result. Second, its resolution is 0.01 dB, so 0.001 dB logging is not available, and no setting or averaging count changes that. I have not configured anything. For this qualification you need a power meter and sensor that cover 40 GHz and resolve 0.001 dB. Alternatively, a 0.01 dB resolution at a frequency within 10 MHz to 18 GHz is the most this unit can give.",
+  "quote": "The KX-100 cannot measure outside these limits, and no setting or averaging count extends them."
+}
