@@ -5,16 +5,31 @@ trusted before anyone decides with it. Specification: [STORY-004](../stories/STO
 [docs/design/STORY-004.md](../docs/design/STORY-004.md). Adversarial reviews of the design and of the
 code: [design](../docs/design/STORY-004-challenge.md), [code](../docs/design/STORY-004-code-challenge.md).
 
+## October 2026
+
+Results: [results/2026-10/results.md](results/2026-10/results.md) (the decision memo first), from
+[the ledger](results/2026-10/ledger.jsonl): 198 attempts stand, 17.81 USD in all, voided attempts included.
+
+- **The tasks separate the models on cost, not on whether they can do the work.** In B, 5 of 7 contestants
+  passed every attempt of every task, and among them cost per pass ran 51 times from the cheapest
+  (Haiku 5.5) to the dearest (Gemini 3.1 Pro). In A0, 3 of 4, 77 times (Haiku 5.5 to Fable 5.1).
+- **The misses are few and named**: Fable 5.1 in B and Sonnet 5.5 in A0 on KB-05 quoted the manual's
+  general rule instead of the limit the request breaks; Qwen3 Coder Next missed KB-01 twice and KB-05 once.
+- **Configuration A did not run**: the restricted CLI denied most of the Python its rule allowed (see
+  the memo's "Not run"). Whether code execution changes the picture is the question this month leaves open.
+- With six tasks it ranks nobody, and five are saturated: the next month needs harder tasks, not more
+  attempts.
+
 ## What it measures
 
-The unit is a **contestant**: a configuration, a model and an effort. The same four models run in three
-configurations:
+The unit is a **contestant**: a configuration, a model and an effort. Configuration B runs every model;
+A0 and A, Anthropic's CLI, run Anthropic's four:
 
 | Configuration | What the model works through |
 |---|---|
 | **B** | the API, called from this repository's agent loop, with three file tools and no code execution |
 | **A0** | Claude Code (the CLI, as shipped) with its file tools, no code execution |
-| **A** | Claude Code with its file tools and Python |
+| **A** | Claude Code with its file tools and Python (not run in October 2026: see the results) |
 
 Six tasks, two kinds:
 

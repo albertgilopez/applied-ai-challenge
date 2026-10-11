@@ -22,7 +22,7 @@ append-only ledger line, and the result is a report Legal can attach to the CRA 
 | [STORY-001](stories/STORY-001.md) | Parse CycloneDX 1.6 and SPDX 2.3, classify each component's license expression | done |
 | [STORY-002](stories/STORY-002.md) | AI models: read the license and usage restrictions from each model card | done |
 | [STORY-003](stories/STORY-003.md) | Reviewer CLI, audit ledger, Legal report | done |
-| [STORY-004](stories/STORY-004.md) | KeysBench: a monthly measurement of frontier models (optional) | built, every grader seen failing, design and code reviewed adversarially; live run pending ([details](keysbench/README.md)) |
+| [STORY-004](stories/STORY-004.md) | KeysBench: a monthly measurement of frontier models (optional) | built, every grader seen failing, design and code reviewed adversarially; October 2026 run scored ([results](keysbench/results/2026-10/results.md), [details](keysbench/README.md)) |
 | [STORY-B01](stories/STORY-B01.md) | Challenge B: manifest validator for the AI marketplace | done ([details](docs/marketplace/README.md)) |
 
 A generated report, from the steps in `samples/build_report.py`, is in [`samples/report/`](samples/report/report.md):
