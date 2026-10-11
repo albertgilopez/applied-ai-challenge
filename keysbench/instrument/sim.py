@@ -91,7 +91,7 @@ COMMANDS: tuple[str, ...] = (
     "FETC?",
 )
 
-MAKER = "Kestrel Microwave"
+MAKER = "Brevalt Instruments"
 MODEL = "KX-100"
 FIRMWARE = "1.02"
 

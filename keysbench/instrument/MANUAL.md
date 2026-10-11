@@ -1,6 +1,6 @@
 # KX-100 RF Power Meter: Programming Manual
 
-Kestrel Microwave KX-100, firmware 1.02. Thermocouple sensor head, single channel, SCPI over a
+Brevalt Instruments KX-100, firmware 1.02. Thermocouple sensor head, single channel, SCPI over a
 message-based session. This manual covers remote control, the specifications needed for an
 uncertainty budget, and the limits of the instrument.
 
@@ -42,6 +42,8 @@ Frequency range: 10 MHz to 18 GHz
 **`FETC?` does not measure.** It returns the result of the last completed `INIT`. After power-on
 or `*RST` it returns the reset reading -100.00 dBm. After a setting is changed it keeps returning
 the previous measurement, taken with the previous settings, until the next `INIT`.
+
+Measurement resolution: 0.01 dB
 
 ### Ranges
 
