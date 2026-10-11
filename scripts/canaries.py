@@ -490,7 +490,7 @@ muts = [
     ("keysbench/report.py", '[md_cell(f["mode"]), md_cell(f["task_id"])', '[f["mode"], md_cell(f["task_id"])'),
     (
         "keysbench/tasks/KB-05/tests/test_kb05.py",
-        "    assert any(line in normalise(quote) for line in RELEVANT_LIMIT_LINES), quote\n",
+        "    assert any(line.lower() in normalise(quote).lower() for line in RELEVANT_LIMIT_LINES), quote\n",
         "    assert True\n",
     ),
     ("pyproject.toml", 'testpaths = ["tests"]', 'testpaths = ["tests", "keysbench"]'),
