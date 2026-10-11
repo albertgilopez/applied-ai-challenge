@@ -103,7 +103,29 @@ def cassette_path(root: Path, key: AttemptKey) -> Path:
 
 
 def spent(rows: list[JSONObject]) -> float:
-    return sum(float(r.get("cost_usd") or 0.0) for r in rows)
+    """What a ledger has spent: the contestants' calls and the judge's (KB-06), stopped attempts included."""
+    return sum(float(r.get("cost_usd") or 0.0) + float(r.get("judge_cost_usd") or 0.0) for r in rows)
+
+
+def _grade_into(row: JSONObject, spec: TaskSpec, workspace: Path, dest: Path, judge_ctx: JudgeContext | None) -> None:
+    """Grade, inside the attempt: a judge call the budget cannot hold makes this attempt `budget_stopped`,
+    and a grader that crashes makes it `error`. Neither aborts the run, so the ledger always gets its line
+    and a resume never pays for the same attempt twice (DR-11, DR-15)."""
+    try:
+        result = grade(spec, workspace, dest, judge_ctx)
+    except BudgetStop:
+        row["outcome"] = "budget_stopped"
+        return
+    except CassetteMiss:
+        raise
+    except Exception as exc:
+        row["outcome"], row["error"] = "error", f"grader: {type(exc).__name__}: {exc}"[:500]
+        return
+    row["outcome"] = "pass" if result.passed else "fail"
+    row["grader"] = {"name": spec.family, "failed_checks": list(result.failed_checks)}
+    row["judge"] = result.judge
+    if result.judge is not None:
+        row["judge_cost_usd"] = result.judge.get("cost_usd")
 
 
 # ── budget ───────────────────────────────────────────────────────────────────────────────────────────
@@ -214,10 +236,7 @@ def attempt_b(
             elif run.stop_reason == "max_tokens":
                 row["outcome"] = "truncated"
             else:
-                result = grade(spec, workspace, Path(tmp) / "g", judge_ctx)
-                row["outcome"] = "pass" if result.passed else "fail"
-                row["grader"] = {"name": spec.family, "failed_checks": list(result.failed_checks)}
-                row["judge"] = result.judge
+                _grade_into(row, spec, workspace, Path(tmp) / "g", judge_ctx)
             row["calls"] = _calls(run.calls)
             row["cost_usd"] = run.cost_usd
             row["cost_basis"] = "measured-usage" if run.cost_usd is not None else "unpriced"
@@ -319,10 +338,7 @@ def attempt_a(
         elif summary["outcome"] is not None:
             row["outcome"] = summary["outcome"]
         else:
-            result = grade(spec, workspace, Path(tmp) / "g", judge_ctx)
-            row["outcome"] = "pass" if result.passed else "fail"
-            row["grader"] = {"name": spec.family, "failed_checks": list(result.failed_checks)}
-            row["judge"] = result.judge
+            _grade_into(row, spec, workspace, Path(tmp) / "g", judge_ctx)
     row["wall_s"] = round(time.monotonic() - started, 3)
     row["at"] = utc_stamp()
     return row

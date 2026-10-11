@@ -166,10 +166,22 @@ def summarise(lines: list[str], *, model: str) -> dict[str, Any]:
     return summary
 
 
+def close_partial(lines: list[str], *, reason: str) -> list[str]:
+    """A transcript the CLI did not finish, closed with an error result line so it is scored as `error`
+    and the messages it already sent are still priced."""
+    end = {"type": "result", "subtype": f"error_{reason}", "is_error": True, "total_cost_usd": None}
+    return [*lines, json.dumps(end)]
+
+
 def run_cli(cmd: list[str], workspace: Path, env: dict[str, str], timeout_s: int) -> list[str]:
-    proc = subprocess.run(
-        cmd, cwd=workspace, env=env, stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout_s, check=False
-    )
+    try:
+        proc = subprocess.run(
+            cmd, cwd=workspace, env=env, stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout_s, check=False
+        )
+    except subprocess.TimeoutExpired as exc:
+        # The run spent money until it was killed: keep what it wrote, so that spend is counted.
+        partial = exc.stdout.decode("utf-8", errors="replace") if isinstance(exc.stdout, bytes) else ""
+        return close_partial(partial.splitlines(), reason="timeout")
     return proc.stdout.decode("utf-8", errors="replace").splitlines()
 
 

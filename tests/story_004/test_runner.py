@@ -41,7 +41,7 @@ def tasks(tmp_path):
     return tmp_path / "tasks"
 
 
-def plan(tasks: Path, **kw) -> Plan:
+def plan(tasks_dir: Path, **kw) -> Plan:
     base = {
         "label": "test",
         "cap_usd": 60.0,
@@ -152,9 +152,16 @@ def test_s4_11_a_projection_above_the_cap_refuses_before_any_attempt(tasks, tmp_
     out = tmp_path / "out"
     out.mkdir()
     # A measured attempt at 25 USD for this contestant; three more would project 75 > 60.
-    measured = {"kind": "attempt", "task_id": "KB-T", "task_sha256": "old", "config": "B",
-                "contestant": {"model": "claude-sonnet-5-5", "effort": "high"}, "attempt": 1,
-                "outcome": "pass", "cost_usd": 25.0}  # fmt: skip
+    measured = {
+        "kind": "attempt",
+        "task_id": "KB-T",
+        "task_sha256": "old",
+        "config": "B",
+        "contestant": {"model": "claude-sonnet-5-5", "effort": "high"},
+        "attempt": 1,
+        "outcome": "pass",
+        "cost_usd": 25.0,
+    }
     (out / "ledger.jsonl").write_text(json.dumps(measured) + "\n", encoding="utf-8")
     with pytest.raises(runner.RunRefused, match="projected"):
         runner.run(plan(tasks, k=3), tasks_dir=tasks, out=out, provider_factory=by_attempt({}), live=True)
@@ -233,8 +240,12 @@ def test_attempts_run_in_rounds_cheapest_model_first(tasks, tmp_path):
         order.append((key.attempt, key.model))
         return Scripted([done()])
 
-    runner.run(plan(tasks, k=2, models=["claude-sonnet-5-5", "claude-haiku-5-5"]), tasks_dir=tasks, out=tmp_path / "o",
-               provider_factory=factory)  # fmt: skip
+    runner.run(
+        plan(tasks, k=2, models=["claude-sonnet-5-5", "claude-haiku-5-5"]),
+        tasks_dir=tasks,
+        out=tmp_path / "o",
+        provider_factory=factory,
+    )
     assert order == [
         (1, "claude-haiku-5-5"),
         (1, "claude-sonnet-5-5"),
@@ -245,8 +256,12 @@ def test_attempts_run_in_rounds_cheapest_model_first(tasks, tmp_path):
 
 def test_a_model_with_no_price_is_refused_before_anything_runs(tasks, tmp_path):
     with pytest.raises(runner.RunRefused, match="price"):
-        runner.run(plan(tasks, models=["claude-unknown-9"]), tasks_dir=tasks, out=tmp_path / "o",
-                   provider_factory=by_attempt({}))  # fmt: skip
+        runner.run(
+            plan(tasks, models=["claude-unknown-9"]),
+            tasks_dir=tasks,
+            out=tmp_path / "o",
+            provider_factory=by_attempt({}),
+        )
 
 
 # ── configurations A and A0 through the runner (the CLI is faked) ────────────────────────────────────
@@ -263,9 +278,19 @@ def fake_cli(content: str, extra_tool: dict | None = None):
         return [
             json.dumps({"type": "system", "subtype": "init", "claude_code_version": "2.1.296"}),
             json.dumps({"type": "assistant", "message": {"id": "m1", "content": blocks, "usage": usage}}),
-            json.dumps({"type": "result", "subtype": "success", "is_error": False, "total_cost_usd": 0.0007,
-                        "duration_ms": 3000, "duration_api_ms": 2000, "num_turns": 2, "usage": usage}),
-        ]  # fmt: skip
+            json.dumps(
+                {
+                    "type": "result",
+                    "subtype": "success",
+                    "is_error": False,
+                    "total_cost_usd": 0.0007,
+                    "duration_ms": 3000,
+                    "duration_api_ms": 2000,
+                    "num_turns": 2,
+                    "usage": usage,
+                }
+            ),
+        ]
 
     return run_cli
 
@@ -274,8 +299,9 @@ def test_configuration_a_runs_live_then_replays_from_what_it_stored(tasks, tmp_p
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     p = plan(tasks, configs=["A"], cli={"version": "2.1.296"})
     cassettes = tmp_path / "cassettes"
-    [live] = runner.run(p, tasks_dir=tasks, out=tmp_path / "live", live=True, cassettes=cassettes,
-                        cli_runner=fake_cli(GOOD))  # fmt: skip
+    [live] = runner.run(
+        p, tasks_dir=tasks, out=tmp_path / "live", live=True, cassettes=cassettes, cli_runner=fake_cli(GOOD)
+    )
     assert live["outcome"] == "pass" and live["contestant"]["harness"] == "claude-code-cli"
     assert live["cost_basis"] == "cli-usage" and live["cli_cost_usd"] == 0.0007
     assert live["cost_usd"] == pytest.approx((100 * 2 + 50 * 10) / 1e6)
@@ -287,14 +313,134 @@ def test_s4_04_configuration_a_reading_outside_the_workspace_is_invalid(tasks, t
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     outside = {"type": "tool_use", "id": "t2", "name": "Read", "input": {"file_path": "../KB-01/solution/core/x.py"}}
     p = plan(tasks, configs=["A0"], cli={"version": "2.1.296"})
-    [row] = runner.run(p, tasks_dir=tasks, out=tmp_path / "o", live=True, cassettes=tmp_path / "c",
-                       cli_runner=fake_cli(GOOD, outside))  # fmt: skip
+    [row] = runner.run(
+        p, tasks_dir=tasks, out=tmp_path / "o", live=True, cassettes=tmp_path / "c", cli_runner=fake_cli(GOOD, outside)
+    )
     assert row["outcome"] == "invalid" and row["audit"]
 
 
 def test_configuration_a_is_not_started_without_budget_for_one_call(tasks, tmp_path, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     p = plan(tasks, configs=["A"], cli={"version": "2.1.296"}, cap_usd=0.01)
-    [row] = runner.run(p, tasks_dir=tasks, out=tmp_path / "o", live=True, cassettes=tmp_path / "c",
-                       cli_runner=fake_cli(GOOD))  # fmt: skip
+    [row] = runner.run(
+        p, tasks_dir=tasks, out=tmp_path / "o", live=True, cassettes=tmp_path / "c", cli_runner=fake_cli(GOOD)
+    )
     assert row["outcome"] == "budget_stopped"
+
+
+# ── the run never aborts on a stop or a crash after the contestant ran (review findings 3B F3, 1B F1) ──
+
+
+def _judge_task(tasks: Path) -> None:
+    t = tasks / "KB-J"
+    (t / "environment").mkdir(parents=True)
+    (t / "task.toml").write_text(
+        'id = "KB-J"\ntrack = "domain"\nfamily = "judge"\neditable = ["REVIEW.md"]\nexpected_tests = []\n'
+        'timeout_s = 60\nreview_file = "REVIEW.md"\ndiff_file = "change.diff"\nrubric = "kb06.toml"\n',
+        encoding="utf-8",
+    )
+    (t / "instruction.md").write_text("Review the change.\n", encoding="utf-8")
+    (t / "environment" / "REVIEW.md").write_text("# Review\n\n(write your review here)\n", encoding="utf-8")
+    (t / "environment" / "change.diff").write_text("+    return 10 ** (dbm / 20) / 1000\n", encoding="utf-8")
+
+
+def write_review(n: int = 1) -> dict:
+    call = write_call("Bug: `return 10 ** (dbm / 20) / 1000` uses /20; dBm to W needs /10.\n", n)
+    call["content"][0]["input"]["path"] = "REVIEW.md"
+    return call
+
+
+def judge_answer() -> dict:
+    text = json.dumps(
+        {
+            "verdict": "pass",
+            "defect_found": True,
+            "review_quote": "Bug: `return 10 ** (dbm / 20) / 1000` uses /20; dBm to W needs /10.",
+        }
+    )
+    return {
+        "stop_reason": "end_turn",
+        "content": [{"type": "text", "text": text}],
+        "usage": {"input_tokens": 1000, "output_tokens": 100, "inference_geo": "global"},
+    }
+
+
+def judges(budget_cap_holder: list, answers: list | None = None):
+    from keysbench.check import JudgeContext
+
+    def factory(key):
+        inner = Scripted([judge_answer()] if answers is None else answers)
+        provider = BudgetedProvider(inner, budget_cap_holder[0], model="claude-opus-5-5", max_tokens=8000)
+        return JudgeContext(provider, "claude-opus-5-5", Path(budget_cap_holder[1]) / f"{key.slug()}.judge.jsonl")
+
+    return factory
+
+
+def test_a_judge_that_does_not_fit_the_budget_stops_the_attempt_not_the_run(tasks, tmp_path, monkeypatch):
+    _judge_task(tasks)
+    holder: list = [Budget(cap_usd=0.05), tmp_path]
+    monkeypatch.setattr(runner, "Budget", lambda cap_usd, spent_usd=0.0: holder[0])
+    p = plan(tasks, tasks=["KB-J"], cap_usd=0.05, models=["claude-haiku-5-5"])
+    rows = runner.run(
+        p,
+        tasks_dir=tasks,
+        out=tmp_path / "o",
+        live=True,
+        provider_factory=by_attempt({1: [write_review(), done()]}),
+        judge_factory=judges(holder),
+    )
+    assert [r["outcome"] for r in rows] == ["budget_stopped"]
+    assert rows[0]["cost_usd"] > 0  # what the contestant already spent is kept
+
+
+def test_the_judges_cost_is_on_the_row_and_in_the_spend(tasks, tmp_path, monkeypatch):
+    _judge_task(tasks)
+    holder: list = [Budget(cap_usd=60.0), tmp_path]
+    monkeypatch.setattr(runner, "Budget", lambda cap_usd, spent_usd=0.0: holder[0])
+    p = plan(tasks, tasks=["KB-J"], models=["claude-haiku-5-5"])
+    [row] = runner.run(
+        p,
+        tasks_dir=tasks,
+        out=tmp_path / "o",
+        live=True,
+        provider_factory=by_attempt({1: [write_review(), done()]}),
+        judge_factory=judges(holder),
+    )
+    assert row["outcome"] == "pass"
+    assert row["judge_cost_usd"] == pytest.approx((1000 * 4 + 100 * 20) / 1e6)
+    assert runner.spent([row]) == pytest.approx(row["cost_usd"] + row["judge_cost_usd"])
+
+
+def test_a_cli_timeout_is_an_error_row_with_the_spend_seen_so_far(tasks, tmp_path, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    usage = {"input_tokens": 100, "output_tokens": 50, "inference_geo": "global"}
+    partial = [
+        json.dumps({"type": "system", "subtype": "init", "claude_code_version": "2.1.296"}),
+        json.dumps({"type": "assistant", "message": {"id": "m1", "content": [], "usage": usage}}),
+    ]
+
+    def timing_out(cmd, workspace, env):
+        from keysbench import arm_a
+
+        return arm_a.close_partial(partial, reason="timeout")
+
+    p = plan(tasks, configs=["A"], cli={"version": "2.1.296"})
+    [row] = runner.run(
+        p, tasks_dir=tasks, out=tmp_path / "o", live=True, cassettes=tmp_path / "c", cli_runner=timing_out
+    )
+    assert row["outcome"] == "error"
+    assert row["cost_usd"] == pytest.approx((100 * 2 + 50 * 10) / 1e6)
+
+
+def test_run_cli_turns_a_timeout_into_a_closed_partial_transcript(monkeypatch, tmp_path):
+    import subprocess as sp
+
+    from keysbench import arm_a
+
+    def boom(*a, **k):
+        raise sp.TimeoutExpired(cmd="claude", timeout=1, output=b'{"type": "system", "subtype": "init"}\n')
+
+    monkeypatch.setattr(arm_a.subprocess, "run", boom)
+    lines = arm_a.run_cli(["claude"], tmp_path, {}, 1)
+    assert json.loads(lines[-1])["subtype"] == "error_timeout"
+    assert arm_a.summarise(lines, model="claude-haiku-5-5")["outcome"] == "error"
