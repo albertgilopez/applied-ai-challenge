@@ -43,8 +43,6 @@ def ask(review: str, answer: dict, tmp_path: Path, contestant: str = "claude-son
     result = judge.judge_review(
         review=review,
         diff="+    return 10 ** (dbm / 20) / 1000\n",
-        planted_line=PLANTED,
-        marker=MARKER,
         judge_model=judge.judge_model_for(contestant, {"default": "claude-opus-5-5", "instead": "claude-sonnet-5-5"}),
         provider=provider,
         ledger_path=tmp_path / "judge.jsonl",
@@ -63,21 +61,32 @@ def test_s4_07_a_quote_not_in_the_review_fails(tmp_path):
 
 def test_an_invented_quote_that_names_the_defect_still_fails(tmp_path):
     # The judge's evidence must come from the review: a quote that names the planted line but that the
-    # review never contains is a hallucinated pass. (The case above also fails the "points at" check, so a
-    # canary that removed only the quote-in-review check survived it in CI; this one isolates it.)
+    # review never contains is a hallucinated pass.
     answer = {"verdict": "pass", "defect_found": True, "review_quote": "return 10 ** (dbm / 20) / 1000 is wrong"}
     r, _ = ask(CASE["review"], answer, tmp_path)
-    assert r["verdict"] == "fail" and not r["quote_in_review"] and r["points_at_defect"]
+    assert r["verdict"] == "fail" and not r["quote_in_review"]
 
 
-def test_s4_07_a_quote_that_does_not_point_at_the_planted_line_fails(tmp_path):
+def test_s4_07_a_judge_that_passes_an_irrelevant_grounded_quote_is_not_caught_by_code(tmp_path):
+    # A documented limit, tested so it is not forgotten. A string check on the quote ("contains the planted
+    # line or '/ 20'") caught this case, and failed 14 of 21 correct reviews in the live grid; it was removed.
+    # Measured in the grid: the judge passed none of this kind (21 of 21 grounded and on the defect).
+    # The next step is a second, narrow model check on the quote, not a string match.
     r, _ = ask(CASE["review"], {**row(1)["judge_response"], "defect_found": True}, tmp_path)
-    assert r["verdict"] == "fail" and r["quote_in_review"] and not r["points_at_defect"]
+    assert r["verdict"] == "pass" and r["quote_in_review"]
 
 
-def test_s4_07_a_grounded_quote_at_the_planted_line_passes(tmp_path):
-    r, _ = ask(row(2)["review"], {**row(2)["judge_response"], "defect_found": True}, tmp_path)
-    assert r["verdict"] == "pass" and r["quote_in_review"] and r["points_at_defect"]
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "Bug: `return 10 ** (dbm / 20) / 1000` uses /20; dBm to W needs /10.",
+        "dBm is a power ratio, so the divisor is 10, not 20.",  # Opus 5.5 in the grid, failed by the string check
+    ],
+)
+def test_s4_07_a_grounded_quote_the_judge_accepts_passes_in_any_wording(tmp_path, quote):
+    review = f"Review of power.py.\n\n{quote}\n"
+    r, _ = ask(review, {"verdict": "pass", "defect_found": True, "review_quote": quote}, tmp_path)
+    assert r["verdict"] == "pass" and r["quote_in_review"]
 
 
 def test_the_judges_own_fail_is_kept_even_with_a_grounded_quote(tmp_path):
@@ -105,7 +114,7 @@ def test_a_malformed_answer_is_a_fail_not_a_crash(tmp_path):
     provider = Scripted({})
     provider.answer = "not json"  # type: ignore[assignment]
     result = judge.judge_review(
-        review=row(2)["review"], diff="", planted_line=PLANTED, marker=MARKER, judge_model="claude-opus-5-5",
+        review=row(2)["review"], diff="", judge_model="claude-opus-5-5",
         provider=provider, ledger_path=tmp_path / "j.jsonl",
     )  # fmt: skip
     assert result["verdict"] == "fail"
@@ -131,7 +140,7 @@ def test_the_judge_prompt_is_approved():
 def test_no_review_is_a_fail_without_calling_the_judge(tmp_path, unchanged):
     provider = Scripted({"verdict": "pass", "defect_found": True, "review_quote": PLANTED})
     result = judge.judge_review(
-        review=unchanged, diff="", planted_line=PLANTED, marker=MARKER, judge_model="claude-opus-5-5",
+        review=unchanged, diff="", judge_model="claude-opus-5-5",
         provider=provider, ledger_path=tmp_path / "j.jsonl", placeholder="# Review\n\n(write your review here)\n",
     )  # fmt: skip
     assert result["verdict"] == "fail" and provider.requests == []

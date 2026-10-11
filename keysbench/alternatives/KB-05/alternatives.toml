@@ -1,0 +1,5 @@
+# Other answers to KB-05 and the score each must get (1 = a correct answer in other words, 0 = a miss).
+[expected]
+explanatory-sentence = 1   # the sentence the decision rests on; quoted by Sonnet, Opus and Fable in the grid
+frequency-clause = 1       # one clause of it, copied exactly
+generic-intro = 0          # names no limit: it does not say why this request fails (Fable, one attempt)

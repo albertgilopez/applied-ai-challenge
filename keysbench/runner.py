@@ -127,8 +127,12 @@ def cassette_path(root: Path, key: AttemptKey) -> Path:
 
 
 def spent(rows: list[JSONObject]) -> float:
-    """What a ledger has spent: the contestants' calls and the judge's (KB-06), stopped attempts included."""
-    return sum(float(r.get("cost_usd") or 0.0) + float(r.get("judge_cost_usd") or 0.0) for r in rows)
+    """What a ledger has spent: the contestants' calls and the judge's (KB-06), stopped and voided attempts
+    included. A replayed row (re-scored from its recordings) keeps the attempt's cost for cost per pass, but
+    nothing was paid for it, so it is not spent again."""
+    return sum(
+        float(r.get("cost_usd") or 0.0) + float(r.get("judge_cost_usd") or 0.0) for r in rows if not r.get("replayed")
+    )
 
 
 def _grade_into(row: JSONObject, spec: TaskSpec, workspace: Path, dest: Path, judge_ctx: JudgeContext | None) -> None:
@@ -674,6 +678,7 @@ def _run(
                 f"projected {budget.spent_usd + projected:.2f} USD (spent {budget.spent_usd:.2f} + "
                 f"{projected:.2f} for {len(remaining)} attempts) is above the cap of {cap:.2f}"
             )
+    replaying = not live and provider_factory is None  # every response comes from a recording
     if provider_factory is None:
         provider_factory = (
             live_provider_factory(cassettes, budget, plan)
@@ -708,6 +713,8 @@ def _run(
         else:
             raise RunRefused(f"unknown configuration {key.config!r}")
         row["row_id"] = uuid.uuid4().hex
+        if replaying:
+            row["replayed"] = True
         append_jsonl(ledger_path, row)
         rows.append(row)
         stopped = live and row.get("outcome") == "budget_stopped"

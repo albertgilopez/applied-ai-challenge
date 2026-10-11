@@ -1,0 +1,5 @@
+# Reviews of KB-06 in the words contestants used in the live grid. Both find the defect; a string check
+# on the quote failed both. Each needs one judge recording (check-graders --live).
+[expected]
+power-ratio-wording = 1   # Opus 5.5's wording
+amplitude-wording = 1     # Fable 5.1's wording

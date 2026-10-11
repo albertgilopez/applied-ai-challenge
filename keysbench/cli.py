@@ -1,7 +1,7 @@
 """`python -m keysbench run | score | check-graders` (STORY-004 § Interface contract).
 
     run            --plan PATH --out DIR [--live] [--budget-usd N]   one ledger line per attempt; resumes
-                   [--only-model M ...] [--only-config C ...]        a subset of the plan, same ledger
+                   [--only-model M] [--only-config C] [--only-task T]  a subset of the plan, same ledger
     score          --plan PATH --ledger PATH --out DIR               results.json, results.md; no network
     project        --plan PATH --ledger PATH                         cost at each reduction step; no network
     void           --ledger PATH --config C [--config C] --reason R  void the standing attempts of a configuration
@@ -92,6 +92,7 @@ def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = 
     r.add_argument("--budget-usd", type=float)
     r.add_argument("--only-model", action="append")
     r.add_argument("--only-config", action="append")
+    r.add_argument("--only-task", action="append")
     s = sub.add_parser("score")
     s.add_argument("--plan", type=Path, required=True)
     s.add_argument("--ledger", type=Path, required=True)
@@ -133,11 +134,12 @@ def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = 
         out.write(f"scored {sum(c['attempts'] for c in data['cells'])} attempts into {a.out}\n")
         return 0
     try:
-        if a.only_model or a.only_config:
+        if a.only_model or a.only_config or a.only_task:
             # A subset of the same plan into the same ledger: per provider (each under its own budget) or per
             # configuration (each run shorter). Unknown names are refused rather than silently ignored.
             unknown = sorted(set(a.only_model or []) - set(plan.models))
             unknown += sorted(set(a.only_config or []) - set(plan.configs))
+            unknown += sorted(set(a.only_task or []) - set(plan.tasks))
             if unknown:
                 err.write(f"refused: not in the plan: {unknown}\n")
                 return 2
@@ -145,6 +147,7 @@ def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = 
                 plan,
                 models=[m for m in plan.models if not a.only_model or m in a.only_model],
                 configs=[c for c in plan.configs if not a.only_config or c in a.only_config],
+                tasks=[t for t in plan.tasks if not a.only_task or t in a.only_task],
             )
         rows = runner.run(plan, out=a.out, live=a.live, budget_usd=a.budget_usd)
     except runner.RunRefused as exc:

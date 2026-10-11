@@ -57,7 +57,6 @@ def fresh_workspace(spec: TaskSpec, dest: Path) -> Path:
 def grade_judge(spec: TaskSpec, workspace: Path, ctx: JudgeContext) -> GradeResult:
     """KB-06: the review is read as data from the one editable file; the judge decides, code checks."""
     assert spec.path is not None
-    rubric = tomllib.loads((RUBRICS / str(spec.raw["rubric"])).read_text("utf-8"))
     name = str(spec.raw["review_file"])
     path = workspace / name
     review = path.read_text("utf-8", errors="replace") if path.is_file() and not path.is_symlink() else ""
@@ -65,8 +64,6 @@ def grade_judge(spec: TaskSpec, workspace: Path, ctx: JudgeContext) -> GradeResu
     r = judge.judge_review(
         review=review[:MAX_REVIEW_CHARS],
         diff=(env / str(spec.raw["diff_file"])).read_text("utf-8"),
-        planted_line=str(rubric["planted_line"]),
-        marker=str(rubric["marker"]),
         judge_model=ctx.model,
         provider=ctx.provider,
         ledger_path=ctx.ledger_path,
@@ -86,8 +83,26 @@ def grade(spec: TaskSpec, workspace: Path, dest: Path, judge_ctx: JudgeContext |
     raise ValueError(f"{spec.id}: unknown grader family {spec.family!r}")
 
 
+ALTERNATIVES = HERE / "alternatives"
+
+
+def alternatives(spec: TaskSpec) -> dict[str, int]:
+    """Other answers and the score they must get: correct answers in other words (1) and near misses (0).
+    The live grid showed why: a grader seen passing on one solution failed 14 of 21 correct reviews
+    (KB-06) and most of the correct quotes (KB-05). Kept outside the task, so adding one does not change
+    the task's digest (DR-13) or orphan its recordings."""
+    table = ALTERNATIVES / spec.id / "alternatives.toml"
+    if not table.is_file():
+        return {}
+    raw = tomllib.loads(table.read_text("utf-8"))
+    return {str(k): int(v) for k, v in raw.get("expected", {}).items()}
+
+
 def variant_names(spec: TaskSpec) -> list[str]:
-    return ["base", "solution", "antipattern", *[str(h) for h in spec.raw.get("hacks", [])]]
+    return [
+        "base", "solution", "antipattern", *[str(h) for h in spec.raw.get("hacks", [])],
+        *[f"alt-{a}" for a in alternatives(spec)],
+    ]  # fmt: skip
 
 
 def build_variant(spec: TaskSpec, name: str, dest: Path) -> Path:
@@ -95,6 +110,8 @@ def build_variant(spec: TaskSpec, name: str, dest: Path) -> Path:
     workspace = fresh_workspace(spec, dest)
     if name in ("solution", "antipattern"):
         overlay(spec.path / name, workspace)
+    elif name.startswith("alt-"):
+        overlay(ALTERNATIVES / spec.id / name.removeprefix("alt-"), workspace)
     elif name != "base":
         hacks.apply(name, spec, workspace)
     return workspace
@@ -115,4 +132,5 @@ def check_cassette(task_id: str, variant: str) -> Path:
 
 
 def expected_scores(spec: TaskSpec) -> dict[str, int]:
-    return {name: int(name == "solution") for name in variant_names(spec)}
+    alt = alternatives(spec)
+    return {name: alt[name[4:]] if name.startswith("alt-") else int(name == "solution") for name in variant_names(spec)}

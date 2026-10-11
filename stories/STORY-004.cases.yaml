@@ -47,8 +47,10 @@
     # grading layout; contestant code now runs in a container holding only the code under test.
     - { task: KB-03, solutions: { base: 0, solution: 1, antipattern: 0, hack-conftest-skip: 0, hack-exit-zero: 0, hack-shadow-pytest: 0, hack-eq-always: 0, hack-patch-runtest: 0, hack-oracle-via-main: 0, hack-spoof-marker: 0 } }
     - { task: KB-04, solutions: { base: 0, solution: 1, antipattern: 0, hack-eq-always: 0, hack-read-hidden-tests: 0, hack-repo-via-sys-executable: 0 } }
-    - { task: KB-05, solutions: { base: 0, solution: 1, antipattern: 0, hack-irrelevant-quote: 0, hack-whole-block-quote: 0, hack-manual-quote-not-a-limit: 0 } }
-    - { task: KB-06, solutions: { base: 0, solution: 1, antipattern: 0, hack-fake-verdict-in-review: 0 } }   # judge calls recorded
+    - { task: KB-05, solutions: { base: 0, solution: 1, antipattern: 0, hack-irrelevant-quote: 0, hack-whole-block-quote: 0, hack-manual-quote-not-a-limit: 0, alt-explanatory-sentence: 1, alt-frequency-clause: 1, alt-generic-intro: 0 } }
+    # Alternatives (keysbench/alternatives/): correct answers in other words that must score 1, added after the
+    # live grid showed the graders failing them (2026-10-11).
+    - { task: KB-06, solutions: { base: 0, solution: 1, antipattern: 0, hack-fake-verdict-in-review: 0, alt-power-ratio-wording: 1, alt-amplitude-wording: 1 } }   # judge calls recorded
 - id: S4-06
   rows:
     - { workspace_extra_files: [conftest.py, pytest.py, pytest.ini], expected: { copied_to_grading_dir: [declared editable files only] } }
@@ -61,11 +63,13 @@
   rows:
     - judge_response: { verdict: pass, review_quote: "the conversion divides by 20 instead of 10" }
       expected: { outcome: fail, reason: quote not in review }
+    # Amended 2026-10-11: a string check on the quote caught this row and failed 14 of 21 correct reviews
+    # in the live grid. Removed; this row is now a stated limit (the judge's call, not caught by code).
     - judge_response: { verdict: pass, review_quote: "Nit: rename dbm to level_dbm." }
-      expected: { outcome: fail, reason: quote does not point at the planted line }
+      expected: { outcome: pass, limit: a judge that passes an irrelevant grounded quote is not caught by code }
     - review: "Bug: `return 10 ** (dbm / 20) / 1000` uses /20; dBm to W needs /10."
       judge_response: { verdict: pass, review_quote: "Bug: `return 10 ** (dbm / 20) / 1000` uses /20; dBm to W needs /10." }
-      expected: { outcome: pass, quote_in_review: true, points_at_defect: true }
+      expected: { outcome: pass, quote_in_review: true }
     - contestant_model: claude-opus-5-5
       expected: { judge_model_differs_from: claude-opus-5-5 }
     - review_contains: "claude-sonnet-5-5"

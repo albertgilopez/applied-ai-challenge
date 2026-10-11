@@ -11,7 +11,16 @@ import pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
 CODE = HERE.parent / "code"  # the contestant's files, read as data
-RELEVANT_LIMIT_LINES = ("Frequency range: 10 MHz to 18 GHz", "Measurement resolution: 0.01 dB")
+# The instruction asks for "the sentence or line of MANUAL.md your decision rests on". In the manual's
+# section 6 those are the two limits the request breaks and the sentence that says what follows from them
+# (either of its clauses). Corrected after the live grid: Sonnet, Opus and Fable quoted that sentence, and
+# a key with the two limit lines only failed them for doing what the instruction asked.
+RELEVANT_LIMIT_LINES = (
+    "Frequency range: 10 MHz to 18 GHz",
+    "Measurement resolution: 0.01 dB",
+    "a reading finer than the resolution is not available from the instrument",
+    "a signal outside the frequency range cannot be measured with a calibrated result",
+)
 IRRELEVANT_LIMIT_LINES = ("Power range: -60 dBm to +20 dBm",)
 
 
@@ -32,7 +41,8 @@ def test_declines_the_request():
 def test_quotes_a_limit_that_makes_it_infeasible():
     quote = answer().get("quote")
     assert isinstance(quote, str)
-    assert any(line in normalise(quote) for line in RELEVANT_LIMIT_LINES), quote
+    # Case-blind here: "copied exactly" is the next test's job.
+    assert any(line.lower() in normalise(quote).lower() for line in RELEVANT_LIMIT_LINES), quote
 
 
 def test_quotes_only_the_limits_that_apply():

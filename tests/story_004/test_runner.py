@@ -672,3 +672,20 @@ def test_a_void_can_name_a_task_version(tasks, tmp_path):
     sha = runner.task_digest(tasks / "KB-T")
     assert runner.void_attempts(out / "ledger.jsonl", configs={"B"}, reason="r", task_sha_prefix="0000") == 0
     assert runner.void_attempts(out / "ledger.jsonl", configs={"B"}, reason="r", task_sha_prefix=sha[:8]) == 1
+
+
+def test_a_replayed_attempt_keeps_its_cost_but_is_not_spent_again(tasks, tmp_path):
+    # Re-scoring recorded attempts after a grader fix costs nothing: the replayed row keeps the attempt's
+    # cost (cost per pass stays right) and is not counted as spent a second time.
+    cassettes = tmp_path / "c"
+
+    def recording(key):
+        return RecordingProvider(Scripted([write_call(GOOD), done()]), runner.cassette_path(cassettes, key))
+
+    out = tmp_path / "out"
+    [live] = runner.run(plan(tasks), tasks_dir=tasks, out=out, provider_factory=recording, live=False)
+    assert runner.void_attempts(out / "ledger.jsonl", configs={"B"}, reason="grader fix") == 1
+    [again] = runner.run(plan(tasks), tasks_dir=tasks, out=out, cassettes=cassettes)
+    assert again["replayed"] is True and again["cost_usd"] == pytest.approx(live["cost_usd"])
+    attempts = [r for r in read_jsonl(out / "ledger.jsonl") if r.get("kind") == "attempt"]
+    assert runner.spent(attempts) == pytest.approx(live["cost_usd"])

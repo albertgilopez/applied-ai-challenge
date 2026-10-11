@@ -111,7 +111,7 @@ Attempt line (ledger):
              cache_read, output, thinking }, inference_geo } ],
   cost_usd: number | null, cost_basis: "measured-usage" | "cli-usage" | "unpriced",
   latency_s, wall_s, grader: { name, failed_checks: [id] }, judge: { model, verdict, review_quote,
-  quote_in_review, points_at_defect, prompt_sha256, rubric_sha256, artifact_sha256 } | null, at }
+  quote_in_review, prompt_sha256, rubric_sha256, artifact_sha256 } | null, at }
 ```
 
 Results JSON:

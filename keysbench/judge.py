@@ -70,7 +70,7 @@ def mask(text: str) -> str:
 
 def _fail(reason: str, **extra: Any) -> dict[str, Any]:
     return {"verdict": "fail", "reason": reason, "review_quote": "", "quote_in_review": False,
-            "points_at_defect": False, **extra}  # fmt: skip
+            **extra}  # fmt: skip
 
 
 _CLOSE = re.compile(r"</\s*review\s*>", re.IGNORECASE)
@@ -86,8 +86,6 @@ def judge_review(
     *,
     review: str,
     diff: str,
-    planted_line: str,
-    marker: str,
     judge_model: str,
     provider: Provider,
     ledger_path: Path,
@@ -130,19 +128,19 @@ def judge_review(
     except (json.JSONDecodeError, KeyError, TypeError, ValueError):
         return {**_fail("the judge's answer is not the expected JSON"), **base}
     quote_in_review = bool(quote.strip()) and _normalise(quote) in _normalise(mask(review))
-    points = _normalise(planted_line) in _normalise(quote) or marker in quote
+    # Whether the quote identifies the defect is the judge's call (`defect_found`), not a string match.
+    # A check that the quote contained the planted line or '/ 20' failed 14 of 21 reviews in the live
+    # grid that found the defect in their own words ('the divisor is 10, not 20'); the judge had passed
+    # all 21. The code keeps the part it can verify: the quote is in the review.
     result = {
         **base,
         "judge_verdict": verdict,
         "defect_found": found,
         "review_quote": quote,
         "quote_in_review": quote_in_review,
-        "points_at_defect": points,
     }
     if verdict != "pass" or not found:
         return {**result, "verdict": "fail", "reason": "the judge did not find the defect in the review"}
     if not quote_in_review:
         return {**result, "verdict": "fail", "reason": "quote not in review"}
-    if not points:
-        return {**result, "verdict": "fail", "reason": "quote does not point at the planted line"}
     return {**result, "verdict": "pass", "reason": "grounded"}

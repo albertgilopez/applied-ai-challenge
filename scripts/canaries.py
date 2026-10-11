@@ -366,6 +366,14 @@ muts = [
     ),
     # An attempt's identity is its row id: key + timestamp collided within one second on Linux (CI).
     ("keysbench/runner.py", '    if r.get("row_id"):\n        return ("row", r["row_id"])\n', ""),
+    # Live grid: KB-05's key holds the sentence the decision rests on, not only the two limit lines.
+    (
+        "keysbench/tasks/KB-05/tests/test_kb05.py",
+        '    "a signal outside the frequency range cannot be measured with a calibrated result",\n',
+        "",
+    ),
+    # A replayed row (re-scored from recordings) keeps its cost but is not spent again.
+    ("keysbench/runner.py", ' for r in rows if not r.get("replayed")', " for r in rows"),
     # The container that runs contestant code: no network, only code/ mounted, mounted read-only.
     ("keysbench/kbcall.py", '"--network", "none", ', ""),
     (
@@ -458,7 +466,6 @@ muts = [
     ),
     # STORY-004 T7: the judge's evidence is checked by code, and the judge is never the contestant.
     ("keysbench/judge.py", "    if not quote_in_review:\n", "    if False:\n"),
-    ("keysbench/judge.py", "    if not points:\n", "    if False:\n"),
     ("keysbench/judge.py", 'if verdict != "pass" or not found:', "if False:"),
     (
         "keysbench/judge.py",
