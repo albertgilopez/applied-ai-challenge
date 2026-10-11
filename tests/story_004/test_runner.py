@@ -612,3 +612,27 @@ def test_a_budget_stopped_attempt_is_run_again_on_resume(tasks, tmp_path):
         budget_usd=10.0,
     )  # fmt: skip
     assert again["outcome"] == "pass"
+
+
+# ── other providers through OpenRouter ──────────────────────────────────────────────────────────────
+
+
+def test_a_model_with_a_provider_prefix_is_called_through_openrouter(tmp_path, monkeypatch):
+    from harness.openrouter import OpenRouterProvider
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+    factory = runner.live_provider_factory(tmp_path, Budget(cap_usd=1.0), plan(Path(tmp_path)))
+    key = runner.AttemptKey("KB-T", "x", "B", "openai/gpt-5.6-sol", "high", 1)
+    p = factory(key)
+    chain = []
+    while p is not None:
+        chain.append(type(p).__name__)
+        p = getattr(p, "inner", None)
+    assert chain[-1] == OpenRouterProvider.__name__ and "RetryingProvider" in chain and "BudgetedProvider" in chain
+
+
+def test_live_with_an_openrouter_model_needs_its_key(tasks, tmp_path, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    with pytest.raises(runner.RunRefused, match="OPENROUTER_API_KEY"):
+        runner.run(plan(tasks, models=["openai/gpt-5.6-sol"]), tasks_dir=tasks, out=tmp_path / "o", live=True)

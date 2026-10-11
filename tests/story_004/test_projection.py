@@ -137,3 +137,11 @@ def test_the_project_command_prints_each_step_against_the_cap(tmp_path, monkeypa
     assert cli.main(["project", "--plan", str(p), "--ledger", str(ledger)], out=out) == 0
     text = out.getvalue()
     assert "step 0" in text and "step 1" in text and "cap 30.00" in text
+
+
+def test_a_model_runs_only_in_the_configurations_the_plan_gives_it():
+    # Other providers' models run in B only: A and A0 are the Claude Code CLI.
+    p = plan(models=[HAIKU, "openai/gpt-5.6-sol"], configs_by_model={"openai/gpt-5.6-sol": ["B"]})
+    assert p.k_for("openai/gpt-5.6-sol", "B") == 3
+    assert p.k_for("openai/gpt-5.6-sol", "A") == 0 and p.k_for("openai/gpt-5.6-sol", "A0") == 0
+    assert p.k_for(HAIKU, "A") == 3

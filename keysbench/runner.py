@@ -29,6 +29,7 @@ from typing import Any
 
 import yaml
 
+from harness.openrouter import OpenRouterProvider
 from harness.providers import AnthropicProvider, Provider, RetryingProvider
 from harness.replay import CassetteMiss, RecordingProvider, ReplayProvider
 from harness.storage import JSONObject, append_jsonl, read_jsonl, utc_stamp
@@ -70,6 +71,9 @@ class Plan:
     # (`decided: false`) cannot be applied, only projected.
     reduction: list[dict[str, Any]] = field(default_factory=list)
     applied_step: int = 0
+    # The configurations a model runs in, when not all of them: other providers' models run in B only,
+    # because A and A0 are the Claude Code CLI.
+    configs_by_model: dict[str, list[str]] = field(default_factory=dict)
 
     @classmethod
     def load(cls, path: Path) -> Plan:
@@ -78,6 +82,8 @@ class Plan:
 
     def k_at(self, model: str, config: str, step: int) -> int:
         """Attempts per task for a contestant with the first `step` reduction steps applied."""
+        if model in self.configs_by_model and config not in self.configs_by_model[model]:
+            return 0
         k = self.k
         for s in self.reduction[:step]:
             for limit in s.get("limits", []):
@@ -440,11 +446,21 @@ def attempt_a(
     return row
 
 
-def live_retrying() -> RetryingProvider:
+def via_openrouter(model: str) -> bool:
+    """Other providers' models are named with their provider (`openai/...`) and called through OpenRouter."""
+    return "/" in model
+
+
+def live_retrying(model: str = "") -> RetryingProvider:
     """Five retries, 4 s doubling (up to about two minutes in all) or what the server asks for: an overload
     shorter than that is not an `error` row (review lens 1A F2: two retries at 2 s and 4 s gave up on a 529
     after about 6 s)."""
-    return RetryingProvider(AnthropicProvider(stream=True, max_retries=0), retries=5, backoff_s=4.0)
+    inner: Provider
+    if via_openrouter(model):
+        inner = OpenRouterProvider(api_key=os.environ.get("OPENROUTER_API_KEY", ""))
+    else:
+        inner = AnthropicProvider(stream=True, max_retries=0)
+    return RetryingProvider(inner, retries=5, backoff_s=4.0)
 
 
 JudgeFactory = Callable[[AttemptKey], JudgeContext]
@@ -578,7 +594,7 @@ def run_lock(out: Path) -> Iterator[None]:
 
 def live_provider_factory(cassettes: Path, budget: Budget, plan: Plan) -> ProviderFactory:
     def factory(key: AttemptKey) -> Provider:
-        recorded = RecordingProvider(live_retrying(), cassette_path(cassettes, key))
+        recorded = RecordingProvider(live_retrying(key.model), cassette_path(cassettes, key))
         return BudgetedProvider(recorded, budget, model=key.model, max_tokens=plan.max_tokens)
 
     return factory
@@ -601,6 +617,9 @@ def run(
         raise RunRefused(f"no price for {unpriced}: a cost would be unknown")
     if live and provider_factory is None and not os.environ.get("ANTHROPIC_API_KEY"):
         raise RunRefused("--live needs ANTHROPIC_API_KEY in the environment")
+    openrouter = [m for m in plan.models if via_openrouter(m)]
+    if live and provider_factory is None and openrouter and not os.environ.get("OPENROUTER_API_KEY"):
+        raise RunRefused(f"--live with {openrouter} needs OPENROUTER_API_KEY in the environment")
     if live:
         with run_lock(out):
             return _run(plan, tasks_dir, out, live, cassettes, provider_factory, budget_usd, cli_runner, judge_factory)

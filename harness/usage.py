@@ -40,7 +40,15 @@ PRICES: dict[str, Price] = {
     "claude-opus-5-5": Price(4.0, 5.0, 8.0, 0.20, 20.0),
     "claude-sonnet-5-5": Price(2.0, 2.5, 4.0, 0.10, 10.0),
     "claude-haiku-5-5": Price(0.10, 0.125, 0.20, 0.01, 0.50, max_prompt_tokens=100_000),
+    # Other providers through OpenRouter (KeysBench configuration B). Source: the `pricing` of each model in
+    # OPENROUTER_PRICES_SOURCE, checked on OPENROUTER_PRICES_CHECKED_ON. A cache write OpenRouter does not
+    # list is priced as plain input; the higher tier above max_prompt_tokens is not in the table.
+    "openai/gpt-5.6-sol": Price(2.0, 2.5, 2.5, 0.2, 10.0, max_prompt_tokens=272_000),
+    "google/gemini-3.1-pro-preview": Price(2.0, 0.375, 0.375, 0.2, 12.0, max_prompt_tokens=200_000),
+    "qwen/qwen3-coder-next": Price(0.12, 0.12, 0.12, 0.07, 0.80),
 }
+OPENROUTER_PRICES_SOURCE = "https://openrouter.ai/api/v1/models"
+OPENROUTER_PRICES_CHECKED_ON = "2026-10-11"
 
 
 @dataclass

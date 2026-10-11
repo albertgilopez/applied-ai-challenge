@@ -546,7 +546,12 @@ def _suite(cwd: pathlib.Path, timeout_s: float | None = None, tests: list[str] |
         timeout=timeout_s,
         env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
     )
+    global LAST_OUTPUT
+    LAST_OUTPUT = (r.stdout or "") + (r.stderr or "")
     return r.returncode
+
+
+LAST_OUTPUT = ""  # the last pytest output, printed when a baseline is red: without it CI only said "red"
 
 
 # Baseline, per scope: the UNMUTATED copy must pass each selection a mutation will run. If it does not
@@ -561,6 +566,7 @@ for scope in {tuple(scope_for(f)) for f, _, _ in muts}:
     if _suite(work, tests=list(scope)) != 0:
         shutil.rmtree(work, ignore_errors=True)
         print(f"BASELINE RED for {' '.join(scope)}: no mutation result on it would mean anything")
+        print("\n".join(LAST_OUTPUT.splitlines()[-40:]))
         sys.exit(3)
     timeouts[scope] = max(TIMEOUT_S, 4 * (time.monotonic() - started))
     print(f"baseline {time.monotonic() - started:5.0f} s  {' '.join(scope)}", flush=True)
