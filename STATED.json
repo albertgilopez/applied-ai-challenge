@@ -1,13 +1,18 @@
 {
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
   "as_of": "2026-10-11",
-  "at_commit": "d85f7a6",
-  "where_we_are": "Both challenges are delivered. Challenge A: STORY-001, STORY-002 and STORY-003 done (model cards reviewed with Claude Haiku 5.5, quotes grounded by code, run recorded and replayed offline in CI). Challenge B: the manifest validator (STORY-B01) is built (strict YAML loader, rules R1-R7, tier and provenance, CLI exit 0/1/2) and the design doc is four pages with one architecture diagram (docs/marketplace/DESIGN.pdf). 307 tests, 102 canaries all killed, CI green. KeysBench (STORY-004, optional) is specified and designed; not built.",
+  "at_commit": "67d90e5",
+  "where_we_are": "Challenges A and B are done (STORY-001..003, STORY-B01; the B design doc is four pages). KeysBench (STORY-004, optional) is built: six tasks, three configurations (B, A0, A), the KB-06 judge, runner, scorer and report, with every grader seen failing against its hacks and contestant code graded in a container. The design and the code were reviewed adversarially (docs/design/STORY-004-challenge.md, STORY-004-code-challenge.md); every confirmed finding is fixed with a test and a canary. It has not been run live: no results yet.",
   "next": [
-    "Rehearse the live change for challenge A and the challenge B demo (samples/marketplace/unsafe)",
-    "Challenge B: the 20-minute presentation",
-    "KeysBench pilot if time allows: one task, configuration B, four models, one attempt"
+    "Pilot (pilot-a: every contestant on KB-03; pilot-b: Haiku 5.5 on B across every task) into keysbench/results/2026-10, then `keysbench project` to see the grid's cost at each reduction step",
+    "Grid live, before the repository is made public, then score and read the memo as its reader would",
+    "Closing review: fresh clone, security pass on keysbench/, README results section",
+    "Make the repository public, then the email to the panel, one at a time"
   ],
   "blocked": [],
-  "waiting_on": []
+  "waiting_on_albert": [
+    "Top up the personal API organisation (30-40 USD) before the pilot",
+    "Only if step 3 of the reduction does not fit the balance: decide step 4 (Fable 5.1 out of A0 and A), recorded as decided: false in the plan",
+    "OK for each delivery step: the repository public, then the email"
+  ]
 }

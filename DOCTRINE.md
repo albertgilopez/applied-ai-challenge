@@ -75,3 +75,36 @@ shared one verdict, and a re-run ignored a policy edit (security review C12). Bo
 that the current inputs never produced.
 **Cost:** a policy change reopens every item it touches, and the reviewer looks at them again; an
 override does not carry over to a new policy.
+
+## D-09 — A benchmark result belongs to (configuration, model, effort)
+
+Every attempt names all three plus the harness version; configurations never share a ranked table.
+**Why:** the same model moves by more than the gap between neighbouring models when the harness
+changes, and running code is a capability of its own (A − A0).
+**Cost:** three configurations for one question.
+
+## D-10 — A grader is trusted once it has been seen failing, reward hacks included
+
+`check-graders` requires 1 for the reference solution and 0 for the untouched environment, a plausible
+wrong answer and every hack, in CI; each grader family has a canary.
+**Why:** a pytest grader that trusted the exit code passed a planted `conftest.py`, an `os._exit(0)`
+and a shadowing `pytest.py`; a quote check against the wrong artifact passed a review that never found
+the defect; a quote of the whole limits block passed a check meant for one line.
+**Cost:** a reference, an antipattern and a set of hacks per task, written before the task is used.
+
+## D-11 — The task is the unit of a benchmark interval
+
+Intervals over contestants are clustered by task; Wilson is per cell only.
+**Why:** attempts of one task are correlated, and pooled Wilson was about half as wide as the
+task-clustered interval.
+**Cost:** with few tasks, honest intervals are wide, and the report says no ranking.
+
+## D-12 — Contestant code never runs where the answer is
+
+It is graded in a disposable container with no network, a read-only root, a non-root user and only the
+code under test mounted; expected values, oracles and the repository stay on the host.
+**Why:** on the first layout four solutions passed without solving their task: one read the hidden
+test's reference values, one imported the benchmark's own solution through the interpreter's path, one
+read the simulator's oracle from the shared process, one forged the grader's result line (code review,
+2026-10-11).
+**Cost:** about a second of container start per call; the suite went from 47 s to about 170 s.

@@ -18,7 +18,8 @@ lives in `marketplace/` (design in `docs/marketplace/`).
 | `core/` | SBOM parsing, policy, license expressions, the decision | **Standard library only.** `tests/test_boundary.py` fails naming the offending import |
 | `app/` | Reads SBOM and policy files (JSON/YAML), with size caps | The only file and YAML access; hands plain dicts to `core/` |
 | `harness/` | Agent loop: catalog, gate, governed prompt, ledger, usage, record/replay | Every tool declares its effect; `read`/`write` tools also declare `path_args` (`()` for none), or they cannot be registered |
-| `agent/` (STORY-002) | The model-card reviewer built on `harness/` | The only place a model is called |
+| `agent/` (STORY-002) | The model-card reviewer built on `harness/` | With `keysbench/`, the only places a model is called |
+| `keysbench/` (STORY-004) | Benchmark of frontier models: tasks, graders, judge, runner, report | A grader is trusted once it has been seen failing, hacks included (D-10); contestant code is graded in a container that holds only the code under test (D-12); configurations A and A0 run the Claude Code CLI as a black box, outside `harness/` |
 | `review/` (STORY-003) | Human approve/override, audit ledger, Legal report | Corrections are new ledger lines, never edits |
 | `marketplace/` (STORY-B01) | CLI of the manifest validator; rules in `core/manifest.py`, strict YAML loader in `app/strict_yaml.py` | Deterministic on purpose: it never calls a model. A new rule gets a case in `STORY-B01.cases.yaml` and a canary |
 | `stories/` | One Markdown file per story + its `cases.yaml` | Every acceptance checkbox cites `(case: ID)` |
@@ -70,6 +71,9 @@ under `## Refused instructions` with the reason. A reviewer can then decide; an 
 
 ## Decided NOT to do
 
-- Multiple model providers, streaming, code-execution sandboxes: out of scope for this size.
+- Multiple model providers: out of scope for this size.
+- A sandbox for the agent phase of KeysBench configurations A and A0: the CLI runs restricted, with
+  reads outside its working directory blocked and every tool input audited. That is a limit, not a
+  sandbox, and the report says so. Contestant code itself is graded in a container (D-12).
 - Let the model choose `Allow / Needs review / Reject`: the verdict is deterministic.
 - Call the network from tests or CI: model calls are recorded once and replayed.
