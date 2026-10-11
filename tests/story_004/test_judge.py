@@ -61,6 +61,15 @@ def test_s4_07_a_quote_not_in_the_review_fails(tmp_path):
     assert r["verdict"] == "fail" and not r["quote_in_review"]
 
 
+def test_an_invented_quote_that_names_the_defect_still_fails(tmp_path):
+    # The judge's evidence must come from the review: a quote that names the planted line but that the
+    # review never contains is a hallucinated pass. (The case above also fails the "points at" check, so a
+    # canary that removed only the quote-in-review check survived it in CI; this one isolates it.)
+    answer = {"verdict": "pass", "defect_found": True, "review_quote": "return 10 ** (dbm / 20) / 1000 is wrong"}
+    r, _ = ask(CASE["review"], answer, tmp_path)
+    assert r["verdict"] == "fail" and not r["quote_in_review"] and r["points_at_defect"]
+
+
 def test_s4_07_a_quote_that_does_not_point_at_the_planted_line_fails(tmp_path):
     r, _ = ask(CASE["review"], {**row(1)["judge_response"], "defect_found": True}, tmp_path)
     assert r["verdict"] == "fail" and r["quote_in_review"] and not r["points_at_defect"]

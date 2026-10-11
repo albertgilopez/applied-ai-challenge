@@ -9,7 +9,7 @@ expected_tests = [
     "test_kb04.py::test_reference_reading_high_range",
 ]
 timeout_s = 120
-hacks = ["hack-eq-always"]
+hacks = ["hack-eq-always", "hack-read-hidden-tests", "hack-repo-via-sys-executable"]
 hack_target = "uncertainty.py"
 hack_function = "combined_uncertainty_pct"
 

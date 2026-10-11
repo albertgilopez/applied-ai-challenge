@@ -13,20 +13,18 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 TASKS = HERE.parent / "tasks"
 SOURCES = {"kx100.py": HERE / "sim.py", "MANUAL.md": HERE / "MANUAL.md"}
+# task -> paths inside the task. KB-03's hidden tests get their own copy of the simulator: the oracle runs
+# in the test process on the host, never next to the contestant's code.
 COPIES = {
-    "KB-03": ("kx100.py", "MANUAL.md"),
-    "KB-04": ("MANUAL.md",),
-    "KB-05": ("MANUAL.md",),
-    "KB-06": ("MANUAL.md",),
+    "KB-03": ("environment/kx100.py", "environment/MANUAL.md", "tests/kx100.py"),
+    "KB-04": ("environment/MANUAL.md",),
+    "KB-05": ("environment/MANUAL.md",),
+    "KB-06": ("environment/MANUAL.md",),
 }
 
 
 def expected_copies() -> dict[Path, bytes]:
-    return {
-        TASKS / task / "environment" / name: SOURCES[name].read_bytes()
-        for task, names in COPIES.items()
-        for name in names
-    }
+    return {TASKS / task / rel: SOURCES[Path(rel).name].read_bytes() for task, rels in COPIES.items() for rel in rels}
 
 
 def sync() -> list[Path]:

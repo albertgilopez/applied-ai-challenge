@@ -277,6 +277,15 @@ muts = [
         "env = dict(os.environ)",
     ),
     ("keysbench/kbcall.py", "    if type(actual) is not type(expected):\n", "    if False:\n"),
+    # The container that runs contestant code: no network, only code/ mounted, mounted read-only.
+    ("keysbench/kbcall.py", '"--network", "none", ', ""),
+    (
+        "keysbench/kbcall.py",
+        '"--mount", f"type=bind,source={CODE},target=/code,readonly",',
+        '"--mount", f"type=bind,source={CODE},target=/code,readonly", '
+        '"--mount", f"type=bind,source={HERE},target=/tests,readonly",',
+    ),
+    ("keysbench/kbcall.py", 'target=/code,readonly"', 'target=/code"'),
     # STORY-004 T2: the scorer (the cell key, what counts as an attempt, saturation, intervals, sizing).
     (
         "core/bench_score.py",

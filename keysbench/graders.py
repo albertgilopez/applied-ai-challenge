@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+import uuid
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,7 +28,13 @@ HERE = Path(__file__).resolve().parent
 
 # What the grading run inherits: enough for Python to start on Windows and Linux, nothing else. No
 # ANTHROPIC_*, no CREDENTIALS_*, no HOME-based configuration.
-_KEEP = ("PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "COMSPEC", "PATHEXT", "LANG", "LC_ALL")
+# Contestant code never sees this environment: it runs in a container that gets none. These are what the
+# docker CLI on the host needs to find its daemon.
+_KEEP = (
+    "PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "COMSPEC", "PATHEXT", "LANG", "LC_ALL",
+    "USERPROFILE", "HOME", "APPDATA", "LOCALAPPDATA", "PROGRAMDATA",
+    "DOCKER_HOST", "DOCKER_CONTEXT", "DOCKER_CONFIG", "DOCKER_CERT_PATH", "DOCKER_TLS_VERIFY",
+)  # fmt: skip
 
 
 @dataclass(frozen=True)
@@ -78,16 +85,23 @@ def _copy_tree(src_root: Path, dest: Path) -> None:
 
 
 def build_grading_dir(spec: TaskSpec, task_dir: Path, workspace: Path, dest: Path) -> None:
-    """The task's pristine `environment/`, then the declared editable files from the workspace on top,
-    then the hidden tests and `kbcall.py`. Nothing else from the workspace crosses."""
+    """Two directories that never mix:
+
+    - `code/`: the task's pristine `environment/`, then the declared editable files from the workspace on
+      top. Nothing else from the workspace crosses. This is all the container running contestant code sees.
+    - `tests/`: the hidden tests and `kbcall.py`, run by pytest on the host. Contestant code cannot reach
+      them: it runs in a container where only `code/` is mounted.
+    """
     if dest.exists():
         shutil.rmtree(dest)
-    dest.mkdir(parents=True)
+    code, tests = dest / "code", dest / "tests"
+    code.mkdir(parents=True)
+    tests.mkdir()
     if (task_dir / "environment").is_dir():
-        _copy_tree(task_dir / "environment", dest)
+        _copy_tree(task_dir / "environment", code)
     for rel in spec.editable:
         src = workspace / rel
-        target = dest / rel
+        target = code / rel
         # A symlink could point anywhere; only a regular file inside the workspace crosses. An editable
         # file the contestant deleted is deleted here too, so "remove the bug by removing the module"
         # is graded as what it is.
@@ -96,8 +110,9 @@ def build_grading_dir(spec: TaskSpec, task_dir: Path, workspace: Path, dest: Pat
             shutil.copyfile(src, target)
         elif target.exists():
             target.unlink()
-    _copy_tree(task_dir / "tests", dest)
-    shutil.copyfile(HERE / "kbcall.py", dest / "kbcall.py")
+    if (task_dir / "tests").is_dir():
+        _copy_tree(task_dir / "tests", tests)
+    shutil.copyfile(HERE / "kbcall.py", tests / "kbcall.py")
 
 
 def _junit(report: Path) -> dict[str, str]:
@@ -110,6 +125,15 @@ def _junit(report: Path) -> dict[str, str]:
         tags = {child.tag for child in case}
         outcomes[test_id] = next((t for t in ("failure", "error", "skipped") if t in tags), "passed")
     return outcomes
+
+
+def _remove_containers(run_id: str) -> None:
+    """A run killed on timeout leaves its contestant containers running: remove them by their run id."""
+    found = subprocess.run(
+        ["docker", "ps", "-aq", "--filter", f"name=kb-{run_id}-"], capture_output=True, text=True, check=False
+    ).stdout.split()
+    if found:
+        subprocess.run(["docker", "rm", "-f", *found], capture_output=True, check=False)
 
 
 def _check_name(test_id: str) -> str:
@@ -128,6 +152,8 @@ def run_pytest(spec: TaskSpec, dest: Path) -> GradeResult:
     planted got past the copy: `--noconftest` ignores a conftest, `-I` keeps a `pytest.py` in the
     directory from shadowing pytest, and the verdict comes from a report written outside the
     directory, never from the exit code."""
+    tests = dest / "tests"
+    run_id = uuid.uuid4().hex[:12]
     with tempfile.TemporaryDirectory(prefix="kb-grade-") as outside:
         ini = Path(outside) / "pytest.ini"
         ini.write_text("[pytest]\naddopts =\n", encoding="utf-8")
@@ -135,19 +161,20 @@ def run_pytest(spec: TaskSpec, dest: Path) -> GradeResult:
         cmd = [
             sys.executable, "-I", "-B", "-m", "pytest",
             "--noconftest", "-p", "no:cacheprovider",
-            "-c", str(ini), "--rootdir", str(dest), f"--junitxml={report}", "-q", str(dest),
+            "-c", str(ini), "--rootdir", str(tests), f"--junitxml={report}", "-q", str(tests),
         ]  # fmt: skip
         try:
             proc = subprocess.run(
                 cmd,
-                cwd=dest,
-                env=grading_env(),
+                cwd=tests,
+                env={**grading_env(), "KB_RUN_ID": run_id},
                 capture_output=True,
                 text=True,
                 timeout=spec.timeout_s,
                 check=False,
             )
         except subprocess.TimeoutExpired:
+            _remove_containers(run_id)
             return GradeResult(False, ("timeout",), f"no result within {spec.timeout_s} s")
         if not report.is_file():
             return GradeResult(False, ("no_report",), f"exit {proc.returncode} and no test report")

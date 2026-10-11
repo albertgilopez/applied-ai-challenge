@@ -10,11 +10,12 @@ import json
 import pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
+CODE = HERE.parent / "code"  # the contestant's files, read as data
 RELEVANT_LIMIT_LINES = ("Frequency range: 10 MHz to 18 GHz", "Measurement resolution: 0.01 dB")
 
 
 def answer() -> dict:
-    data = json.loads((HERE / "answer.json").read_text("utf-8"))
+    data = json.loads((CODE / "answer.json").read_text("utf-8"))
     assert isinstance(data, dict)
     return data
 
@@ -36,7 +37,7 @@ def test_quotes_a_limit_that_makes_it_infeasible():
 def test_the_quote_is_from_the_manual():
     quote = answer().get("quote")
     assert isinstance(quote, str) and quote.strip()
-    manual = normalise((HERE / "MANUAL.md").read_text("utf-8"))
+    manual = normalise((CODE / "MANUAL.md").read_text("utf-8"))
     assert normalise(quote).strip("- ") in manual
 
 

@@ -117,8 +117,10 @@ def test_s4_06_only_declared_files_are_copied(tmp_path):
         {"mod.py": GOOD, "conftest.py": FORCE_PASS_CONFTEST, "pytest.py": FAKE_PYTEST, "pytest.ini": "[pytest]\n"},
     )
     result = grade_pytest(load_task(_task(tmp_path)), w, tmp_path / "g")
-    copied = sorted(p.name for p in (tmp_path / "g").iterdir() if p.is_file())
-    assert copied == ["kbcall.py", "mod.py", "test_hidden.py"], copied
+    code = sorted(p.name for p in (tmp_path / "g" / "code").iterdir())
+    tests = sorted(p.name for p in (tmp_path / "g" / "tests").iterdir() if p.is_file())
+    # The two never mix: the container that runs the contestant's code mounts only code/.
+    assert (code, tests) == (["mod.py"], ["kbcall.py", "test_hidden.py"]), (code, tests)
     assert result.passed
 
 
@@ -138,7 +140,7 @@ def test_s4_06_non_editable_files_come_from_the_pristine_environment(tmp_path):
     w = _workspace(tmp_path, {"mod.py": GOOD, "helper.py": "VALUE = 99\n"})
     result = grade_pytest(load_task(task), w, tmp_path / "g")
     assert result.passed, result
-    assert (tmp_path / "g" / "helper.py").read_text("utf-8") == "VALUE = 2\n"
+    assert (tmp_path / "g" / "code" / "helper.py").read_text("utf-8") == "VALUE = 2\n"
 
 
 def test_layer1_a_wrong_solution_with_planted_files_still_fails(tmp_path):
@@ -151,19 +153,19 @@ def test_layer1_a_wrong_solution_with_planted_files_still_fails(tmp_path):
 
 def test_layer2_noconftest_holds_even_if_a_conftest_got_in(tmp_path):
     spec, dest = _built(tmp_path)
-    (dest / "conftest.py").write_text(FORCE_PASS_CONFTEST, encoding="utf-8")
+    (dest / "tests" / "conftest.py").write_text(FORCE_PASS_CONFTEST, encoding="utf-8")
     assert not run_pytest(spec, dest).passed
 
 
 def test_layer2_isolated_mode_holds_even_if_a_pytest_py_got_in(tmp_path):
     spec, dest = _built(tmp_path)
-    (dest / "pytest.py").write_text(FAKE_PYTEST, encoding="utf-8")
+    (dest / "tests" / "pytest.py").write_text(FAKE_PYTEST, encoding="utf-8")
     assert not run_pytest(spec, dest).passed
 
 
 def test_s4_06_an_exit_zero_without_a_report_is_a_fail(tmp_path):
     spec, dest = _built(tmp_path, GOOD)
-    (dest / "test_hidden.py").write_text("import os\nos._exit(0)\n", encoding="utf-8")
+    (dest / "tests" / "test_hidden.py").write_text("import os\nos._exit(0)\n", encoding="utf-8")
     result = run_pytest(spec, dest)
     assert not result.passed and result.failed_checks == ("no_report",)
 
@@ -178,7 +180,7 @@ def test_s4_06_a_partial_report_is_a_fail(tmp_path):
 
 def test_a_skipped_test_is_not_a_pass(tmp_path):
     spec, dest = _built(tmp_path, GOOD)
-    (dest / "test_hidden.py").write_text(
+    (dest / "tests" / "test_hidden.py").write_text(
         "import pytest\n@pytest.mark.skip\ndef test_add():\n    pass\ndef test_type():\n    pass\n", encoding="utf-8"
     )
     result = run_pytest(spec, dest)
@@ -240,3 +242,32 @@ def test_strict_equal_distinguishes_bool_int_and_float():
     assert strict_equal(1, 1) and not strict_equal(True, 1) and not strict_equal(1, 1.0)
     assert strict_equal(1.0, 1.0004, tol=1e-3) and not strict_equal(1.0, 1.01, tol=1e-3)
     assert strict_equal({"a": [1, "x"]}, {"a": [1, "x"]}) and not strict_equal({"a": 1}, {"a": 1, "b": 2})
+
+
+# ── the container holds only the code under test ───────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "mod",
+    [
+        # reads the hidden tests from the grading directory (passed on the first layout)
+        "import pathlib\n"
+        "def add(a, b):\n"
+        "    for d in ('/code', '/code/..', '/tests', '/grading', '/work', '/tmp'):\n"
+        "        for p in pathlib.Path(d).glob('**/test_hidden.py'):\n"
+        "            return 5 if a == 2 else 2\n"
+        "    return 0\n",
+        # needs the network (pypi.org:443 connects from a container with the default network; a DNS
+        # server on port 53 over TCP was refused even then, so it could not tell the two cases apart)
+        "import socket\n"
+        "def add(a, b):\n"
+        "    socket.create_connection(('pypi.org', 443), timeout=5).close()\n"
+        "    return a + b\n",
+        # writes outside /tmp
+        "def add(a, b):\n    open('/code/x', 'w').write('x')\n    return a + b\n",
+    ],
+    ids=["reads-hidden-tests", "network", "writes-the-code-dir"],
+)
+def test_the_contestants_code_reaches_only_its_own_files(tmp_path, mod):
+    result = grade_pytest(load_task(_task(tmp_path)), _workspace(tmp_path, {"mod.py": mod}), tmp_path / "g")
+    assert not result.passed, result

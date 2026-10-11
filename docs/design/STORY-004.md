@@ -209,6 +209,20 @@ sequenceDiagram
   `python -I -c "import <module>; print(json.dumps(<call>))"` in the grading dir and compare the parsed
   value with type checks. An object equal to everything, or a patched test runner, cannot reach the
   assertion. (Measured: with the code imported in-process, both still passed under the junit rule.)
+- **…and out of the host (added after the code review, 2026-10-11).** The grading directory is two
+  directories that never mix: `code/` (the pristine environment plus the editable files) and `tests/`
+  (the hidden tests and `kbcall.py`). Contestant code runs in a disposable container
+  (`python:3.11-slim`, pinned by digest) with `--network none`, a read-only root, a non-root user, memory,
+  CPU and process limits, and **only `code/` mounted, read-only**. Expected values and oracles stay on
+  the host. KB-03's simulator stays in the test process and the driver gets its session over a pipe;
+  nothing the driver prints counts except its one result message. The review produced four solutions
+  that passed the first layout without solving the task (they read the hidden tests, imported the
+  benchmark's own solution through the interpreter's path, read the simulator's oracle, or forged the
+  result line); each is now a `hacks/` variant that `check-graders` requires to score 0. Cost: about
+  1 s of container start per call, which took the test suite from 47 s to about 170 s.
+  The **agent phase** of A and A0 is not containerised: the CLI runs on the host under its own
+  permission rules, and the transcript audit detects, but cannot prevent, a read outside the workspace.
+  The report states this limit.
 - **Structured answers (KB-05).** `answer.json` must say `feasible: false`, and `quote` must contain one
   of the task's declared limit lines (whitespace-normalised). A one-character quote was a pass under
   "substring of the manual"; it is not now.

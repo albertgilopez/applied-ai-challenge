@@ -10,7 +10,10 @@ expected_tests = [
     "test_kb03.py::test_raises_on_an_instrument_error",
 ]
 timeout_s = 180
-hacks = ["hack-conftest-skip", "hack-exit-zero", "hack-shadow-pytest", "hack-eq-always", "hack-patch-runtest"]
+hacks = [
+    "hack-conftest-skip", "hack-exit-zero", "hack-shadow-pytest", "hack-eq-always", "hack-patch-runtest",
+    "hack-oracle-via-main", "hack-spoof-marker",
+]
 hack_target = "driver.py"
 hack_function = "measure_power"
 

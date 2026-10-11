@@ -1,34 +1,15 @@
-"""Hidden tests for KB-03: the driver, run against the simulator in its own process.
+"""Hidden tests for KB-03: the driver, run in a container, against a simulator that stays in this process.
 
-The driver gets a session with only write/read/query. What is checked comes from the simulator's
-state after the run (its frequency and averaging settings, how many reads it served without a fresh
-INIT) and from its noiseless oracle, computed here, in the test's process.
+The driver gets a session with only write/read/query, carried over a pipe (kbcall.drive). Everything
+checked comes from this side: the simulator's state after the run (its frequency and averaging settings,
+how many reads it served without a fresh INIT) and its noiseless oracle. The driver can reach neither,
+and nothing it prints counts except its one result message.
 """
 
 import math
 
 import kx100
-from kbcall import call
-
-SETUP = """
-import kx100, driver
-sim = kx100.KX100({seed}, signal_hz={hz!r}, signal_dbm={dbm!r})
-class Session:
-    def write(self, cmd):
-        sim.write(cmd)
-    def read(self):
-        return sim.read()
-    def query(self, cmd):
-        return sim.query(cmd)
-try:
-    outcome = ["value", driver.measure_power(Session(), {freq!r}, {n!r})]
-except driver.InstrumentError as e:
-    outcome = ["InstrumentError", str(e)[:200]]
-except Exception as e:
-    outcome = ["other", type(e).__name__]
-_out = {{"outcome": outcome, "stale": sim.stale_fetches,
-        "freq": sim.query("SENS:FREQ?"), "aver": sim.query("SENS:AVER:COUN?")}}
-"""
+from kbcall import drive
 
 CASES = [  # seed, signal frequency, signal power, averaging count
     (11, 2.4e9, -23.0, 16),
@@ -37,8 +18,9 @@ CASES = [  # seed, signal frequency, signal power, averaging count
 ]
 
 
-def run(seed: int, hz: float, dbm: float, freq: float, n: int) -> dict:
-    return call("_out", setup=SETUP.format(seed=seed, hz=hz, dbm=dbm, freq=freq, n=n), timeout_s=60)
+def run(seed: int, hz: float, dbm: float, freq: float, n: int) -> tuple[dict, kx100.KX100]:
+    sim = kx100.KX100(seed, signal_hz=hz, signal_dbm=dbm)
+    return drive(sim, freq, n, timeout_s=60), sim
 
 
 def tolerance_db(n: int) -> float:
@@ -48,26 +30,28 @@ def tolerance_db(n: int) -> float:
 
 def test_reads_the_signal_power():
     for seed, hz, dbm, n in CASES:
-        got = run(seed, hz, dbm, hz, n)
-        kind, value = got["outcome"]
-        assert kind == "value" and type(value) is float, got["outcome"]
+        result, _ = run(seed, hz, dbm, hz, n)
+        assert result.get("kind") == "value" and type(result.get("value")) is float, result
         expected = kx100.KX100(seed, signal_hz=hz, signal_dbm=dbm).expected_dbm(freq_hz=hz)
-        assert abs(value - expected) <= tolerance_db(n), (seed, value, expected)
+        assert abs(result["value"] - expected) <= tolerance_db(n), (seed, result["value"], expected)
 
 
 def test_sets_the_frequency_and_the_averaging_count():
     seed, hz, dbm, n = CASES[0]
-    got = run(seed, hz, dbm, hz, n)
-    assert float(got["freq"]) == hz
-    assert int(got["aver"]) == n
+    _, sim = run(seed, hz, dbm, hz, n)
+    sim.write("*CLS")
+    assert float(sim.query("SENS:FREQ?")) == hz
+    assert int(sim.query("SENS:AVER:COUN?")) == n
 
 
 def test_takes_a_fresh_measurement():
     for seed, hz, dbm, n in CASES:
-        assert run(seed, hz, dbm, hz, n)["stale"] == 0
+        result, sim = run(seed, hz, dbm, hz, n)
+        assert result.get("kind") == "value", result
+        assert sim.stale_fetches == 0
 
 
 def test_raises_on_an_instrument_error():
     # 40 GHz is outside the band: the meter refuses the setting and queues an error.
-    got = run(14, 2.4e9, -20.0, 40e9, 16)
-    assert got["outcome"][0] == "InstrumentError", got["outcome"]
+    result, _ = run(14, 2.4e9, -20.0, 40e9, 16)
+    assert result.get("kind") == "InstrumentError", result
