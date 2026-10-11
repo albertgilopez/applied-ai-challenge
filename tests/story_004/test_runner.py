@@ -444,3 +444,26 @@ def test_run_cli_turns_a_timeout_into_a_closed_partial_transcript(monkeypatch, t
     lines = arm_a.run_cli(["claude"], tmp_path, {}, 1)
     assert json.loads(lines[-1])["subtype"] == "error_timeout"
     assert arm_a.summarise(lines, model="claude-haiku-5-5")["outcome"] == "error"
+
+
+def test_a_tool_error_names_only_the_relative_path_so_the_attempt_replays(tasks, tmp_path):
+    # Writing under a file fails with an OS error whose text carries the temporary directory (and, on a
+    # Spanish Windows, Spanish words). That text goes back to the model and into the next request, so
+    # the recording would not replay (review finding 3B F4).
+    bad = write_call(GOOD, 1)
+    bad["content"][0]["input"]["path"] = "mod.py/x.txt"
+    script = {1: [bad, write_call(GOOD, 2), done()]}
+    cassettes = tmp_path / "cassettes"
+
+    seen: list = []
+
+    def recording(key):
+        inner = Scripted(script[key.attempt])
+        seen.append(inner)
+        return RecordingProvider(inner, runner.cassette_path(cassettes, key))
+
+    [live] = runner.run(plan(tasks), tasks_dir=tasks, out=tmp_path / "live", provider_factory=recording)
+    sent = json.dumps(seen[0].requests)  # what the model received, tool results included
+    assert "tool failed" in sent and "kb-attempt-" not in sent
+    [replayed] = runner.run(plan(tasks), tasks_dir=tasks, out=tmp_path / "replay", cassettes=cassettes)
+    assert live["outcome"] == replayed["outcome"] == "pass"

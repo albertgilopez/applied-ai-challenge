@@ -62,14 +62,18 @@ def test_s4_02_cost_per_price_component_or_null(row):
 
 
 class FakeMessage:
-    def __init__(self, data: dict, request_id: str) -> None:
-        self._data, self._request_id = data, request_id
+    # Like anthropic 1.12.1's streamed snapshot: the final message carries no `_request_id`; the id lives
+    # on the stream (review finding 3B F5: the first version of this fake set it on the message).
+    def __init__(self, data: dict) -> None:
+        self._data = data
 
     def model_dump(self, mode: str = "json") -> dict:
         return dict(self._data)
 
 
 class FakeStream:
+    request_id = "req_1"
+
     def __init__(self, clock: list[float], message: FakeMessage, first_token_after: float, total: float) -> None:
         self.clock, self.message = clock, message
         self.first, self.total = first_token_after, total
@@ -98,7 +102,7 @@ class FakeClient:
 
     def _stream(self, **request):
         self.streamed.append(request)
-        msg = FakeMessage({"stop_reason": "end_turn", "content": [], "usage": {"input_tokens": 1}}, "req_1")
+        msg = FakeMessage({"stop_reason": "end_turn", "content": [], "usage": {"input_tokens": 1}})
         return FakeStream(self.clock, msg, first_token_after=0.2, total=1.25)
 
     def _create(self, **request):  # pragma: no cover - the benchmark provider never calls it

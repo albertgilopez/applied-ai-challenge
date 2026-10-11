@@ -43,6 +43,7 @@ class AnthropicProvider:
     def create(self, **request: Any) -> JSONObject:
         started = self.clock()
         ttft: float | None = None
+        request_id: str | None
         if self.stream:
             # Streaming is required for large `max_tokens`: the SDK refuses a non-streaming call above
             # about 21k output tokens, and thinking at high effort counts toward that budget.
@@ -51,11 +52,14 @@ class AnthropicProvider:
                     if ttft is None and getattr(event, "type", "") == "content_block_delta":
                         ttft = self.clock() - started
                 message = events.get_final_message()
+                # Streamed, the id is on the stream: the accumulated final message never carries it
+                # (anthropic 1.12.1; review finding 3B F5, reproduced against a mock transport).
+                request_id = getattr(events, "request_id", None)
         else:
             message = self.client.messages.create(**request)
+            # Read before model_dump: the request id is set on the parsed object and dropped by the dump.
+            request_id = getattr(message, "_request_id", None)
         latency = self.clock() - started
-        # Read before model_dump: the request id is set on the parsed object and dropped by the dump.
-        request_id = getattr(message, "_request_id", None)
         response: JSONObject = message.model_dump(mode="json")
         response["_call"] = {
             "latency_s": round(latency, 3),

@@ -8,7 +8,6 @@ never names the temporary directory (a recording made on one machine replays on 
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 from harness.catalog import Catalog, tool
@@ -27,10 +26,10 @@ HARNESS_VERSION = "1"  # bump when the loop, the tools or the prompt change what
 MAX_FILE_BYTES = 200_000
 
 
-@dataclass(frozen=True)
-class ContestantRun:
-    run: RunResult | None
-    error: str | None = None
+class ToolError(Exception):
+    """A tool failure the model sees. Its text names only the relative path: an OS error's own message
+    carries the temporary directory and the machine's language, which would put both into the next
+    request and stop the attempt from replaying (review finding 3B F4)."""
 
 
 def b_catalog(gate: Gate, workspace: Path) -> Catalog:
@@ -49,8 +48,11 @@ def b_catalog(gate: Gate, workspace: Path) -> Catalog:
     def read_file(path: str) -> str:
         target = gate.resolve(path)
         if target is None or not target.is_file():
-            raise FileNotFoundError(path)
-        return target.read_text("utf-8", errors="replace")[:MAX_FILE_BYTES]
+            raise ToolError(f"no such file: {path}")
+        try:
+            return target.read_text("utf-8", errors="replace")[:MAX_FILE_BYTES]
+        except OSError:
+            raise ToolError(f"cannot read {path}") from None
 
     @tool(
         catalog,
@@ -61,9 +63,12 @@ def b_catalog(gate: Gate, workspace: Path) -> Catalog:
     def write_file(path: str, content: str) -> str:
         target = gate.resolve(path)
         if target is None:
-            raise PermissionError(path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(content.encode("utf-8"))  # bytes: no newline translation on Windows
+            raise ToolError(f"not allowed: {path}")
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content.encode("utf-8"))  # bytes: no newline translation on Windows
+        except OSError:
+            raise ToolError(f"cannot write {path}") from None
         return f"wrote {path} ({len(content)} characters)"
 
     return catalog
