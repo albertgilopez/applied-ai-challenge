@@ -3,9 +3,22 @@ label: keysbench-2026.10
 cap_usd: 60.0
 k: 3
 effort: high
-# The four models compared, as /v1/models names them. Rounds run cheapest first.
-models: [claude-haiku-5-5, claude-sonnet-5-5, claude-opus-5-5, claude-fable-5-1]
+# The models compared. Anthropic's as /v1/models names them; other providers' as OpenRouter names them
+# (provider/model), called through OpenRouter. Rounds run cheapest first.
+models:
+  - claude-haiku-5-5
+  - claude-sonnet-5-5
+  - claude-opus-5-5
+  - claude-fable-5-1
+  - openai/gpt-5.6-sol
+  - google/gemini-3.1-pro-preview
+  - qwen/qwen3-coder-next   # open-weights; OpenRouter lists no `reasoning` parameter for it, so effort is not applied
 configs: [B, A0, A]
+# A and A0 are the Claude Code CLI; other providers' models run in B, the common harness.
+configs_by_model:
+  openai/gpt-5.6-sol: [B]
+  google/gemini-3.1-pro-preview: [B]
+  qwen/qwen3-coder-next: [B]
 tasks: [KB-01, KB-02, KB-03, KB-04, KB-05, KB-06]
 max_tokens: 32000
 max_steps: 12
@@ -33,6 +46,6 @@ reduction:
 applied_step: 0
 not_run:
   - contestant: codex-cli
-    reason: "not run: pricing it on the same basis needs per-call usage from an OpenAI account that was not set up for this run; the same tasks and graders would apply"
+    reason: "not run: OpenAI's model is measured in configuration B (GPT-5.6 Sol); its own harness, the Codex CLI, needs an OpenAI account set up for this run, which was not"
   - contestant: cursor-agent
     reason: "not run: its headless agent reports no per-call token usage, so cost per pass could not be measured on the same basis"

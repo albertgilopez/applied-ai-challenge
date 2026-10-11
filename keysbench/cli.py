@@ -96,6 +96,7 @@ def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = 
     v.add_argument("--ledger", type=Path, required=True)
     v.add_argument("--config", action="append", required=True)
     v.add_argument("--reason", required=True)
+    v.add_argument("--model", action="append")
     pr = sub.add_parser("project")
     pr.add_argument("--plan", type=Path, required=True)
     pr.add_argument("--ledger", type=Path, required=True)
@@ -105,7 +106,8 @@ def main(argv: list[str] | None = None, out: TextIO = sys.stdout, err: TextIO = 
     a = ap.parse_args(argv)
 
     if a.cmd == "void":
-        n = runner.void_attempts(a.ledger, configs=set(a.config), reason=a.reason)
+        models = set(a.model) if a.model else None
+        n = runner.void_attempts(a.ledger, configs=set(a.config), reason=a.reason, models=models)
         out.write(f"voided {n} attempts of {sorted(a.config)}: {a.reason}\n")
         return 0
     if a.cmd == "check-graders":

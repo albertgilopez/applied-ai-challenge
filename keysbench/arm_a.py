@@ -57,7 +57,9 @@ _ELSEWHERE = re.compile(
     r"\$\{?(?:HOME|USERPROFILE|APPDATA|LOCALAPPDATA|TMPDIR|TEMP|TMP|OLDPWD)\b\}?"
     r"|%(?:USERPROFILE|HOMEPATH|HOMEDRIVE|APPDATA|LOCALAPPDATA|TEMP|TMP|PUBLIC|PROGRAMDATA|ONEDRIVE)%"
     r"|\$env:\w+"
-    r"|(?<![\w~])~(?=[/\\\s]|$)"
+    # `~/...`, or a `~` that ends a command (`cd ~`, `ls ~ && ...`); not any tilde in the text: the pilot's
+    # Haiku attempt in A was marked invalid for "# mean of noise ~ 0" in a Python comment.
+    r"|(?<![\w~])~(?=[/\\]|\s*(?:$|[;&|]))"
     r"|(?<![\w:\\])\\\\[\w.$-]+\\"
     r"|\bcd\s+-(?=[\s;&|]|$)",
     re.IGNORECASE,

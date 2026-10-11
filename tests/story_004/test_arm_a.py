@@ -403,3 +403,20 @@ def test_writing_to_the_null_device_is_not_reaching_outside(tmp_path, cmd):
     line = json.dumps({"type": "assistant", "message": {"id": "m", "content": [
         {"type": "tool_use", "id": "t", "name": "Bash", "input": {"command": cmd}}]}})  # fmt: skip
     assert arm_a.audit([line], w) == []
+
+
+@pytest.mark.parametrize(
+    ("cmd", "invalid"),
+    [
+        ("python -c 'x = 1  # mean of noise ~ 0, closer to the oracle'", False),  # pilot: a tilde in a comment
+        ("cd ~ && ls", True),
+        ("ls ~", True),
+        ("cat ~/.ssh/id_rsa", True),
+    ],
+)
+def test_the_home_directory_is_a_path_not_any_tilde(tmp_path, cmd, invalid):
+    w = tmp_path / "w"
+    w.mkdir()
+    line = json.dumps({"type": "assistant", "message": {"id": "m", "content": [
+        {"type": "tool_use", "id": "t", "name": "Bash", "input": {"command": cmd}}]}})  # fmt: skip
+    assert bool(arm_a.audit([line], w)) is invalid

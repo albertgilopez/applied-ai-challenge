@@ -636,3 +636,10 @@ def test_live_with_an_openrouter_model_needs_its_key(tasks, tmp_path, monkeypatc
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     with pytest.raises(runner.RunRefused, match="OPENROUTER_API_KEY"):
         runner.run(plan(tasks, models=["openai/gpt-5.6-sol"]), tasks_dir=tasks, out=tmp_path / "o", live=True)
+
+
+def test_a_void_can_name_the_model_too(tasks, tmp_path):
+    out = tmp_path / "out"
+    p = plan(tasks, models=["claude-haiku-5-5", "claude-sonnet-5-5"])
+    runner.run(p, tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [write_call(GOOD), done()]}))
+    assert runner.void_attempts(out / "ledger.jsonl", configs={"B"}, models={"claude-haiku-5-5"}, reason="r") == 1

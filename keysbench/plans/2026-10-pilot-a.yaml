@@ -9,10 +9,20 @@ models:
 - claude-sonnet-5-5
 - claude-opus-5-5
 - claude-fable-5-1
+- openai/gpt-5.6-sol
+- google/gemini-3.1-pro-preview
+- qwen/qwen3-coder-next
 configs:
 - B
 - A0
 - A
+configs_by_model:
+  openai/gpt-5.6-sol:
+  - B
+  google/gemini-3.1-pro-preview:
+  - B
+  qwen/qwen3-coder-next:
+  - B
 tasks:
 - KB-03
 max_tokens: 32000
@@ -27,8 +37,8 @@ reduction: []
 applied_step: 0
 not_run:
 - contestant: codex-cli
-  reason: 'not run: pricing it on the same basis needs per-call usage from an OpenAI account that was not set up for this
-    run; the same tasks and graders would apply'
+  reason: 'not run: OpenAI''s model is measured in configuration B (GPT-5.6 Sol); its own harness, the Codex CLI, needs an
+    OpenAI account set up for this run, which was not'
 - contestant: cursor-agent
   reason: 'not run: its headless agent reports no per-call token usage, so cost per pass could not be measured on the same
     basis'
