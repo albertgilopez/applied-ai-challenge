@@ -1,0 +1,300 @@
+"""STORY-004 T8: the runner and configuration B (S4-01, S4-04, S4-11, S4-12, S4-18).
+
+The model is scripted or replayed; nothing here calls a provider. A tiny task is built in a temporary
+directory: `add` must return a + b, and configuration B fixes it by writing the file with its tool.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from harness.replay import CassetteMiss, RecordingProvider
+from harness.storage import read_jsonl
+from keysbench import runner
+from keysbench.runner import Budget, BudgetedProvider, BudgetStop, Plan
+
+TASK_TOML = """
+id = "KB-T"
+track = "domain"
+family = "pytest"
+editable = ["mod.py"]
+expected_tests = ["test_hidden.py::test_add"]
+timeout_s = 60
+"""
+HIDDEN = "from kbcall import call\n\ndef test_add():\n    assert call('mod.add(2, 3)', 'mod') == 5\n"
+GOOD = "def add(a, b):\n    return a + b\n"
+BAD = "def add(a, b):\n    return a - b\n"
+
+
+@pytest.fixture
+def tasks(tmp_path):
+    t = tmp_path / "tasks" / "KB-T"
+    (t / "environment").mkdir(parents=True)
+    (t / "tests").mkdir()
+    (t / "task.toml").write_text(TASK_TOML, encoding="utf-8")
+    (t / "instruction.md").write_text("Fix add in mod.py so add(2, 3) == 5.\n", encoding="utf-8")
+    (t / "environment" / "mod.py").write_text(BAD, encoding="utf-8")
+    (t / "tests" / "test_hidden.py").write_text(HIDDEN, encoding="utf-8")
+    return tmp_path / "tasks"
+
+
+def plan(tasks: Path, **kw) -> Plan:
+    base = {
+        "label": "test",
+        "cap_usd": 60.0,
+        "k": 1,
+        "effort": "high",
+        "models": ["claude-sonnet-5-5"],
+        "configs": ["B"],
+        "tasks": ["KB-T"],
+        "max_tokens": 32000,
+        "max_steps": 6,
+        "not_run": [],
+    }
+    return Plan(**{**base, **kw})
+
+
+def usage(inp=1000, out=200):
+    return {"input_tokens": inp, "output_tokens": out, "inference_geo": "global"}
+
+
+def write_call(content: str, n: int = 1) -> dict:
+    return {
+        "stop_reason": "tool_use",
+        "content": [
+            {"type": "tool_use", "id": f"t{n}", "name": "write_file", "input": {"path": "mod.py", "content": content}}
+        ],
+        "usage": usage(),
+        "_call": {"latency_s": 1.0, "ttft_s": 0.2, "request_id": f"r{n}", "failed_tries": []},
+    }
+
+
+def done(stop: str = "end_turn") -> dict:
+    return {
+        "stop_reason": stop,
+        "content": [{"type": "text", "text": "done"}],
+        "usage": usage(),
+        "_call": {"latency_s": 0.5, "ttft_s": 0.1, "request_id": "rz", "failed_tries": []},
+    }
+
+
+class Scripted:
+    def __init__(self, responses):
+        self.responses, self.requests = list(responses), []
+
+    def create(self, **request):
+        self.requests.append(json.loads(json.dumps(request)))
+        return self.responses.pop(0)
+
+
+def by_attempt(script: dict[int, list[dict]], seen: list | None = None):
+    def factory(key: runner.AttemptKey):
+        p = Scripted(script[key.attempt])
+        if seen is not None:
+            seen.append(p)
+        return p
+
+    return factory
+
+
+# ── S4-01: every row names its unit; every request carries the fixed effort ──────────────────────────
+
+
+def test_s4_01_rows_name_the_unit_and_every_request_carries_the_effort(tasks, tmp_path):
+    seen: list = []
+    rows = runner.run(
+        plan(tasks),
+        tasks_dir=tasks,
+        out=tmp_path / "out",
+        provider_factory=by_attempt({1: [write_call(GOOD), done()]}, seen),
+    )
+    [row] = rows
+    assert row["config"] == "B" and row["task_id"] == "KB-T" and row["task_sha256"]
+    assert row["contestant"]["model"] == "claude-sonnet-5-5" and row["contestant"]["effort"] == "high"
+    assert row["contestant"]["harness"] == "repo-harness" and row["contestant"]["harness_version"]
+    assert row["outcome"] == "pass"
+    assert all(r["output_config"]["effort"] == "high" for r in seen[0].requests)
+    assert all("cache_control" in r for r in seen[0].requests)
+
+
+def test_the_prompt_never_names_the_temporary_directory(tasks, tmp_path):
+    seen: list = []
+    runner.run(plan(tasks), tasks_dir=tasks, out=tmp_path / "out", provider_factory=by_attempt({1: [done()]}, seen))
+    assert str(tmp_path) not in json.dumps(seen[0].requests)
+
+
+# ── S4-04: refusal, max_tokens and errors are named, never fail ──────────────────────────────────────
+
+
+@pytest.mark.parametrize(("stop", "outcome"), [("refusal", "refused"), ("max_tokens", "truncated")])
+def test_s4_04_named_outcomes(tasks, tmp_path, stop, outcome):
+    rows = runner.run(
+        plan(tasks), tasks_dir=tasks, out=tmp_path / "out", provider_factory=by_attempt({1: [done(stop)]})
+    )
+    assert rows[0]["outcome"] == outcome
+
+
+def test_a_wrong_answer_is_a_fail_with_its_failed_checks(tasks, tmp_path):
+    rows = runner.run(
+        plan(tasks), tasks_dir=tasks, out=tmp_path / "out", provider_factory=by_attempt({1: [write_call(BAD), done()]})
+    )
+    assert rows[0]["outcome"] == "fail"
+    assert rows[0]["grader"]["failed_checks"] == ["test_add"]
+
+
+# ── S4-11: the budget ────────────────────────────────────────────────────────────────────────────────
+
+
+def test_s4_11_a_projection_above_the_cap_refuses_before_any_attempt(tasks, tmp_path):
+    out = tmp_path / "out"
+    out.mkdir()
+    # A measured attempt at 25 USD for this contestant; three more would project 75 > 60.
+    measured = {"kind": "attempt", "task_id": "KB-T", "task_sha256": "old", "config": "B",
+                "contestant": {"model": "claude-sonnet-5-5", "effort": "high"}, "attempt": 1,
+                "outcome": "pass", "cost_usd": 25.0}  # fmt: skip
+    (out / "ledger.jsonl").write_text(json.dumps(measured) + "\n", encoding="utf-8")
+    with pytest.raises(runner.RunRefused, match="projected"):
+        runner.run(plan(tasks, k=3), tasks_dir=tasks, out=out, provider_factory=by_attempt({}), live=True)
+
+
+def test_s4_11_a_call_whose_worst_case_crosses_the_cap_is_not_made(tasks, tmp_path):
+    inner = Scripted([done()])
+    budget = Budget(cap_usd=1.0)
+    provider = BudgetedProvider(inner, budget, model="claude-fable-5-1", max_tokens=32000)
+    with pytest.raises(BudgetStop):
+        provider.create(model="claude-fable-5-1", max_tokens=32000, messages=[{"role": "user", "content": "x"}])
+    assert inner.requests == [] and budget.spent_usd == 0.0
+
+
+def test_s4_11_a_stopped_attempt_keeps_what_it_spent(tasks, tmp_path):
+    # First call measured at 0.50 USD; the second call's reservation (0.50 + 1.60 > 2.00) is refused.
+    first = write_call(BAD)
+    first["usage"] = {"input_tokens": 0, "output_tokens": 10000, "inference_geo": "global"}  # 10k x $50/MTok
+    p = plan(tasks, cap_usd=2.0, models=["claude-fable-5-1"])
+    rows = runner.run(
+        p, tasks_dir=tasks, out=tmp_path / "out", provider_factory=by_attempt({1: [first, done()]}), live=True
+    )
+    assert rows[0]["outcome"] == "budget_stopped"
+    assert rows[0]["cost_usd"] == pytest.approx(0.50)
+
+
+# ── S4-12: replay, per attempt ───────────────────────────────────────────────────────────────────────
+
+
+def test_s4_12_three_recorded_attempts_replay_as_three_attempts(tasks, tmp_path):
+    script = {1: [write_call(GOOD), done()], 2: [write_call(BAD), done()], 3: [write_call(GOOD), done()]}
+    cassettes = tmp_path / "cassettes"
+
+    def recording(key):
+        return RecordingProvider(Scripted(script[key.attempt]), runner.cassette_path(cassettes, key))
+
+    p = plan(tasks, k=3)
+    live = runner.run(p, tasks_dir=tasks, out=tmp_path / "live", provider_factory=recording)
+    replayed = runner.run(p, tasks_dir=tasks, out=tmp_path / "replay", cassettes=cassettes)
+    assert [r["outcome"] for r in live] == ["pass", "fail", "pass"]
+    assert [r["outcome"] for r in replayed] == ["pass", "fail", "pass"]
+
+
+def test_s4_12_an_unrecorded_request_stops_the_run(tasks, tmp_path):
+    with pytest.raises(CassetteMiss):
+        runner.run(plan(tasks), tasks_dir=tasks, out=tmp_path / "out", cassettes=tmp_path / "empty")
+
+
+def test_s4_12_live_without_a_key_is_refused(tasks, tmp_path, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    with pytest.raises(runner.RunRefused, match="ANTHROPIC_API_KEY"):
+        runner.run(plan(tasks), tasks_dir=tasks, out=tmp_path / "out", live=True)
+
+
+# ── S4-18: resume ────────────────────────────────────────────────────────────────────────────────────
+
+
+def test_s4_18_a_rerun_skips_recorded_attempts_and_keeps_the_spend(tasks, tmp_path):
+    out = tmp_path / "out"
+    script = {n: [write_call(GOOD), done()] for n in (1, 2, 3)}
+    calls: list = []
+    runner.run(plan(tasks, k=2), tasks_dir=tasks, out=out, provider_factory=by_attempt(script, calls))
+    assert len(calls) == 2
+    rows = runner.run(plan(tasks, k=3), tasks_dir=tasks, out=out, provider_factory=by_attempt(script, calls))
+    assert len(calls) == 3  # only attempt 3 ran
+    assert [r["attempt"] for r in rows] == [3]
+    ledger = [r for r in read_jsonl(out / "ledger.jsonl") if r.get("kind") == "attempt"]
+    assert [r["attempt"] for r in ledger] == [1, 2, 3]
+    assert runner.spent(ledger) == pytest.approx(sum(r["cost_usd"] for r in ledger))
+
+
+def test_attempts_run_in_rounds_cheapest_model_first(tasks, tmp_path):
+    order: list = []
+
+    def factory(key):
+        order.append((key.attempt, key.model))
+        return Scripted([done()])
+
+    runner.run(plan(tasks, k=2, models=["claude-sonnet-5-5", "claude-haiku-5-5"]), tasks_dir=tasks, out=tmp_path / "o",
+               provider_factory=factory)  # fmt: skip
+    assert order == [
+        (1, "claude-haiku-5-5"),
+        (1, "claude-sonnet-5-5"),
+        (2, "claude-haiku-5-5"),
+        (2, "claude-sonnet-5-5"),
+    ]
+
+
+def test_a_model_with_no_price_is_refused_before_anything_runs(tasks, tmp_path):
+    with pytest.raises(runner.RunRefused, match="price"):
+        runner.run(plan(tasks, models=["claude-unknown-9"]), tasks_dir=tasks, out=tmp_path / "o",
+                   provider_factory=by_attempt({}))  # fmt: skip
+
+
+# ── configurations A and A0 through the runner (the CLI is faked) ────────────────────────────────────
+
+
+def fake_cli(content: str, extra_tool: dict | None = None):
+    def run_cli(cmd, workspace, env):
+        assert env["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"] == "1"
+        (workspace / "mod.py").write_text(content, encoding="utf-8")
+        blocks = [{"type": "tool_use", "id": "t1", "name": "Edit", "input": {"file_path": "mod.py"}}]
+        if extra_tool:
+            blocks.append(extra_tool)
+        usage = {"input_tokens": 100, "output_tokens": 50, "inference_geo": "global"}
+        return [
+            json.dumps({"type": "system", "subtype": "init", "claude_code_version": "2.1.296"}),
+            json.dumps({"type": "assistant", "message": {"id": "m1", "content": blocks, "usage": usage}}),
+            json.dumps({"type": "result", "subtype": "success", "is_error": False, "total_cost_usd": 0.0007,
+                        "duration_ms": 3000, "duration_api_ms": 2000, "num_turns": 2, "usage": usage}),
+        ]  # fmt: skip
+
+    return run_cli
+
+
+def test_configuration_a_runs_live_then_replays_from_what_it_stored(tasks, tmp_path, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    p = plan(tasks, configs=["A"], cli={"version": "2.1.296"})
+    cassettes = tmp_path / "cassettes"
+    [live] = runner.run(p, tasks_dir=tasks, out=tmp_path / "live", live=True, cassettes=cassettes,
+                        cli_runner=fake_cli(GOOD))  # fmt: skip
+    assert live["outcome"] == "pass" and live["contestant"]["harness"] == "claude-code-cli"
+    assert live["cost_basis"] == "cli-usage" and live["cli_cost_usd"] == 0.0007
+    assert live["cost_usd"] == pytest.approx((100 * 2 + 50 * 10) / 1e6)
+    [replayed] = runner.run(p, tasks_dir=tasks, out=tmp_path / "replay", cassettes=cassettes)
+    assert replayed["outcome"] == "pass"
+
+
+def test_s4_04_configuration_a_reading_outside_the_workspace_is_invalid(tasks, tmp_path, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    outside = {"type": "tool_use", "id": "t2", "name": "Read", "input": {"file_path": "../KB-01/solution/core/x.py"}}
+    p = plan(tasks, configs=["A0"], cli={"version": "2.1.296"})
+    [row] = runner.run(p, tasks_dir=tasks, out=tmp_path / "o", live=True, cassettes=tmp_path / "c",
+                       cli_runner=fake_cli(GOOD, outside))  # fmt: skip
+    assert row["outcome"] == "invalid" and row["audit"]
+
+
+def test_configuration_a_is_not_started_without_budget_for_one_call(tasks, tmp_path, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    p = plan(tasks, configs=["A"], cli={"version": "2.1.296"}, cap_usd=0.01)
+    [row] = runner.run(p, tasks_dir=tasks, out=tmp_path / "o", live=True, cassettes=tmp_path / "c",
+                       cli_runner=fake_cli(GOOD))  # fmt: skip
+    assert row["outcome"] == "budget_stopped"
