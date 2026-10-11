@@ -27,6 +27,8 @@ package = false
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+# Task trees are data (old copies of core/, hidden tests): linting them would edit what a task digest covers.
+extend-exclude = ["keysbench/tasks"]
 
 [tool.ruff.lint]
 # pyflakes, pycodestyle, import order, bugbear, pyupgrade, simplify
@@ -38,7 +40,9 @@ select = ["F", "E", "W", "I", "B", "UP", "SIM"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["core", "harness", "app", "agent", "review", "marketplace", "state", "scripts", "samples", "keysbench/instrument"]
+files = ["core", "harness", "app", "agent", "review", "marketplace", "state", "scripts", "samples", "keysbench"]
+# Task trees are data: old copies of core/, hidden tests, planted hacks. Never type-checked as repo code.
+exclude = ["keysbench/tasks/"]
 warn_unused_ignores = true
 warn_redundant_casts = true
 check_untyped_defs = true

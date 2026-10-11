@@ -143,8 +143,13 @@
   steps: [run_until_attempt_5_then_kill, run_again]
   expected: { attempts_rerun: 0, spend_after_second_run_includes_first: true }
 - id: S4-19
-  ledger: samples of S4-09 + one failing attempt with failed_checks [kb03.reads_before_init]
+  ledger: samples of S4-09 + one failing attempt with failed_checks [kb03.reads_before_init] (A0, m1, so S4-09 still holds)
+  # Discordance: within each configuration, every pair of contestants and every task both ran,
+  # d_t = p_x (1 - p_y) + p_y (1 - p_x), averaged. Only B has a pair here: KB-03 0, KB-04 5/9, mean 5/18.
+  # (Corrected 2026-10-11: the first version of this case said 0.3 -> 103, a number written by hand that
+  # no ledger of this shape produces. The sample-size formula is checked separately at 0.3.)
   expected:
     memo_sections: [per_task, commodity, failure_modes, decision_grade]
     failure_modes_contains: { mode: reads before INIT, count: 1 }
-    decision_grade: { discordance_rate: 0.3, tasks_needed_for_15_points: 103 }   # paired, alpha 0.05 two-sided, power 0.8
+    decision_grade: { discordance_rate: 0.2778, tasks_needed_for_15_points: 95 }   # paired, alpha 0.05 two-sided, power 0.8
+    sample_size_formula: { discordance_rate: 0.3, tasks_needed_for_15_points: 103 }

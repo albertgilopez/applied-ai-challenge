@@ -277,6 +277,50 @@ muts = [
         "env = dict(os.environ)",
     ),
     ("keysbench/kbcall.py", "    if type(actual) is not type(expected):\n", "    if False:\n"),
+    # STORY-004 T2: the scorer (the cell key, what counts as an attempt, saturation, intervals, sizing).
+    (
+        "core/bench_score.py",
+        'return (row["task_id"], row["task_sha256"], row["config"], contestant["model"], contestant["effort"])',
+        'return (row["task_id"], "", row["config"], contestant["model"], contestant["effort"])',
+    ),
+    (
+        "core/bench_score.py",
+        'NOT_ATTEMPTS = frozenset({"budget_stopped", "error"})',
+        'NOT_ATTEMPTS = frozenset({"error"})',
+    ),
+    (
+        "core/bench_score.py",
+        '        if c["attempts"] > 0:\n            rates.setdefault',
+        '        if c["attempts"] > 0 and not c["saturated"]:\n            rates.setdefault',
+    ),
+    ("core/bench_score.py", "6: 2.4469,", "6: 1.96,"),
+    ("core/bench_score.py", "return {task for task, who in perfect.items() if who == everyone}", "return set(perfect)"),
+    (
+        "core/bench_score.py",
+        "rank = max(1, math.ceil(q * len(ordered)))",
+        "rank = max(1, round(q * (len(ordered) - 1)) + 1)",
+    ),
+    ("core/bench_score.py", "POWER = 0.8\n", "POWER = 0.9\n"),
+    (
+        "core/bench_score.py",
+        "return math.fsum(float(c) for c in costs if c is not None)",
+        "return sum(float(c) for c in costs if c is not None)",
+    ),
+    # STORY-004 T3: the KX-100 traps the tasks rely on.
+    (
+        "keysbench/instrument/sim.py",
+        "            if not self._fresh:\n                self.stale_fetches += 1\n",
+        "            self._measure()\n",
+    ),
+    ("keysbench/instrument/sim.py", "NOISE_REL_N1 / math.sqrt(self._aver) * z", "NOISE_REL_N1 * z"),
+    ("keysbench/instrument/sim.py", "ratio = cal_factor_pct(self.signal_hz) / cal_factor_pct(freq_hz)", "ratio = 1.0"),
+    (
+        "keysbench/instrument/sim.py",
+        "        if not FREQ_MIN_HZ <= value <= FREQ_MAX_HZ:\n            raise _CommandError(-222)\n",
+        "",
+    ),
+    ("keysbench/instrument/sim.py", "self._errors.pop(0) if self._errors", "self._errors.pop() if self._errors"),
+    ("keysbench/instrument/sim.py", "        self._buffer = RESET_READING_DBM\n", ""),
 ]
 # Every anchor is checked before anything is mutated: a reformat that splits a
 # line should report all the stale anchors at once, not stop at the first.

@@ -282,7 +282,7 @@ def test_s4_19_memo_sections_and_failure_mode() -> None:
 def test_s4_19_tasks_needed_for_15_points_at_the_case_discordance() -> None:
     # n = (1.959964*sqrt(0.3) + 0.841621*sqrt(0.3 - 0.0225))^2 / 0.0225
     #   = (1.073520 + 0.443352)^2 / 0.0225 = 2.300901 / 0.0225 = 102.26 -> 103
-    expected = CASES["S4-19"]["expected"]["decision_grade"]
+    expected = CASES["S4-19"]["expected"]["sample_size_formula"]
     assert tasks_needed(expected["discordance_rate"], 0.15) == expected["tasks_needed_for_15_points"]
 
 
@@ -292,12 +292,11 @@ def test_s4_19_discordance_measured_from_the_ledger() -> None:
     # disagrees. On this ledger only B has a pair (m1, m2):
     #   KB-03: 1 * 0 + 1 * 0 = 0;  KB-04: 2/3 * 2/3 + 1/3 * 1/3 = 5/9;  mean = 5/18 = 0.2778
     #   n = (1.959964*sqrt(5/18) + 0.841621*sqrt(5/18 - 0.0225))^2 / 0.0225 = 94.51 -> 95
-    # The cases file says 0.3 -> 103; 0.3 is not reachable from this ledger under any pairing tried
-    # (attempt-index pairs 1/6, cross-product 5/18), so the measured value is asserted here.
+    expected = CASES["S4-19"]["expected"]["decision_grade"]
     rows = s4_19_rows()
     grade = memo(cells(rows), rows, FAILURE_NAMES)["decision_grade"]
-    assert close(grade["discordance_rate"], 5 / 18)
-    assert grade["tasks_needed_for_15_points"] == 95
+    assert close(grade["discordance_rate"], 5 / 18) and close(grade["discordance_rate"], expected["discordance_rate"])
+    assert grade["tasks_needed_for_15_points"] == expected["tasks_needed_for_15_points"]
     # 13 attempts (12 from S4-09 + the A0 one) at 0.01 = 0.13 over 2 task digests = 0.065 per task
     assert close(grade["est_cost_usd"], 95 * 0.065)
 
