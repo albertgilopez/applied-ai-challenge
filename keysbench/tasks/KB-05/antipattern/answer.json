@@ -1,0 +1,5 @@
+{
+  "feasible": true,
+  "answer": "Set SENS:FREQ 40 GHZ and SENS:AVER:COUN 1024 to get the finest resolution, then log FETC? after each INIT.",
+  "quote": "SENS:AVER:COUN <n> | integer 1 to 1024"
+}
