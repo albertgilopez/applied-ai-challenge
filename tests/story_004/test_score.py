@@ -399,9 +399,14 @@ def test_tasks_needed_is_null_when_15_points_cannot_exist() -> None:
 
 def test_score_is_deterministic_and_order_free() -> None:
     rows = s4_19_rows()
+    rng = random.Random(19)
+    for row in rows:  # costs that do not add up the same in every order (0.1 + 0.2 + 0.3 != 0.3 + 0.2 + 0.1)
+        row["cost_usd"] = rng.choice([0.1, 0.2, 0.3, 0.7, 1e-3, 1e-17])
+        row["latency_s"] = rng.uniform(0.5, 9.0)
     first = score(rows, FAILURE_NAMES, benchmark="keysbench-2026.10")
-    shuffled = list(rows)
-    random.Random(19).shuffle(shuffled)
-    assert score(shuffled, FAILURE_NAMES, benchmark="keysbench-2026.10") == first
+    for seed in range(20):
+        shuffled = list(rows)
+        random.Random(seed).shuffle(shuffled)
+        assert score(shuffled, FAILURE_NAMES, benchmark="keysbench-2026.10") == first, seed
     assert set(first) == {"benchmark", "tasks", "ranking", "memo", "cells", "by_contestant", "deltas"}
     assert first["benchmark"] == "keysbench-2026.10"

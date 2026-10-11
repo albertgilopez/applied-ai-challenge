@@ -183,12 +183,11 @@ def _counted(row: Mapping[str, Any]) -> bool:
 
 
 def _cost(rows: Iterable[Mapping[str, Any]]) -> float | None:
-    total = 0.0
-    for row in rows:
-        if row.get("cost_usd") is None:
-            return None
-        total += float(row["cost_usd"])
-    return total
+    costs = [row.get("cost_usd") for row in rows]
+    if any(c is None for c in costs):
+        return None
+    # fsum is exactly rounded, so the total does not depend on the order of the ledger lines
+    return math.fsum(float(c) for c in costs if c is not None)
 
 
 def _latencies(rows: Iterable[Mapping[str, Any]]) -> list[float]:
