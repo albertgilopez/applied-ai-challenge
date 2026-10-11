@@ -539,14 +539,23 @@ def standing(rows: Iterable[JSONObject]) -> list[JSONObject]:
     return [r for r in rows if r.get("kind") == "attempt" and _attempt_id(r) not in gone]
 
 
-def void_attempts(ledger_path: Path, *, configs: set[str], reason: str, models: set[str] | None = None) -> int:
+def void_attempts(
+    ledger_path: Path,
+    *,
+    configs: set[str],
+    reason: str,
+    models: set[str] | None = None,
+    task_sha_prefix: str | None = None,
+) -> int:
     """Append one void line for every standing attempt of `configs`; returns how many. What they cost is
     still spent (`spent` counts every attempt line)."""
     rows = list(read_jsonl(ledger_path))
     targets = [
         r
         for r in standing(rows)
-        if r.get("config") in configs and (models is None or r["contestant"]["model"] in models)
+        if r.get("config") in configs
+        and (models is None or r["contestant"]["model"] in models)
+        and (task_sha_prefix is None or str(r.get("task_sha256", "")).startswith(task_sha_prefix))
     ]
     if targets:
         ids = [

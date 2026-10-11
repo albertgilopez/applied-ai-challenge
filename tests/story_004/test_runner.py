@@ -663,3 +663,12 @@ def test_a_provider_prefixed_model_names_a_file_not_a_folder(tmp_path):
     path = runner.cassette_path(tmp_path, key)
     assert path.parent == tmp_path / "KB-03" / ("a" * 12)
     assert path.name == "B-openai--gpt-5.6-sol-high-1.jsonl"
+
+
+def test_a_void_can_name_a_task_version(tasks, tmp_path):
+    # Grid: a pilot attempt measured KB-05 before a hack was added to it, so under another digest.
+    out = tmp_path / "out"
+    runner.run(plan(tasks), tasks_dir=tasks, out=out, provider_factory=by_attempt({1: [write_call(GOOD), done()]}))
+    sha = runner.task_digest(tasks / "KB-T")
+    assert runner.void_attempts(out / "ledger.jsonl", configs={"B"}, reason="r", task_sha_prefix="0000") == 0
+    assert runner.void_attempts(out / "ledger.jsonl", configs={"B"}, reason="r", task_sha_prefix=sha[:8]) == 1
