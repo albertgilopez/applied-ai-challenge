@@ -90,3 +90,18 @@ ledger keeps the original lines) and re-scored or rerun:
 
 L5 matters beyond the false positive: the repository went public before configuration A ran, and
 without it a contestant could have fetched a published solution from a script it wrote.
+
+**L6, configuration A not run.** The CLI with Python was granted Python by rule (`Bash(python *)`) and
+denied it by matcher: the matcher splits a command on newlines and operators and needs every part to
+match a rule, so heredocs, multi-line `python -c` and the shell around them (`cat > t.py`, `rm`, `cd ... &&`)
+were refused. 56 denials in 13 attempts; 6 of the 13 reached the turn cap. A read as "Python makes the
+models worse" (A − B −67 points on the preview), which was the harness, not the models. The 13 attempts
+are voided, A is in the plan's `not_run` with this reason, and the fix is the CLI in a container with
+egress only to the API, not a wider allow list on the host (`rm` behind an after-the-fact audit). The same
+look found that the CLI's turn cap was recorded as `error` and retried at a cost, while B grades what its
+step cap leaves: the CLI now does the same.
+
+**Open, written as a limit.** The audit is the fifth patch of the day and the A attempts showed two more
+false-positive kinds (`https://x` as test data in a URL-parsing task, `/.git/*` as a filter argument). The
+design change is that the audit flags and each flag is judged on its quoted evidence, verdict frozen in the
+ledger. With A not run, A0 has no audit finding, so no result here depends on it.

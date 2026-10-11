@@ -472,6 +472,12 @@ muts = [
     ),
     ("keysbench/arm_a.py", "whole = [value for value, part in fresh if not part]", "whole = [v for v, _ in fresh]"),
     ("keysbench/arm_a.py", "    for text in whole + parts:", "    for text in whole:"),
+    # The CLI's turn cap is graded like B's step cap, not recorded as an error and retried.
+    (
+        "keysbench/arm_a.py",
+        '        summary["outcome"] = None  # B\'s step cap',
+        '        summary["outcome"] = "error"  #',
+    ),
     (
         "keysbench/arm_a.py",
         "    p = relative_path(rel)",

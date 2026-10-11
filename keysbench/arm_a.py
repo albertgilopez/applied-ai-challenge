@@ -359,6 +359,8 @@ def summarise(lines: list[str], *, model: str) -> dict[str, Any]:
         summary["outcome"] = "error"
     elif result.get("subtype") == "error_max_budget_usd":
         summary["outcome"] = "budget_stopped"
+    elif result.get("subtype") == "error_max_turns":
+        summary["outcome"] = None  # B's step cap: the grader decides on what the attempt left, as in B
     elif result.get("is_error") or str(result.get("subtype", "")).startswith("error"):
         summary["outcome"] = "error"
     elif (result.get("stop_reason") or last_stop) == "refusal":

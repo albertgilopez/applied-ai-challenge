@@ -32,10 +32,10 @@ LIMITS = (
     "The judge (KB-06 only) is an Anthropic model, anonymised, never the contestant. Code checks that its "
     "quote is in the review; whether the quote is the planted defect is the judge's call (a word-level check "
     "rejected 14 of 21 correct reviews and was removed). Bias reduced, not removed.",
-    "Configurations A and A0 run the Claude Code CLI restricted and audited, not sandboxed: the audit reads "
-    "shell text and the string literals of Python the contestant runs or writes, and a path outside the "
-    "workspace or a network address makes the attempt invalid. A path or an address built at run time is "
-    "not seen.",
+    "Configuration A0 runs the Claude Code CLI restricted and audited, not sandboxed, with file tools only. "
+    "Whether code execution changes the picture is not answered this month: configuration A (the CLI with "
+    "Python) ran and was voided, because the CLI's permission matcher refused most of the Python the rule "
+    "allowed; the fix is the CLI in a container.",
     "The offline measure is not the contract metric. That is cost per accepted change on real work; this is "
     "the gate before it and the regression check after it.",
 )

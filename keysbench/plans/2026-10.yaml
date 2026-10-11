@@ -13,8 +13,9 @@ models:
   - openai/gpt-5.6-sol
   - google/gemini-3.1-pro-preview
   - qwen/qwen3-coder-next   # open-weights; OpenRouter lists no `reasoning` parameter for it, so effort is not applied
-configs: [B, A0, A]
-# A and A0 are the Claude Code CLI; other providers' models run in B, the common harness.
+configs: [B, A0]
+# A0 is the Claude Code CLI; other providers' models run in B, the common harness. Configuration A (the CLI
+# with Python) ran and was voided: see `not_run`.
 configs_by_model:
   openai/gpt-5.6-sol: [B]
   google/gemini-3.1-pro-preview: [B]
@@ -47,5 +48,7 @@ applied_step: 0
 not_run:
   - contestant: codex-cli
     reason: "not run: OpenAI's model is measured in configuration B (GPT-5.6 Sol); its own harness, the Codex CLI, needs an OpenAI account set up for this run, which was not"
+  - contestant: claude-code-cli-with-python (configuration A)
+    reason: "not run this month: the restricted CLI granted Python by rule (Bash(python *)) and denied it by matcher. Heredocs, multi-line python -c and the shell idioms around them (cat > file, rm, cd) were refused: 56 denials in 13 attempts, 6 of 13 at the turn cap. The 13 attempts are voided in the ledger. A wider allow list would put rm on the host with only an after-the-fact audit behind it; the fix is the CLI in a container"
   - contestant: cursor-agent
     reason: "not run: its headless agent reports no per-call token usage, so cost per pass could not be measured on the same basis"

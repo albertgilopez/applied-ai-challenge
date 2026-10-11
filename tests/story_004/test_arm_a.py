@@ -148,7 +148,9 @@ def test_cost_is_priced_once_per_message_from_its_own_usage(w):
     ("res", "outcome"),
     [
         (result(subtype="error_max_budget_usd", is_error=True), "budget_stopped"),
-        (result(subtype="error_max_turns", is_error=True), "error"),
+        # The turn cap is B's max_steps: B grades what it left, so the CLI does too. As `error` it was
+        # retried at a cost and never graded (live run, 2026-10-11: 6 of 13 attempts in A).
+        (result(subtype="error_max_turns", is_error=True), None),
         (result(stop_reason="refusal"), "refused"),
         (result(stop_reason="max_tokens"), "truncated"),
         (result(), None),
