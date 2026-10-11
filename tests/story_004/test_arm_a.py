@@ -438,3 +438,61 @@ def test_a_command_that_names_a_url_is_invalid(tmp_path, cmd, invalid):
     line = json.dumps({"type": "assistant", "message": {"id": "m", "content": [
         {"type": "tool_use", "id": "t", "name": "Bash", "input": {"command": cmd}}]}})  # fmt: skip
     assert bool(arm_a.audit([line], w)) is invalid
+
+
+# ── found by the live run (2026-10-11): Python audited as shell text, and Python written to a file ──────
+
+
+_HAIKU_HEREDOC = (
+    "python - <<'EOF'\nimport math\n# noise is at most ~2%/sqrt(N) * 3 sigma\nx = (1 + 2)/math.sqrt(4)\nEOF"
+)
+_DOCSTRING_AND_FSTRING = '    """A uniform has sigma (b - a)/√12."""\n    raise ValueError(f"must be in {lo}..{hi}")\n'
+_FSTRING_URL = "    get(f'https://raw.githubusercontent.com/{who}/s.py')\n"
+_FETCH = "import urllib.request\nurllib.request.urlopen('https://raw.githubusercontent.com/a/b/main/solution.py')\n"
+
+
+def _one(tool, inp):
+    return json.dumps({"type": "assistant", "message": {"id": "m", "content": [
+        {"type": "tool_use", "id": "t", "name": tool, "input": inp}]}})  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("tool", "inp", "invalid"),
+    [
+        # The live Haiku attempt in A, KB-03: `2%/sqrt(N)` in a comment of a heredoc read as the path /sqrt.
+        ("Bash", {"command": _HAIKU_HEREDOC}, False),
+        ("Bash", {"command": 'python -c "import math; y = (2)/math.sqrt(9)"'}, False),
+        # ...and the same Python written to a file by a heredoc and then run, which is what Haiku did.
+        ("Bash", {"command": "cat > t.py <<'EOF'\n# at most ~2%/sqrt(N)\nx = 1\nEOF\npython t.py"}, False),
+        ("Bash", {"command": "cat > t.py <<'EOF'\nprint(open('/etc/hosts').read())\nEOF\npython t.py"}, True),
+        # A docstring or an f-string part is text, not a path (re-audit of the stored A0 attempts).
+        ("Edit", {"file_path": "u.py", "old_string": "x", "new_string": _DOCSTRING_AND_FSTRING}, False),
+        ("Edit", {"file_path": "u.py", "old_string": "x", "new_string": _FSTRING_URL}, True),
+        # A path or an address in a literal of that Python is still found.
+        ("Bash", {"command": "python - <<'EOF'\nprint(open('/etc/hosts').read())\nEOF"}, True),
+        ("Bash", {"command": "python - <<EOF\nimport urllib.request as u\nu.urlopen('https://x.io/s.py')\nEOF"}, True),
+        # Python written to a file and run later: the hole the URL rule had.
+        ("Write", {"file_path": "fetch.py", "content": _FETCH}, True),
+        ("Edit", {"file_path": "driver.py", "old_string": "x = 1", "new_string": "x = open('C:/x/s.py')"}, True),
+        ("Write", {"file_path": "notes.md", "content": "see https://example.com"}, False),  # not Python, not run
+        ("Write", {"file_path": "driver.py", "content": "def f(a, b):\n    return a/b  # ratio\n"}, False),
+    ],
+)
+def test_python_is_audited_by_its_string_literals(tmp_path, tool, inp, invalid):
+    w = tmp_path / "w"
+    w.mkdir()
+    assert bool(arm_a.audit([_one(tool, inp)], w)) is invalid
+
+
+def test_a_literal_the_task_already_has_is_not_a_finding(tmp_path):
+    # KB-01/02's purl.py names URLs: an attempt that rewrites the file must stay valid (the complement).
+    env = tmp_path / "environment"
+    (env / "core").mkdir(parents=True)
+    (env / "core" / "purl.py").write_text("BASE = 'https://github.com/'\n", encoding="utf-8")
+    w = tmp_path / "w"
+    w.mkdir()
+    line = _one("Write", {"file_path": "core/purl.py", "content": "BASE = 'https://github.com/'\nX = 2\n"})
+    assert arm_a.audit([line], w) != []  # without the task's literals it is a finding
+    assert arm_a.audit([line], w, arm_a.environment_literals(env)) == []
+    new = _one("Write", {"file_path": "core/purl.py", "content": "BASE = 'https://evil.example/'\n"})
+    assert arm_a.audit([new], w, arm_a.environment_literals(env)) != []

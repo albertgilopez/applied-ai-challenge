@@ -336,7 +336,7 @@ muts = [
         "        stopped = False",
     ),
     ("keysbench/arm_a.py", '    return _KEY_PATTERNS.sub("<redacted>", text)', "    return text"),
-    ("keysbench/arm_a.py", "            for m in _ELSEWHERE.finditer(cmd):", "            for m in []:"),
+    ("keysbench/arm_a.py", "            for m in _ELSEWHERE.finditer(shell):", "            for m in []:"),
     (
         "keysbench/arm_a.py",
         "            if prefix and (_ELSEWHERE.search(prefix) or not _inside(prefix, workspace)):",
@@ -459,6 +459,19 @@ muts = [
     ),
     ("keysbench/arm_a.py", "                if not _inside(p, workspace):\n", "                if False:\n"),
     ("keysbench/arm_a.py", 'env["CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"] = "1"', "pass"),
+    # Found by the live run (2026-10-11): Python is audited by its string literals, and Python written to a
+    # file is audited too.
+    ("keysbench/arm_a.py", "    shell = _HEREDOC.sub(take_heredoc, cmd)", "    shell = cmd"),
+    ("keysbench/arm_a.py", "    shell = _PY_C.sub(take_c, shell)", "    pass"),
+    ("keysbench/arm_a.py", "if value not in known and _one_token(value)]", "if _one_token(value)]"),
+    ("keysbench/arm_a.py", '            for key in ("content", "new_string"):', "            for key in ():"),
+    (
+        "keysbench/arm_a.py",
+        "    return bool(stripped) and not any(c.isspace() for c in stripped)",
+        "    return bool(stripped)",
+    ),
+    ("keysbench/arm_a.py", "whole = [value for value, part in fresh if not part]", "whole = [v for v, _ in fresh]"),
+    ("keysbench/arm_a.py", "    for text in whole + parts:", "    for text in whole:"),
     (
         "keysbench/arm_a.py",
         "    p = relative_path(rel)",

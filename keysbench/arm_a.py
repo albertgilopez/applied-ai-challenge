@@ -9,8 +9,10 @@ machine, so it is confined and audited, and the report says this is detection, n
   from scratch: no user credential names, and `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` so the API key never
   reaches the contestant's processes (measured in T0: without it, Python saw the key).
 - **Audited.** Every tool input in the transcript is checked: a path outside the workspace, absolute or
-  through `..`, makes the attempt `invalid`. Python can still build a path at run time; the audit cannot
-  see that, and the report says so.
+  through `..`, or a network address makes the attempt `invalid`. Shell text is read as shell; Python (a
+  `-c` argument, a heredoc, a `.py` file written or edited) is read by its single-token string literals,
+  leaving out those the task's own code already has. Python can still build a path or an address at run
+  time; the audit cannot see that, and the report says so.
 - **Measured.** Cost is priced from the usage of each model message in the transcript, once per message
   (the CLI repeats a message's usage on every content block), with the CLI's own estimate kept beside it.
   Latency is the CLI's API time.
@@ -21,6 +23,8 @@ machine, so it is confined and audited, and the report says this is detection, n
 
 from __future__ import annotations
 
+import ast
+import io
 import json
 import os
 import re
@@ -28,6 +32,9 @@ import shutil
 import signal
 import subprocess
 import sys
+import textwrap
+import tokenize
+import warnings
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
@@ -153,15 +160,136 @@ def _command_paths(cmd: str) -> list[str]:
     return found
 
 
+# A network address. A command that names one makes the attempt invalid (b31a919); the same holds for one
+# written into a Python file that the contestant can then run.
+_URL = re.compile(r"\b(?:https?|ftp|wss?)://[^\s'\"`<>()]+", re.IGNORECASE)
+# Python inside a shell command: `python -c '<code>'` / `python -c "<code>"`, and a heredoc that is fed to
+# python (`python - <<'EOF'`) or written to a `.py` file that is then run (`cat > t.py <<'EOF'`, the live
+# Haiku attempt in A).
+_PY_C = re.compile(r"\bpython[\w.]*(?:\s+-[A-Za-z]+)*?\s+-c\s+(?P<q>['\"])(?P<code>.*?)(?<!\\)(?P=q)", re.DOTALL)
+_HEREDOC = re.compile(
+    r"(?P<head>[^\n]*?)<<-?\s*(?P<q>['\"]?)(?P<tag>\w+)(?P=q)[^\n]*\n(?P<code>.*?)\n\s*(?P=tag)\b", re.DOTALL
+)
+_PY_TARGET = re.compile(r"\bpython[\w.]*\b|>\s*['\"]?[^\s'\"<>|;&]+\.py\b")
+
+
+def _unescape_double_quoted(code: str) -> str:
+    """What bash hands to python from a double-quoted argument: `\\"`, `\\\\`, `\\$` and `\\``` lose the backslash."""
+    return re.sub(r"\\([\"\\$`])", r"\1", code)
+
+
+def _python_in_command(cmd: str) -> tuple[str, list[str]]:
+    """The shell part of a command and the Python sources it runs. In Python a place can only be named in a
+    string literal; comments and operators cannot name one. Auditing the source as shell text read
+    `2%/sqrt(N)` in a comment as the path `/sqrt` (live run, 2026-10-11), so the source is taken out of the
+    shell text and audited by its literals."""
+    sources: list[str] = []
+
+    def take_c(m: re.Match[str]) -> str:
+        code = m.group("code")
+        sources.append(_unescape_double_quoted(code) if m.group("q") == '"' else code)
+        return m.group(0)[: m.start("code") - m.start(0)] + m.group(0)[m.end("code") - m.start(0) :]
+
+    def take_heredoc(m: re.Match[str]) -> str:
+        if not _PY_TARGET.search(m.group("head")):
+            return m.group(0)  # a heredoc that is not Python stays shell text
+        sources.append(m.group("code"))
+        return m.group(0)[: m.start("code") - m.start(0)] + m.group(0)[m.end("code") - m.start(0) :]
+
+    shell = _HEREDOC.sub(take_heredoc, cmd)
+    shell = _PY_C.sub(take_c, shell)
+    return shell, sources
+
+
+def _literals(source: str) -> list[tuple[str, bool]] | None:
+    """Every string constant in a Python source as `(value, is_fstring_part)`, or None if not even one token
+    can be read. An f-string part is a fragment of text, not a value handed to a call (`f"{lo}..{hi}"` gave
+    the part `..`). An `Edit` hands over a fragment (indented, cut mid-block) that `ast` refuses, so the
+    tokenizer, which reads fragments, is the fallback."""
+    with warnings.catch_warnings():  # `'C:\Windows'` warns of an invalid escape; it is still a literal
+        warnings.simplefilter("ignore", SyntaxWarning)
+        warnings.simplefilter("ignore", DeprecationWarning)
+        try:
+            tree: ast.Module | None = ast.parse(textwrap.dedent(source))
+        except (SyntaxError, ValueError):
+            tree = None
+        if tree is not None:
+            parts = {id(v) for n in ast.walk(tree) if isinstance(n, ast.JoinedStr) for v in n.values}
+            return [
+                (n.value, id(n) in parts)
+                for n in ast.walk(tree)
+                if isinstance(n, ast.Constant) and isinstance(n.value, str)
+            ]
+        found: list[tuple[str, bool]] = []
+        read_any = False
+        try:
+            for tok in tokenize.generate_tokens(io.StringIO(source).readline):
+                read_any = True
+                if tok.type == tokenize.STRING:
+                    try:
+                        value = ast.literal_eval(tok.string)
+                    except (SyntaxError, ValueError):
+                        value = None  # an f-string before Python 3.12: its parts are not values
+                    if isinstance(value, str):
+                        found.append((value, False))
+                elif tok.type == getattr(tokenize, "FSTRING_MIDDLE", -1):
+                    found.append((tok.string, True))
+        except (tokenize.TokenError, SyntaxError):
+            pass
+        return found if read_any else None
+
+
+def environment_literals(environment: Path) -> frozenset[str]:
+    """The string literals the task's own code already has. Rewriting one of them is not reaching anywhere:
+    KB-01/02's `purl.py` and `sbom.py` name URLs, and an attempt that edits them must stay valid (the
+    complement of the finding, ai-first anti-pattern 6.bis)."""
+    found: set[str] = set()
+    if environment.is_dir():
+        for path in environment.rglob("*.py"):
+            found.update(value for value, _ in _literals(path.read_text("utf-8", errors="replace")) or [])
+    return frozenset(found)
+
+
+def _one_token(text: str) -> bool:
+    """A literal that is one token. Only such a literal can be a path or an address handed to a call; a
+    docstring or a message is prose (re-auditing the stored attempts, `σ/√3.` in the docstrings of a valid A0
+    attempt read as paths)."""
+    stripped = text.strip()
+    return bool(stripped) and not any(c.isspace() for c in stripped)
+
+
+def _source_findings(where: str, source: str, workspace: Path, known: frozenset[str]) -> list[str]:
+    lits = _literals(source)
+    if lits is None:  # not even one token: audit it as text, as before
+        whole, parts = [source], []
+    else:
+        fresh = [(value, part) for value, part in lits if value not in known and _one_token(value)]
+        whole = [value for value, part in fresh if not part]
+        parts = [value for value, part in fresh if part]
+    findings = []
+    for text in whole + parts:  # an address is an address, in a whole literal or in an f-string part
+        for m in _URL.finditer(text):
+            findings.append(f"{where} names a network address: {m.group(0)[:200]}")
+    for text in whole:
+        for m in _ELSEWHERE.finditer(text):
+            findings.append(f"{where} names a place outside the workspace: {m.group(0)[:200]}")
+        for p in _command_paths(_URL.sub(" ", text)):
+            if not _inside(p, workspace):
+                findings.append(f"{where} reaches outside the workspace: {p[:200]}")
+    return findings
+
+
 def _glob_prefix(pattern: str) -> str:
     """The part of a glob before its first wildcard: the directory it starts from."""
     cut = min((i for i, ch in enumerate(pattern) if ch in "*?[{"), default=len(pattern))
     return pattern[:cut]
 
 
-def audit(lines: list[str], workspace: Path) -> list[str]:
-    """Every tool input that reaches outside the workspace. Any finding makes the attempt `invalid`.
-    Detection only: Python can build a path at run time that no transcript shows."""
+def audit(lines: list[str], workspace: Path, known: frozenset[str] = frozenset()) -> list[str]:
+    """Every tool input that reaches outside the workspace or names a network address. Any finding makes the
+    attempt `invalid`. Shell tokens and the string literals of Python the contestant runs or writes are
+    audited; `known` are the literals the task's own code already has. Detection only: Python can build a
+    path or an address at run time that no transcript shows."""
     findings = []
     for name, inp in _tool_inputs(_parse(lines)):
         glob_key = GLOB_KEYS.get(name)
@@ -176,11 +304,25 @@ def audit(lines: list[str], workspace: Path) -> list[str]:
                 findings.append(f"{name}.{key} outside the workspace: {value[:200]}")
         cmd = inp.get("command")
         if isinstance(cmd, str):
-            for m in _ELSEWHERE.finditer(cmd):
+            shell, sources = _python_in_command(cmd)
+            for m in _ELSEWHERE.finditer(shell):
                 findings.append(f"{name}.command names a place outside the workspace: {m.group(0)[:200]}")
-            for p in _command_paths(cmd):
+            for p in _command_paths(_URL.sub(" ", shell)):
                 if not _inside(p, workspace):
                     findings.append(f"{name}.command reaches outside the workspace: {p[:200]}")
+            for m in _URL.finditer(shell):
+                findings.append(f"{name}.command names a network address: {m.group(0)[:200]}")
+            for source in sources:
+                findings += _source_findings(f"{name}.command (python)", source, workspace, known)
+        target = inp.get("file_path")
+        if isinstance(target, str) and target.lower().endswith(".py"):
+            for key in ("content", "new_string"):
+                text = inp.get(key)
+                if isinstance(text, str) and text:
+                    findings += _source_findings(f"{name}.{key}", text, workspace, known)
+            for edit in inp.get("edits") or []:  # MultiEdit
+                if isinstance(edit, dict) and isinstance(edit.get("new_string"), str):
+                    findings += _source_findings(f"{name}.edits", edit["new_string"], workspace, known)
     return findings
 
 

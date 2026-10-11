@@ -427,7 +427,7 @@ def attempt_a(
                 raise CassetteMiss(f"no stored CLI attempt at {store}")
             lines = arm_a.restore_attempt(store, workspace)
         summary = arm_a.summarise(lines, model=key.model)
-        findings = arm_a.audit(lines, workspace)
+        findings = arm_a.audit(lines, workspace, arm_a.environment_literals(spec.path / "environment"))
         cost = summary["cost_usd"]
         if live:
             budget.spent_usd += cost if cost is not None else float(summary["cli_cost_usd"] or 0.0)
