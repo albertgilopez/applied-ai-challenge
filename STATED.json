@@ -1,10 +1,9 @@
 {
   "_": "Judgement half of state.json, written by a person at the commit below. If head has moved past at_commit, read it as stale.",
   "as_of": "2026-10-12",
-  "at_commit": "f48dce8",
-  "where_we_are": "Challenges A and B are done and delivered (repository public, email to the panel sent). KeysBench (STORY-004, optional) ran live in October 2026: 198 attempts stand, 17.81 USD with voided attempts included, results in keysbench/results/2026-10/results.md. Finding: on these six tasks the models separate on cost, not on whether they can do the work (B: 5 of 7 contestants passed every attempt, cost per pass 51 times apart; A0: 3 of 4, 77 times). Five of six tasks are saturated. Configuration A (the CLI with Python) was run and voided: the restricted CLI denied most of the Python its rule allowed (56 denials in 13 attempts). Decided by the repository owner on 2026-10-11: A is not run this month. On 2026-10-12 the challenges were reviewed live with the panel. STORY-005 (reject a component with a critical OSV vulnerability) was built during that session: a pure rule in core/vulns.py with six cases (S5-01 to S5-06), and no network adapter yet. Measured behaviour when the model API is down: the scan stops with an unhandled error, the ledger keeps the decisions already made and closes the run with the error, and the report refuses to be written; only an answer that cannot be read ends in Needs review.",
+  "at_commit": "d596fac",
+  "where_we_are": "Challenges A and B are done and delivered (repository public, email to the panel sent). KeysBench (STORY-004, optional) ran live in October 2026: 198 attempts stand, 17.81 USD with voided attempts included, results in keysbench/results/2026-10/results.md. Finding: on these six tasks the models separate on cost, not on whether they can do the work (B: 5 of 7 contestants passed every attempt, cost per pass 51 times apart; A0: 3 of 4, 77 times). Five of six tasks are saturated. Configuration A (the CLI with Python) was run and voided: the restricted CLI denied most of the Python its rule allowed (56 denials in 13 attempts). Decided by the repository owner on 2026-10-11: A is not run this month. On 2026-10-12 the challenges were reviewed live with the panel. STORY-005 (reject a component with a critical OSV vulnerability) was built during that session: a pure rule in core/vulns.py with six cases (S5-01 to S5-06), and no network adapter yet. When the model API is down the scan now refuses cleanly (exit 2, names the component) and writes no decision for it, so a re-run decides it when the model answers; the ledger keeps the decisions already made and the failed run, and the report refuses to be written until every component has a decision. An answer that cannot be read still ends in Needs review. Before 2026-10-12 this crashed with a raw traceback (S2-13).",
   "next": [
-    "Catch a model provider failure in review/cli.py (main() does not list it): refuse cleanly and leave the component in Needs review in the ledger; test first",
     "The OSV adapter for api.osv.dev, recorded and replayed in CI like the model calls, with the vulnerability data in decision_key (D-08), and apply_vulnerabilities wired into the scan",
     "Configuration A in a container with network only to the API, so Python can be granted without a wider allow list on the host",
     "Harder tasks: five of six are saturated, so the next month needs tasks that separate the models, not more attempts",
@@ -13,9 +12,10 @@
   "blocked": [],
   "decided": [
     "2026-10-11: configuration A not run this month (reason in the plan's not_run and the memo); confirmed by the repository owner",
-    "2026-10-12: STORY-005 is committed with the rule only; the adapter and the decision_key change are a separate step (declared out of scope in the story)"
+    "2026-10-12: STORY-005 is committed with the rule only; the adapter and the decision_key change are a separate step (declared out of scope in the story)",
+    "2026-10-12: a model outage records no decision (a recorded verdict is reused on re-run, DR-9, so a frozen Needs review would never retry); it refuses with exit 2 instead"
   ],
   "waiting_on_albert": [
-    "Whether to build the clean refusal on a provider failure and the OSV adapter before the next review"
+    "Whether to build the OSV adapter (api.osv.dev) before the next review"
   ]
 }
