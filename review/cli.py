@@ -34,6 +34,24 @@ from harness.replay import CassetteMiss
 from harness.storage import CorruptRecord, JSONObject, utc_stamp
 
 REFUSED = 2
+
+
+class ModelUnavailable(Exception):
+    """The model could not be reached or the SDK raised an API error, so nothing was decided for this component."""
+
+
+def _provider_errors() -> tuple[type[BaseException], ...]:
+    """What a model call raises when the provider cannot answer: network errors and the SDK's own API errors
+    (timeouts and connection failures included). Not `OSError` as a whole: a missing card is a FileNotFoundError
+    and `main()` already refuses that for its own reason. Any other exception is a bug and propagates."""
+    errors: tuple[type[BaseException], ...] = (ConnectionError, TimeoutError)
+    try:
+        import anthropic
+    except ImportError:  # pragma: no cover - the SDK is a dependency
+        return errors
+    return (*errors, anthropic.APIError)
+
+
 DEFAULT_RECORDINGS = Path(__file__).resolve().parents[1] / "tests" / "cassettes" / "story_002"
 
 # (model id, live, recordings dir) -> the provider for that model's review
@@ -158,7 +176,17 @@ def _scan(args: argparse.Namespace, out: TextIO, factory: ProviderFactory) -> No
             decision = Decision(c.ref, REVIEW, f"{decide(c, policy).reason}; model card: {what}", c.source_url)
             evidence = {"model_id": model_id, "license": None, "grounded": False}
         else:
-            decision, evidence = _card_decision(c, policy, args, ledger, factory, card, model_id)
+            try:
+                decision, evidence = _card_decision(c, policy, args, ledger, factory, card, model_id)
+            except _provider_errors() as exc:
+                # No decision is written: a recorded verdict stands and a re-run would reuse it (DR-9), so a
+                # `Needs review` frozen by an outage would never be asked again. Nothing is approved either
+                # way: the report refuses a component without a decision. The failed run is already in the
+                # ledger (`run_end` with the error), so the history shows what happened.
+                raise ModelUnavailable(
+                    f"{c.name}: the model call failed ({type(exc).__name__}); no decision was recorded for it "
+                    "and nothing is approved. Run scan again when the model answers."
+                ) from exc
         ledger.append(decision_record(c, decision, policy_digest, ckey, evidence))
         known.add(key)
         decided += 1
@@ -239,6 +267,7 @@ def main(
         FileNotFoundError,
         CassetteMiss,
         UnapprovedPrompt,
+        ModelUnavailable,
     ) as exc:
         print(f"refused: {safe_text(str(exc))}", file=err)
         return REFUSED

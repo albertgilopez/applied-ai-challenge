@@ -174,6 +174,14 @@ muts = [
         "return self.reviews[0].verdict if self.reviews",
     ),  # DR-3 latest wins
     ("review/cli.py", "if key in known:", "if False:"),  # DR-9 a re-run never decides again
+    # S2-13: a model outage refuses cleanly (exit 2) instead of crashing, and nothing else is swallowed.
+    ("review/cli.py", "except _provider_errors() as exc:", "except ValueError as exc:"),
+    (
+        "review/cli.py",
+        "errors: tuple[type[BaseException], ...] = (ConnectionError, TimeoutError)",
+        "errors: tuple[type[BaseException], ...] = (ConnectionError, TimeoutError, ValueError)",
+    ),
+    ("review/cli.py", "        ModelUnavailable,\n    ) as exc:", "    ) as exc:"),
     (
         "core/sbom.py",
         'named = Product(str(product["name"]), version if isinstance(version, str) else None)',

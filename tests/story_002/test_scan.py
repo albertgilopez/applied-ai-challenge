@@ -105,3 +105,60 @@ def test_the_report_finds_decisions_made_against_the_cards(tmp_path):
     report = json.loads((out / "report.json").read_text("utf-8"))
     llama = next(r for r in report["components"] if r["name"] == "Llama-3.1-8B")
     assert "model card" in llama["reason"]
+
+
+class DownProvider:
+    """A provider that cannot be reached: every call raises `error`."""
+
+    def __init__(self, error):
+        self.error = error
+
+    def create(self, **request):
+        raise self.error
+
+
+def _api_connection_error():
+    import anthropic
+
+    # The SDK keeps the request it was given and does not use it to build the error, so a stand-in is enough
+    # and the test does not depend on which HTTP library the SDK uses underneath.
+    return anthropic.APIConnectionError(request=object())  # type: ignore[arg-type]
+
+
+def run_down(error, ledger: Path):
+    out, err = io.StringIO(), io.StringIO()
+    argv = ["scan", "--sbom", SBOM, "--policy", POLICY, "--ledger", str(ledger), "--model-cards", str(CARDS)]
+    code = main(argv, out=out, err=err, provider_factory=lambda model_id, live, recordings: DownProvider(error))
+    return code, err.getvalue()
+
+
+def test_s2_13_a_model_that_cannot_be_reached_refuses_cleanly_and_records_no_decision_for_it(tmp_path):
+    for error in (ConnectionError("API down"), TimeoutError("slow"), _api_connection_error()):
+        ledger = tmp_path / f"{type(error).__name__}.jsonl"
+        code, err = run_down(error, ledger)
+        assert code == 2, err
+        assert err.startswith("refused:") and type(error).__name__ in err
+        assert ai_decisions(ledger) == []  # no decision for the model: a re-run decides it when it answers
+        rows = [json.loads(line) for line in ledger.read_text("utf-8").splitlines() if line.strip()]
+        assert any(r["kind"] == "run_end" and r.get("error") for r in rows)  # the failed run is in the history
+        ai_allows = [r for r in rows if r["kind"] == "decision" and r["identity"].startswith("pkg:huggingface/")]
+        assert not any(r["verdict"] == "Allow" for r in ai_allows)
+
+
+def test_s2_13_the_rerun_decides_what_was_left_and_reuses_the_rest(tmp_path):
+    ledger, calls = tmp_path / "l.jsonl", []
+    code, _ = run_down(ConnectionError("API down"), ledger)
+    assert code == 2
+    decided_before = len([line for line in ledger.read_text("utf-8").splitlines() if '"kind": "decision"' in line])
+    args = ["scan", "--sbom", SBOM, "--policy", POLICY, "--ledger", str(ledger), "--model-cards", str(CARDS)]
+    code, out, _ = run(*args, calls=calls)[0:3]
+    assert code == 0
+    assert len(ai_decisions(ledger)) == 3
+    assert f"{decided_before} reused" in out
+
+
+def test_s2_13_an_error_that_is_not_an_outage_is_not_swallowed(tmp_path):
+    import pytest
+
+    with pytest.raises(ValueError):
+        run_down(ValueError("a bug"), tmp_path / "l.jsonl")

@@ -106,3 +106,4 @@ Model answer (structured output, validated by code):
 - [x] A changed card is a new decision; the same card reuses the recorded one (case: S2-10)
 - [x] A restriction whose quote is not in the card is dropped and counted (case: S2-11)
 - [x] Without `--model-cards` scan is unchanged; offline without a recording it refuses with exit 2 (case: S2-12)
+- [x] When the model cannot be reached (a connection error, a timeout or an SDK API error, after its retries), scan refuses with exit 2 and names the component, records no decision for it so a re-run decides it when the model answers, and approves nothing because of it; any other error is not swallowed (case: S2-13)

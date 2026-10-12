@@ -61,3 +61,10 @@
     - { args: "scan without --model-cards", expected: { same_ledger_as_story_003: true } }
     - { args: "scan --model-cards samples/model-cards --recordings <empty dir>", expected: { exit_code: 2, network_calls: 0 } }
     - { args: "scan --model-cards samples/model-cards (default recordings)", expected: { exit_code: 0, network_calls: 0, ai_models_reviewed: 3 } }
+- id: S2-13
+  rows:
+    - { failure: "ConnectionError from the provider", expected: { exit_code: 2, stderr_contains: ["refused:", "Mistral"], decisions_for_the_failed_model: 0, allow_decisions_for_ai_models: 0 } }
+    - { failure: "anthropic.APIConnectionError", expected: { exit_code: 2, stderr_contains: ["refused:", "APIConnectionError"] } }
+    - { failure: "TimeoutError", expected: { exit_code: 2, stderr_contains: ["refused:"] } }
+    - { failure: "ValueError (a bug, not an outage)", expected: { raises: ValueError } }
+    - { rerun: "scan again with a working model", expected: { exit_code: 0, ai_models_reviewed: 3, earlier_decisions_reused: true } }
