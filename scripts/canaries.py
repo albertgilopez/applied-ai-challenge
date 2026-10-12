@@ -20,6 +20,8 @@ import tempfile
 import time
 
 muts = [
+    # STORY-005: a critical OSV vulnerability rejects the component.
+    ("core/vulns.py", 'if severity == "CRITICAL":', 'if severity == "NEVER":'),
     (
         "harness/gate.py",
         'return Decision("escalate", f"{t.effect} effect needs a human")',

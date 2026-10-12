@@ -1,0 +1,31 @@
+# STORY-005 cases. Each case: the license decision (verdict), the component's OSV vulnerabilities
+# (`null` = the lookup failed or was not done), and the expected verdict and text in the reason.
+- id: S5-01
+  verdict: Allow
+  vulns: []
+  expected: Allow
+- id: S5-02
+  verdict: Allow
+  vulns: [{ id: CVE-2024-0001, severity: CRITICAL }]
+  expected: Reject
+  reason_contains: CVE-2024-0001
+- id: S5-03
+  verdict: Allow
+  vulns: [{ id: CVE-2024-0002, severity: HIGH }]
+  expected: Allow
+  reason_contains: CVE-2024-0002
+- id: S5-04
+  verdict: Allow
+  vulns: null
+  expected: Needs review
+  reason_contains: not checked against OSV
+- id: S5-05
+  verdict: Needs review
+  vulns: [{ id: CVE-2024-0003, severity: CRITICAL }]
+  expected: Reject
+  reason_contains: CVE-2024-0003
+- id: S5-06
+  verdict: Allow
+  vulns: [{ id: GHSA-xxxx-yyyy-zzzz, severity: null }]
+  expected: Needs review
+  reason_contains: GHSA-xxxx-yyyy-zzzz
